@@ -30,7 +30,7 @@ Common paths are:
 /series/{username}/{password}/{episode_id}.{container_extension}
 ```
 
-Credentials are encoded as separate path segments. Never use the series ID in place of the episode ID. Use provider-supplied container extensions for movies/episodes instead of assuming MP4. The first player prefers HLS when the account allows it, otherwise MPEG-TS.
+Credentials are encoded as separate path segments. Never use the series ID in place of the episode ID. Use provider-supplied container extensions for movies/episodes instead of assuming MP4. The first player prefers the provider's `ts` endpoint when advertised, otherwise the available HLS endpoint. Progressive playback can sniff the actual container when a provider returns a different container; a `.m3u8` endpoint that returns MP4 cannot be parsed as an HLS playlist.
 
 The baseline constructs common Xtream paths. Provider-specific direct URLs, custom stream headers, DRM licensing, catch-up paths, Stalker/MAG portals and M3U import are not implemented. Validate these needs before promising compatibility with another provider.
 
@@ -43,12 +43,14 @@ The baseline constructs common Xtream paths. Provider-specific direct URLs, cust
 - Connection/read/call timeouts are bounded; coroutine cancellation cancels the call.
 - Catalog responses are limited to 20 MiB; large catalogs require paging or incremental import work.
 - JSON/parser/network errors are translated into safe messages without the response body, URL or exception cause.
-- The player permits same-protocol redirects for delivery hosts but rejects cross-protocol redirects.
+- The player rejects HTTPS-to-HTTP redirects and HTTP manifest/segment URLs by default. The per-connection **Allow HTTP streams** option permits HTTP video delivery when explicitly enabled; catalog/login requests remain HTTPS-only.
 
 ## Private compatibility check
 
 A supplied test connection was checked privately on 2026-10-25. HTTPS account authentication succeeded. Category responses contained 48 Live TV categories, 346 movie categories and 19 series categories; no non-root category parents were reported. The account advertised HLS (`m3u8`) and MPEG-TS (`ts`).
 
-These are observations of one service at one time, not public fixtures or a guarantee of playback. No account values, server hostname, raw responses, titles or stream URLs are stored in this repository. Streaming has not yet been verified on a physical device.
+On-device testing on a Pixel 9 Pro XL confirmed login and category browsing. Both live formats redirected to HTTP delivery hosts that did not accept HTTPS; this motivated the per-connection playback compatibility option. UI language switching was checked for English, Italian, Russian, Simplified Chinese, Japanese and Arabic.
+
+These are observations of one service at one time, not public fixtures or a guarantee of playback. No account values, server hostname, raw responses, titles or stream URLs are stored in this repository.
 
 The next private verification should select one live channel, one movie and one episode; inspect only the metadata needed for their formats, then verify playback without exceeding the account's connection limit. Never run this against a real account from public CI.

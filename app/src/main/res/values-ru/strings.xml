@@ -45,4 +45,7 @@
   <string name="err_save_failed">Не удалось безопасно сохранить подключение. Отключите параметр Запомнить подключение и повторите попытку.</string>
   <string name="err_remove_failed">Не удалось удалить сохранённое подключение. Очистите данные приложения в настройках Android.</string>
   <string name="err_unknown">Не удалось выполнить запрос. Повторите попытку.</string>
+  <string name="allow_http_streams">Разрешить потоки HTTP</string>
+  <string name="http_streams_help">Некоторые провайдеры передают видео без шифрования. Включайте только для сервиса, которому доверяете.</string>
+  <string name="err_insecure_stream">Этот поток использует HTTP. Разрешите потоки HTTP для этого подключения, чтобы воспроизвести его.</string>
 </resources>

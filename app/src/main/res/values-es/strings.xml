@@ -45,4 +45,7 @@
   <string name="err_save_failed">No se pudo guardar la conexión de forma segura. Desactiva Recordar esta conexión y vuelve a intentarlo.</string>
   <string name="err_remove_failed">No se pudo eliminar la conexión guardada. Borra los datos de la aplicación en los ajustes de Android.</string>
   <string name="err_unknown">No se pudo completar la solicitud. Vuelve a intentarlo.</string>
+  <string name="allow_http_streams">Permitir transmisiones HTTP</string>
+  <string name="http_streams_help">Algunos proveedores envían vídeo sin cifrar. Activa esta opción solo para un servicio de confianza.</string>
+  <string name="err_insecure_stream">Esta transmisión usa HTTP. Permite las transmisiones HTTP para esta conexión para reproducirla.</string>
 </resources>

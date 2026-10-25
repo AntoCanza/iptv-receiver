@@ -141,7 +141,7 @@ class XtreamCatalogRepository internal constructor(private val transport: JsonTr
             .addPathSegment(connection.password)
             .addPathSegment("$id.$extension")
             .build()
-        return PlaybackSource(url.toString(), title, type == ContentType.LIVE)
+        return PlaybackSource(url.toString(), title, type == ContentType.LIVE, connection.allowHttpStreams)
     }
 
     private suspend fun request(

@@ -34,8 +34,8 @@ android {
     lint {
         abortOnError = true
         warningsAsErrors = true
-        // Dependency updates are reviewed through Dependabot, separately from correctness checks.
-        informational += setOf("GradleDependency", "AndroidGradlePluginVersion", "NewerVersionAvailable")
+        // Version and target-SDK migrations are reviewed separately from correctness checks.
+        informational += setOf("GradleDependency", "AndroidGradlePluginVersion", "NewerVersionAvailable", "OldTargetApi")
     }
 }
 

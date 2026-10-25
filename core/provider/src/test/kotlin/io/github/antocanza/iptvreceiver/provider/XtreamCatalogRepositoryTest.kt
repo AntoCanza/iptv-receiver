@@ -49,9 +49,11 @@ class XtreamCatalogRepositoryTest {
     @Test fun `plain HTTP and URLs containing credentials or queries are rejected before transport`() = runTest {
         for (url in listOf("http://provider.example.test", "https://user:secret@provider.example.test", "https://provider.example.test?password=secret")) {
             requested = null
-            val result = runCatching { repository("{}").authenticate(ProviderConnection("Test", url, "demo", "test")) }
-            assertTrue(result.exceptionOrNull() is ProviderException)
-            assertNull(requested)
+            for (allowHttpStreams in listOf(false, true)) {
+                val result = runCatching { repository("{}").authenticate(ProviderConnection("Test", url, "demo", "test", allowHttpStreams)) }
+                assertTrue(result.exceptionOrNull() is ProviderException)
+                assertNull(requested)
+            }
         }
     }
 
@@ -96,6 +98,16 @@ class XtreamCatalogRepositoryTest {
     @Test fun `missing stream extension is reported instead of guessed`() {
         val result = runCatching { repository("{}").episodeStream(connection, Episode("11", "Test", 1, 1, "")) }
         assertTrue(result.exceptionOrNull() is ProviderException)
+    }
+
+    @Test fun `HTTP stream permission stays scoped to the selected connection`() {
+        val client = repository("{}")
+        val item = CatalogItem("81", "Sample", ContentType.LIVE)
+        assertFalse(client.stream(connection, item).allowHttpStreams)
+        val optedIn = ProviderConnection("Test", connection.serverUrl, connection.username, connection.password, true)
+        assertTrue(client.stream(optedIn, item).allowHttpStreams)
+        assertTrue(client.episodeStream(optedIn, Episode("11", "Episode", 1, 1, "mp4")).allowHttpStreams)
+        assertFalse(client.stream(connection, item).allowHttpStreams)
     }
 
     @Test fun `empty object catalog is accepted and missing artwork does not hide a title`() = runTest {

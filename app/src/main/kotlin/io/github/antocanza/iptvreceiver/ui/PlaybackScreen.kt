@@ -36,6 +36,9 @@ import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
 import androidx.media3.ui.PlayerView
 import io.github.antocanza.iptvreceiver.R
+import io.github.antocanza.iptvreceiver.data.InsecureStreamException
+import io.github.antocanza.iptvreceiver.data.StreamDataSourceFactory
+import io.github.antocanza.iptvreceiver.model.FailureReason
 import io.github.antocanza.iptvreceiver.model.PlaybackSource
 
 @androidx.annotation.OptIn(UnstableApi::class)
@@ -45,10 +48,12 @@ fun PlaybackScreen(source: PlaybackSource) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     var failed by remember(source) { mutableStateOf(false) }
     var buffering by remember(source) { mutableStateOf(true) }
+    var insecureStream by remember(source) { mutableStateOf(false) }
     val player = remember(source) {
         val http = DefaultHttpDataSource.Factory().setUserAgent("IPTVReceiver/0.1")
-            .setAllowCrossProtocolRedirects(false).setConnectTimeoutMs(15_000).setReadTimeoutMs(30_000)
-        ExoPlayer.Builder(context).setMediaSourceFactory(DefaultMediaSourceFactory(http)).build().apply {
+            .setAllowCrossProtocolRedirects(source.allowHttpStreams).setConnectTimeoutMs(15_000).setReadTimeoutMs(30_000)
+        val guarded = StreamDataSourceFactory(http, source.allowHttpStreams)
+        ExoPlayer.Builder(context).setMediaSourceFactory(DefaultMediaSourceFactory(guarded)).build().apply {
             setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA)
                 .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true)
             setHandleAudioBecomingNoisy(true)
@@ -58,7 +63,11 @@ fun PlaybackScreen(source: PlaybackSource) {
     DisposableEffect(player, lifecycle) {
         val listener = object : Player.Listener {
             override fun onPlaybackStateChanged(playbackState: Int) { buffering = playbackState == Player.STATE_BUFFERING }
-            override fun onPlayerError(error: PlaybackException) { failed = true; buffering = false }
+            override fun onPlayerError(error: PlaybackException) {
+                insecureStream = generateSequence(error as Throwable) { it.cause }.any { it is InsecureStreamException }
+                failed = true
+                buffering = false
+            }
         }
         val observer = LifecycleEventObserver { _, event -> if (event == Lifecycle.Event.ON_STOP) player.pause() }
         val window = (context as? ComponentActivity)?.window
@@ -79,7 +88,8 @@ fun PlaybackScreen(source: PlaybackSource) {
             modifier = Modifier.fillMaxSize(), onRelease = { it.player = null })
         if (buffering && !failed) CircularProgressIndicator(Modifier.align(Alignment.Center))
         if (failed) Column(Modifier.align(Alignment.Center).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(stringResource(R.string.playback_failed), color = MaterialTheme.colorScheme.error)
+            Text(if (insecureStream) FailureReason.INSECURE_STREAM.localized() else stringResource(R.string.playback_failed),
+                color = MaterialTheme.colorScheme.error)
             Button(onClick = { failed = false; buffering = true; player.prepare(); player.play() }) {
                 Text(stringResource(R.string.retry))
             }

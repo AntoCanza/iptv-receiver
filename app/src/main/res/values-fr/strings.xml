@@ -45,4 +45,7 @@
   <string name="err_save_failed">Impossible d\'enregistrer la connexion de façon sécurisée. Désactivez Mémoriser cette connexion et réessayez.</string>
   <string name="err_remove_failed">Impossible de supprimer la connexion enregistrée. Effacez les données de l\'application dans les paramètres Android.</string>
   <string name="err_unknown">Impossible de terminer la requête. Réessayez.</string>
+  <string name="allow_http_streams">Autoriser les flux HTTP</string>
+  <string name="http_streams_help">Certains fournisseurs diffusent sans chiffrement. Activez cette option uniquement pour un service de confiance.</string>
+  <string name="err_insecure_stream">Ce flux utilise HTTP. Autorisez les flux HTTP pour cette connexion afin de le lire.</string>
 </resources>

@@ -46,4 +46,7 @@
   <string name="err_save_failed">The connection could not be saved securely. Turn off Remember this connection and try again.</string>
   <string name="err_remove_failed">The saved connection could not be removed. Clear app storage in Android Settings.</string>
   <string name="err_unknown">The request could not be completed. Please try again.</string>
+  <string name="allow_http_streams">Allow HTTP streams</string>
+  <string name="http_streams_help">Some providers deliver video without encryption. Enable only for a service you trust.</string>
+  <string name="err_insecure_stream">This stream uses HTTP. Enable HTTP streams for this connection to play it.</string>
 </resources>

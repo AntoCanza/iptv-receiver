@@ -6,6 +6,7 @@ class ProviderConnection(
     val serverUrl: String,
     val username: String,
     val password: String,
+    val allowHttpStreams: Boolean = false,
 ) {
     override fun toString(): String = "ProviderConnection([redacted])"
 }
@@ -41,7 +42,7 @@ data class Episode(
 data class SeriesDetails(val title: String, val description: String, val episodes: List<Episode>)
 
 /** Contains a credential-bearing URL; never log, serialize, or use as a navigation argument. */
-class PlaybackSource(val url: String, val title: String, val isLive: Boolean) {
+class PlaybackSource(val url: String, val title: String, val isLive: Boolean, val allowHttpStreams: Boolean = false) {
     override fun toString(): String = "PlaybackSource([redacted])"
 }
 
@@ -61,8 +62,17 @@ enum class FailureReason {
     INACTIVE_ACCOUNT, EXPIRED_ACCOUNT, SELECT_EPISODE, INVALID_STREAM,
     UNREACHABLE, REDIRECTED, ACCESS_DENIED, UNAVAILABLE, EMPTY_RESPONSE,
     UNSUPPORTED_RESPONSE, TOO_LARGE, RESPONSE_UNREADABLE, SAVE_FAILED,
-    REMOVE_FAILED, UNKNOWN,
+    REMOVE_FAILED, INSECURE_STREAM, UNKNOWN,
 }
 
 /** Stable error codes are localized by the UI and contain no raw provider values. */
 class ProviderException(val reason: FailureReason) : Exception(reason.name)
+
+/** Applied before every manifest/segment request, not just the initial stream URL. */
+fun requireAllowedStreamScheme(scheme: String?, allowHttp: Boolean) {
+    when (scheme?.lowercase()) {
+        "https" -> Unit
+        "http" -> if (!allowHttp) throw ProviderException(FailureReason.INSECURE_STREAM)
+        else -> throw ProviderException(FailureReason.INVALID_STREAM)
+    }
+}

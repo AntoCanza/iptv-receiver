@@ -11,7 +11,7 @@
       android:localeConfig="@xml/locales_config"
       android:supportsRtl="true"
       android:theme="@style/Theme.IptvReceiver"
-      android:usesCleartextTraffic="false"
+      android:usesCleartextTraffic="true"
       tools:targetApi="33">
     <service
         android:name="androidx.appcompat.app.AppLocalesMetadataHolderService"

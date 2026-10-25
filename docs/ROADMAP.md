@@ -52,6 +52,7 @@ The first baseline includes local search only for the loaded list. Full-catalog 
 - [ ] Verify credential storage, logout removal, backup behavior and sanitized diagnostics.
 - [ ] Verify the minified release build on hardware.
 - [ ] Owner-managed release signing and distribution decision.
+- [ ] Review the API 36 target against the latest Android behavior and distribution requirements before publishing a release.
 - [ ] Review dependency updates, license selection and repository protections.
 
 ## Milestone 5 — Android TV

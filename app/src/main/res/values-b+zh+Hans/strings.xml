@@ -45,4 +45,7 @@
   <string name="err_save_failed">无法安全保存连接。请关闭“记住此连接”后重试。</string>
   <string name="err_remove_failed">无法删除已保存的连接。请在 Android 设置中清除此应用的数据。</string>
   <string name="err_unknown">无法完成请求。请重试。</string>
+  <string name="allow_http_streams">允许 HTTP 流媒体</string>
+  <string name="http_streams_help">部分服务商以未加密方式传输视频。请仅为可信服务启用此选项。</string>
+  <string name="err_insecure_stream">此流媒体使用 HTTP。请为此连接启用 HTTP 流媒体后播放。</string>
 </resources>

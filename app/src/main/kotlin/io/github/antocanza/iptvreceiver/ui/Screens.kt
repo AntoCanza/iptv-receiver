@@ -71,6 +71,7 @@ fun LoginScreen(state: LoginState, connect: (ProviderConnection, Boolean) -> Uni
     var username by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var rememberConnection by rememberSaveable { mutableStateOf(false) }
+    var allowHttpStreams by rememberSaveable { mutableStateOf(false) }
     val defaultConnectionName = stringResource(R.string.default_connection_name)
     ScreenFrame(stringResource(R.string.app_name)) {
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp),
@@ -92,9 +93,14 @@ fun LoginScreen(state: LoginState, connect: (ProviderConnection, Boolean) -> Uni
                     Checkbox(rememberConnection, { rememberConnection = it }, enabled = !state.busy)
                     Text(stringResource(R.string.remember_connection))
                 }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(allowHttpStreams, { allowHttpStreams = it }, enabled = !state.busy)
+                    Text(stringResource(R.string.allow_http_streams))
+                }
+                Text(stringResource(R.string.http_streams_help), style = MaterialTheme.typography.bodySmall)
                 state.error?.let { Text(it.localized(), color = MaterialTheme.colorScheme.error) }
                 Button(onClick = { connect(ProviderConnection(name.trim().ifBlank { defaultConnectionName },
-                    server.trim(), username.trim(), password), rememberConnection) },
+                    server.trim(), username.trim(), password, allowHttpStreams), rememberConnection) },
                     enabled = !state.busy && server.isNotBlank() && username.isNotBlank() && password.isNotBlank(),
                     modifier = Modifier.fillMaxWidth()) {
                     if (state.busy) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
@@ -148,8 +154,8 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
                         openCategory = { navigation.navigate("browse/${type.name}/${Uri.encode(it)}") },
                         openItem = { item ->
                             if (item.type == ContentType.LIVE) startPlayback {
-                                val format = session.account.liveFormats.firstOrNull { it == "m3u8" }
-                                    ?: session.account.liveFormats.firstOrNull() ?: "m3u8"
+                                val format = session.account.liveFormats.firstOrNull { it == "ts" }
+                                    ?: session.account.liveFormats.firstOrNull() ?: "ts"
                                 repository.stream(session.connection, item, format)
                             } else {
                                 model.select(item)

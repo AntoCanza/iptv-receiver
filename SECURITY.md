@@ -12,7 +12,10 @@ Do not post credentials, playlist URLs, provider responses or stream URLs in pub
 - Model `toString` methods redact credential-bearing values.
 - HTTP logs and analytics integrations are absent. Do not add raw network logging.
 - Account/catalog HTTPS redirects are rejected; platform TLS validation remains enabled.
-- HTTPS is required. HTTP-only provider support needs an explicit design review before implementation.
+- Account/catalog requests always require HTTPS, regardless of playback options.
+- HTTP playback requires the separate **Allow HTTP streams** option for that connection; it defaults to off. Its explanation appears beside the login option.
+- Android's manifest must permit cleartext transport for arbitrary provider delivery hosts. A guarded Media3 data source enforces the per-connection policy before every manifest/segment request, and cross-protocol redirects are disabled unless the connection opted in. Artwork is restricted to HTTPS.
+- HTTP video delivery is unencrypted and can expose stream URLs to the network. The playback option does not make HTTP secure and never relaxes TLS certificate verification.
 
 Runtime memory still contains credentials while a connection is active. Keystore protects the stored key; it cannot hide credentials from a fully compromised device. Avoid making stronger security claims.
 

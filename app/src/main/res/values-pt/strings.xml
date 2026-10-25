@@ -45,4 +45,7 @@
   <string name="err_save_failed">Não foi possível guardar a ligação em segurança. Desative Guardar esta ligação e tente novamente.</string>
   <string name="err_remove_failed">Não foi possível remover a ligação guardada. Limpe os dados da aplicação nas definições do Android.</string>
   <string name="err_unknown">Não foi possível concluir o pedido. Tente novamente.</string>
+  <string name="allow_http_streams">Permitir transmissões HTTP</string>
+  <string name="http_streams_help">Alguns fornecedores transmitem vídeo sem encriptação. Ative apenas para um serviço de confiança.</string>
+  <string name="err_insecure_stream">Esta transmissão usa HTTP. Permita transmissões HTTP para esta ligação para a reproduzir.</string>
 </resources>

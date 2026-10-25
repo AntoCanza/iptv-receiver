@@ -45,4 +45,7 @@
   <string name="err_save_failed">Die Verbindung konnte nicht sicher gespeichert werden. Deaktivieren Sie Diese Verbindung speichern und versuchen Sie es erneut.</string>
   <string name="err_remove_failed">Die gespeicherte Verbindung konnte nicht entfernt werden. Löschen Sie die App-Daten in den Android-Einstellungen.</string>
   <string name="err_unknown">Die Anfrage konnte nicht abgeschlossen werden. Versuchen Sie es erneut.</string>
+  <string name="allow_http_streams">HTTP-Streams zulassen</string>
+  <string name="http_streams_help">Manche Anbieter übertragen Videos unverschlüsselt. Nur für einen vertrauenswürdigen Dienst aktivieren.</string>
+  <string name="err_insecure_stream">Dieser Stream verwendet HTTP. Lassen Sie HTTP-Streams für diese Verbindung zu, um ihn abzuspielen.</string>
 </resources>

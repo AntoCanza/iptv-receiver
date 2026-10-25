@@ -58,5 +58,6 @@ internal fun FailureReason.localized(): String = stringResource(when (this) {
     FailureReason.RESPONSE_UNREADABLE -> R.string.err_response_unreadable
     FailureReason.SAVE_FAILED -> R.string.err_save_failed
     FailureReason.REMOVE_FAILED -> R.string.err_remove_failed
+    FailureReason.INSECURE_STREAM -> R.string.err_insecure_stream
     FailureReason.UNKNOWN -> R.string.err_unknown
 })

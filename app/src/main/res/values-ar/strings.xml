@@ -45,4 +45,7 @@
   <string name="err_save_failed">تعذر حفظ الاتصال بأمان. عطّل تذكر هذا الاتصال وأعد المحاولة.</string>
   <string name="err_remove_failed">تعذرت إزالة الاتصال المحفوظ. امسح بيانات التطبيق من إعدادات Android.</string>
   <string name="err_unknown">تعذر إكمال الطلب. أعد المحاولة.</string>
+  <string name="allow_http_streams">السماح ببث HTTP</string>
+  <string name="http_streams_help">يبث بعض المزودين الفيديو دون تشفير. فعّل هذا الخيار لخدمة تثق بها فقط.</string>
+  <string name="err_insecure_stream">يستخدم هذا البث HTTP. اسمح ببث HTTP لهذا الاتصال لتشغيله.</string>
 </resources>

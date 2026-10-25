@@ -27,7 +27,7 @@ Still planned: durable catalog caching, watch-progress resume, next-episode play
 3. Let Gradle sync, then run the `app` configuration on an Android 8.0+ phone or tablet.
 4. Enter your own provider's **HTTPS base server address**, username and password in the login screen. A connection name is optional.
 
-No account, provider hostname or password belongs in source, build settings, examples, screenshots or CI secrets. Login is runtime input. Remembering a connection is optional and off by default. HTTP-only providers and HTTPS-to-HTTP stream redirects are unsupported in this baseline.
+No account, provider hostname or password belongs in source, build settings, examples, screenshots or CI secrets. Login is runtime input. Remembering a connection is optional and off by default. Account/catalog servers must support HTTPS. For services that deliver video over HTTP, **Allow HTTP streams** is a separate per-connection option, off by default. Enabling it permits unencrypted video delivery and playback redirects for that connection.
 
 For a command-line build, set `ANDROID_HOME` to your Android SDK or create an untracked `local.properties` containing `sdk.dir=/path/to/android-sdk`.
 

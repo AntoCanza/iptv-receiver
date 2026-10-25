@@ -45,4 +45,7 @@
   <string name="err_save_failed">Impossibile salvare la connessione in modo sicuro. Disattiva Ricorda questa connessione e riprova.</string>
   <string name="err_remove_failed">Impossibile rimuovere la connessione salvata. Cancella i dati dell\'app nelle impostazioni di Android.</string>
   <string name="err_unknown">Impossibile completare la richiesta. Riprova.</string>
+  <string name="allow_http_streams">Consenti streaming HTTP</string>
+  <string name="http_streams_help">Alcuni provider trasmettono video senza crittografia. Attiva solo per un servizio di cui ti fidi.</string>
+  <string name="err_insecure_stream">Questo streaming usa HTTP. Abilita lo streaming HTTP per questa connessione per riprodurlo.</string>
 </resources>

@@ -7,12 +7,13 @@
 - Xtream-compatible provider login: HTTPS base URL, username and password.
 - No separate application account or backend in the initial release.
 - One active provider connection and one player at a time.
+- Account APIs require HTTPS; unencrypted video delivery has a separate, default-off, per-connection opt-in.
 - Android 8.0 (API 26) minimum for the first baseline; compile and target API 36.
 - English by default with ten interface languages; see [localization](LOCALIZATION.md).
 
 The build pins AGP 9.1.0, Gradle 9.3.1 and Kotlin/Compose compiler 2.2.10. AGP provides built-in Kotlin for Android; do not also apply `org.jetbrains.kotlin.android`. Android dependencies are pinned in the version catalog. These are explicit baseline versions, not a claim that every dependency is the newest release.
 
-Lint treats correctness warnings as errors. Available dependency-version notices remain informational and are handled through Dependabot review, so an unrelated upstream release does not unexpectedly break the build.
+Lint treats correctness warnings as errors. Dependency-version and target-SDK migration notices remain informational. Dependencies are handled through Dependabot review; the deliberately pinned API 36 target must be reviewed against current platform/store requirements before release. This avoids an unrelated upstream release unexpectedly breaking a development build.
 
 ## Boundaries
 
