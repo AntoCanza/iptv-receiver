@@ -1,8 +1,10 @@
-# IPTV Receiver
+# IPTV Receiver — Native Android IPTV Client
 
 Native Android IPTV client for phones and tablets, with an Android TV interface planned next.
 
 Connect to an Xtream-compatible provider, browse Live TV, Movies and Series, and play content using Android Media3. The application does not include an IPTV subscription or bundled content.
+
+**[Project website](https://antocanza.github.io/iptv-receiver/)** · [Source code](https://github.com/AntoCanza/iptv-receiver) · [Roadmap](docs/ROADMAP.md)
 
 ## Status
 
@@ -58,6 +60,8 @@ gradle/                   Version catalog and checksum-verified Gradle Wrapper
 The dependency direction is `app -> core:provider -> core:model`; the UI depends on `CatalogRepository`. These boundaries allow a later TV app to reuse provider behavior and content models. Features currently use packages within `app`; extract modules when there is an actual reuse or ownership need.
 
 Read [architecture](docs/ARCHITECTURE.md), [provider integration](docs/PROVIDER.md), [security](SECURITY.md), and [contributing](CONTRIBUTING.md) before making changes.
+
+The public project website is static HTML served by GitHub Pages from `main:/docs`, with a canonical URL, social previews, structured data and a sitemap. See [search indexing](docs/SEARCH_INDEXING.md) for maintenance and Google Search Console setup.
 
 See [localization](docs/LOCALIZATION.md) for supported locales, translated UI scope and translation checks. Provider-supplied titles and descriptions remain in their original language.
 
