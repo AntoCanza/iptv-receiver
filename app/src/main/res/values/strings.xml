@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+  <string name="app_name" translatable="false">IPTV Receiver</string>
+  <string name="connection_name">Connection name</string>
+  <string name="server_address">Server address (https://)</string>
+  <string name="username">Username</string>
+  <string name="password">Password</string>
+  <string name="connect">Connect</string>
+  <string name="remember_connection">Remember this connection</string>
+  <string name="sign_out">Sign out</string>
+  <string name="back">Back</string>
+  <string name="retry">Try again</string>
+  <string name="empty_category">There is nothing in this category yet.</string>
+  <string name="search">Search this list</string>
+  <string name="play">Play</string>
+  <string name="live_tv">Live TV</string>
+  <string name="movies">Movies</string>
+  <string name="series">Series</string>
+  <string name="season_number">Season %1$d</string>
+  <string name="episode_number">%1$d. %2$s</string>
+  <string name="playback_failed">This stream could not be played. Check your connection or try another title.</string>
+  <string name="connection_help">Enter the account supplied by your IPTV provider.</string>
+  <string name="default_connection_name">My IPTV</string>
+  <string name="dismiss">Dismiss</string>
+  <string name="select_title">Select a title from the catalog.</string>
+  <string name="select_title_play">Select a title to play.</string>
+  <string name="unnamed_category">Unnamed category</string>
+  <string name="untitled">Untitled</string>
+  <string name="language">Language</string>
+  <string name="err_invalid_server">Enter a valid HTTPS server address.</string>
+  <string name="err_https_required">Use an HTTPS base address without account details or a playlist URL.</string>
+  <string name="err_credentials_required">Enter a username and password.</string>
+  <string name="err_authentication_failed">The username or password was not accepted.</string>
+  <string name="err_inactive_account">This provider account is not active.</string>
+  <string name="err_expired_account">This provider account has expired.</string>
+  <string name="err_select_episode">Select an episode to play this series.</string>
+  <string name="err_invalid_stream">The provider did not supply a valid stream format.</string>
+  <string name="err_unreachable">The provider could not be reached. Check your connection and server address.</string>
+  <string name="err_redirected">The server redirected this request. Check the server address.</string>
+  <string name="err_access_denied">The provider refused access. Check your account details.</string>
+  <string name="err_unavailable">The provider is temporarily unavailable. Please try again.</string>
+  <string name="err_empty_response">The provider returned an empty response.</string>
+  <string name="err_unsupported_response">The provider returned an unsupported response.</string>
+  <string name="err_too_large">This catalog is too large to load.</string>
+  <string name="err_response_unreadable">The provider response could not be read.</string>
+  <string name="err_save_failed">The connection could not be saved securely. Turn off Remember this connection and try again.</string>
+  <string name="err_remove_failed">The saved connection could not be removed. Clear app storage in Android Settings.</string>
+  <string name="err_unknown">The request could not be completed. Please try again.</string>
+</resources>
