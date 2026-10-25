@@ -48,4 +48,5 @@
   <string name="allow_http_streams">Permitir transmissões HTTP</string>
   <string name="http_streams_help">Alguns fornecedores transmitem vídeo sem encriptação. Ative apenas para um serviço de confiança.</string>
   <string name="err_insecure_stream">Esta transmissão usa HTTP. Permita transmissões HTTP para esta ligação para a reproduzir.</string>
+  <string name="language_system">Usar o idioma do dispositivo</string>
 </resources>

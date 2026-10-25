@@ -28,6 +28,10 @@ internal fun LanguageSelector() {
     Box {
         TextButton(onClick = { expanded = true }) { Text(stringResource(R.string.language)) }
         DropdownMenu(expanded, onDismissRequest = { expanded = false }) {
+            DropdownMenuItem(text = { Text(stringResource(R.string.language_system)) }, onClick = {
+                expanded = false
+                AppCompatDelegate.setApplicationLocales(LocaleListCompat.getEmptyLocaleList())
+            })
             supportedLanguages.forEach { (tag, name) ->
                 DropdownMenuItem(text = { Text(name) }, onClick = {
                     expanded = false

@@ -48,4 +48,5 @@
   <string name="allow_http_streams">Autoriser les flux HTTP</string>
   <string name="http_streams_help">Certains fournisseurs diffusent sans chiffrement. Activez cette option uniquement pour un service de confiance.</string>
   <string name="err_insecure_stream">Ce flux utilise HTTP. Autorisez les flux HTTP pour cette connexion afin de le lire.</string>
+  <string name="language_system">Utiliser la langue du système</string>
 </resources>

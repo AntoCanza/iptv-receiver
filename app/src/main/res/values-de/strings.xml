@@ -48,4 +48,5 @@
   <string name="allow_http_streams">HTTP-Streams zulassen</string>
   <string name="http_streams_help">Manche Anbieter übertragen Videos unverschlüsselt. Nur für einen vertrauenswürdigen Dienst aktivieren.</string>
   <string name="err_insecure_stream">Dieser Stream verwendet HTTP. Lassen Sie HTTP-Streams für diese Verbindung zu, um ihn abzuspielen.</string>
+  <string name="language_system">Gerätesprache verwenden</string>
 </resources>

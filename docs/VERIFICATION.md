@@ -1,51 +1,46 @@
 # Verification record
 
-Date: 2026-10-25. Application code verified at commit `00179d5`.
+Date: October 25, 2026. Development version 0.1.1, versionCode 2. Package: `io.github.antocanza.iptvreceiver`.
 
 ## Automated checks
 
-- 23 JVM unit tests passed: 3 model/security tests, 12 provider tests, and 8 screen-state/localization tests.
-- Debug and release Android lint passed with no correctness warnings/errors. Version and target-SDK migration notices are informational by policy.
-- Debug APK and minified, unsigned release APK assembled successfully with JDK 21, compile/target API 36 and Build Tools 36.0.0.
-- [GitHub Android CI passed](https://github.com/AntoCanza/iptv-receiver/actions/runs/40210306192) for the verified code commit.
-- All 48 app-owned translatable strings are present in all ten languages, with matching format arguments.
-- Before publication, source was checked for the supplied private connection values and access tokens; none were committed. GitHub secret scanning and push protection are enabled.
+- 35 JVM tests pass: 3 model/security, 17 provider and 15 app state/localization/artwork/temp-cleanup tests. Fixtures are synthetic and need no account.
+- Exact stable-version policy check passes. All 14 managed dependency/plugin families and all four Actions were checked against current primary metadata. See [dependency audit](DEPENDENCY_AUDIT.md), including the complete 212-record resolved inventory.
+- Debug APK, minified unsigned release APK and unsigned release AAB build successfully with JDK 21, Gradle 9.8.2, AGP 9.4.1, compile SDK 37.2, target API 36 and minSdk 26.
+- Local debug/release lint reports only the empty, untracked `mipmap-anydpi-v26` directory left by icon generation. Automated approval review blocked removing it even after explicit user authorization. No other lint error was reported. A clean GitHub checkout contains no such directory; its CI runs both lint variants without disabling checks. Check the pull request's latest CI status for the clean-checkout result.
+- All 49 app-owned translatable keys are present in ten languages, with matching format arguments. All ten store listing drafts fit Play's title, short-description and full-description limits.
+- Supplied private connection values and access tokens are excluded from the public files. Only fictional-catalog screenshots are included in store assets.
 
 ## Physical phone checks
 
-Device: Pixel 9 Pro XL, Android API 37. Device serial numbers and account identifiers are intentionally excluded.
+Pixel 9 Pro XL, Android API 37. Private account and device identifiers are excluded from this record.
 
 | Flow | Result |
 | --- | --- |
-| First launch on an Italian-language phone | App opened in English |
-| HTTPS provider login | Successful; three home sections displayed |
-| Remember connection | Encrypted save completed successfully before entering the session |
-| Live TV -> category -> channel | Broadcast video displayed; H.264 video and AAC audio decoders initialized |
-| Movies -> category -> details -> Play | Movie video displayed with playback progress and controls; H.264/AAC decoders initialized |
-| Series -> category -> details -> season/episode | Episode video displayed; correct episode navigation and H.264/AAC decoder initialization observed |
-| Leaving playback | Returned through the catalog to Home; one player used at a time |
-| Language switching | Correct home labels observed for English, Italian, Spanish, French, German, Portuguese, Arabic, Russian, Simplified Chinese and Japanese |
-| Session during language switching | Logged-in session retained |
-| Test cleanup | App left at English Home; temporary USB screen-awake setting restored |
+| Upgrade from forced English | Opened in Italian with the device; English could still be selected manually |
+| HTTPS provider login and catalog | Remembered encrypted connection restored and Movies/Series catalogs loaded after dependency upgrades |
+| Movie posters and details | Visible movie posters and detail artwork loaded with the new image pipeline |
+| Series posters | Four visible provider series covers loaded; no private screenshots are published |
+| Portrait to landscape to portrait | Paused playback retained 00:04 throughout; returned to portrait without becoming stuck in landscape |
+| Fullscreen button and Back | Entered immersive landscape with header/system bars hidden; Back returned to portrait player at the same 00:04 position |
+| Session lifecycle | Leaving playback returned through details and catalog; rotation did not restart media |
+| Store fixture | Actual home, movie grid, series episodes and language menu captured using an offline fictional catalog; fixture excluded from release |
+| Final app state | Device-language mode selected again, showing Italian; real account retained; original rotation and USB screen-awake settings restored |
 
-The supplied provider redirects video delivery to HTTP servers that do not accept HTTPS. Playback was checked with the per-connection **Allow HTTP streams** option enabled. Account/catalog requests remained HTTPS-only. Default-off HTTP restrictions were also exercised before compatibility was enabled.
+Earlier starter checks also verified real Live TV and series-episode video frames and H.264/AAC decoder initialization, default-off HTTP restrictions, and switching all ten home languages. Those complete playback flows were not all repeated after the latest dependency migration. The latest movie, rotation/fullscreen and artwork flows above were repeated.
 
-The provider includes separator/intro entries among live channels. One such entry returned a short MP4 clip even from its HLS-labelled endpoint. A real broadcast channel was subsequently selected and displayed successfully using the progressive `ts` endpoint.
-
-Decoder initialization and visible frames were verified. This record does not claim an independent listening test or native-speaker review. No raw provider responses, titles, stream URLs or playback screenshots are published here.
+The test provider requires HTTP delivery redirects for some video/artwork. Checks used its explicit per-connection compatibility option while account/catalog traffic remained HTTPS. Decoder initialization and visible frames were checked; this is not an independent listening test or a native-speaker review.
 
 ## Development APK
 
-Version: `0.1.0`. Package: `io.github.antocanza.iptvreceiver`.
-
-SHA-256 of the verified development APK:
+SHA-256:
 
 ```text
-8734e41e46e60f669429935f62fb9350f43398c937afbe42bf90ef749d7353be
+8c6d1da332e6c95a650d9aa56d497dc8d7ac514ae2061988f2258c8c43cd0425
 ```
 
-This APK uses development signing. Production signing and distribution remain owner-managed release work.
+The APK uses development signing. The AAB is unsigned and cannot be submitted until the owner provides production signing and completes the [store checklist](../store/RELEASE_CHECKLIST.md).
 
-## Remaining release gates
+## Remaining release validation
 
-Tablet layouts, Android 8.0/older supported devices, rotation continuity, network recovery, subtitle/audio-track combinations, large catalogs, and the minified release on hardware need further verification. Full catalog caching, durable watch progress, next-episode playback and Android TV are still planned. Review initial translations with native speakers and test mixed-direction metadata before release.
+Test the signed/minified build on hardware, tablets, API 26, long sessions, network recovery, large catalogs, subtitles/audio tracks, and mixed-direction metadata. Daily/weekly cache maintenance is scheduled and temp pruning is unit-tested; a multi-day background soak is still needed. Artwork viewport gating was exercised in actual grids but has no automated network-count instrumentation test yet. Upstream missing artwork still displays a placeholder. Durable watch progress after process death, next-episode playback, a full TV guide and Android TV remain roadmap work.

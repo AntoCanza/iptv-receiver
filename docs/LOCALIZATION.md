@@ -1,6 +1,8 @@
 # Languages and localization
 
-English is the first-run default and the complete fallback resource set. Users can change language with the picker in the app header. Android 13+ also exposes these choices in system per-app language settings. The selection is stored by AndroidX AppCompat on older Android versions and the platform on newer versions.
+The device language is the first-run default; English is the complete fallback resource set for unsupported languages. The header picker offers Use device language plus ten explicit choices. Android 13+ also exposes these choices in system per-app language settings. AppCompat stores the selection on older Android versions and the platform on newer versions. An empty app locale list follows the device's ordered locale preferences.
+
+On the first upgrade from the starter's forced-English default, an old English selection is cleared once. The starter did not distinguish a seeded default from a manual English choice. After this one-time migration, new explicit choices are preserved, including English. A user can always choose Use device language again.
 
 | Language | Locale tag | Resource directory |
 | --- | --- | --- |

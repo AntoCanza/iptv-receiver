@@ -27,7 +27,10 @@ data class CatalogItem(
     val type: ContentType,
     val imageUrl: String? = null,
     val extension: String? = null,
+    val imageFallbackUrls: List<String> = emptyList(),
 )
+
+val CatalogItem.artworkUrls: List<String> get() = (listOfNotNull(imageUrl) + imageFallbackUrls).distinct()
 
 data class MovieDetails(val item: CatalogItem, val description: String)
 

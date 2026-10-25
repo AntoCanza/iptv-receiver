@@ -48,4 +48,5 @@
   <string name="allow_http_streams">HTTPストリームを許可</string>
   <string name="http_streams_help">一部のプロバイダーは動画を暗号化せずに配信します。信頼できるサービスでのみ有効にしてください。</string>
   <string name="err_insecure_stream">このストリームはHTTPを使用しています。この接続でHTTPストリームを許可すると再生できます。</string>
+  <string name="language_system">デバイスの言語を使用</string>
 </resources>

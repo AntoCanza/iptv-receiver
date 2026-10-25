@@ -49,4 +49,5 @@
   <string name="allow_http_streams">Allow HTTP streams</string>
   <string name="http_streams_help">Some providers deliver video without encryption. Enable only for a service you trust.</string>
   <string name="err_insecure_stream">This stream uses HTTP. Enable HTTP streams for this connection to play it.</string>
+  <string name="language_system">Use device language</string>
 </resources>

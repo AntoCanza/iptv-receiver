@@ -1,0 +1,42 @@
+import groovy.json.JsonOutput
+import org.gradle.api.artifacts.component.ModuleComponentIdentifier
+
+gradle.projectsEvaluated {
+    def scopes = [':app': ['debugRuntimeClasspath', 'debugUnitTestRuntimeClasspath'],
+                  ':core:model': ['testRuntimeClasspath'], ':core:provider': ['testRuntimeClasspath']]
+    scopes.each { projectPath, names ->
+        def owner = rootProject.project(projectPath)
+        owner.tasks.register('exportProjectDependencyInventory') {
+            doLast {
+                def rows = []
+                names.each { configName ->
+                    def config = owner.configurations.findByName(configName)
+                    if (config != null && config.canBeResolved) {
+                        config.incoming.resolutionResult.allComponents.each { component ->
+                            if (component.id instanceof ModuleComponentIdentifier) {
+                                rows.add([group: component.id.group, artifact: component.id.module,
+                                          version: component.id.version, scope: projectPath + ':' + configName])
+                            }
+                        }
+                    }
+                }
+                def target = new File(rootProject.buildDir, 'dependency-audit/dependencies-' + owner.name + '.json')
+                target.parentFile.mkdirs()
+                target.text = JsonOutput.toJson(rows)
+            }
+        }
+    }
+    rootProject.tasks.register('exportDependencyInventory') {
+        dependsOn(scopes.keySet().collect { it + ':exportProjectDependencyInventory' })
+        doLast {
+            def rows = []
+            scopes.keySet().each { projectPath ->
+                def name = projectPath.tokenize(':').last()
+                rows.addAll(new groovy.json.JsonSlurper().parse(new File(rootProject.buildDir, 'dependency-audit/dependencies-' + name + '.json')))
+            }
+            def target = new File(rootProject.buildDir, 'dependency-audit/resolved-dependencies.json')
+            target.text = JsonOutput.prettyPrint(JsonOutput.toJson(rows))
+            println('Exported ' + rows.size() + ' resolved dependency entries.')
+        }
+    }
+}

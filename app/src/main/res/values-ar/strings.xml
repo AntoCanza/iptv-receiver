@@ -48,4 +48,5 @@
   <string name="allow_http_streams">السماح ببث HTTP</string>
   <string name="http_streams_help">يبث بعض المزودين الفيديو دون تشفير. فعّل هذا الخيار لخدمة تثق بها فقط.</string>
   <string name="err_insecure_stream">يستخدم هذا البث HTTP. اسمح ببث HTTP لهذا الاتصال لتشغيله.</string>
+  <string name="language_system">استخدام لغة الجهاز</string>
 </resources>

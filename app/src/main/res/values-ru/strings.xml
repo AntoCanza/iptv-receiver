@@ -48,4 +48,5 @@
   <string name="allow_http_streams">Разрешить потоки HTTP</string>
   <string name="http_streams_help">Некоторые провайдеры передают видео без шифрования. Включайте только для сервиса, которому доверяете.</string>
   <string name="err_insecure_stream">Этот поток использует HTTP. Разрешите потоки HTTP для этого подключения, чтобы воспроизвести его.</string>
+  <string name="language_system">Использовать язык устройства</string>
 </resources>

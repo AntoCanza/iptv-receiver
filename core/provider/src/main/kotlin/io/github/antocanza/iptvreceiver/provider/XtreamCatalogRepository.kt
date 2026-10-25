@@ -12,6 +12,7 @@ import io.github.antocanza.iptvreceiver.model.PlaybackSource
 import io.github.antocanza.iptvreceiver.model.ProviderConnection
 import io.github.antocanza.iptvreceiver.model.ProviderException
 import io.github.antocanza.iptvreceiver.model.SeriesDetails
+import io.github.antocanza.iptvreceiver.model.artworkUrls
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
@@ -70,13 +71,14 @@ class XtreamCatalogRepository internal constructor(private val transport: JsonTr
             val item = element.asObject()
             val id = item.text(if (type == ContentType.SERIES) "series_id" else "stream_id")
                 .takeIf { it.matches(Regex("[0-9]+")) } ?: return@mapNotNull null
+            val artwork = artworkUrls(item, connection)
             CatalogItem(
                 id = id,
                 title = item.text("name"),
                 type = type,
-                imageUrl = (item.text("stream_icon").ifBlank { item.text("cover") })
-                    .toHttpUrlOrNull()?.takeIf { it.isHttps && it.username.isEmpty() && it.password.isEmpty() }?.toString(),
+                imageUrl = artwork.firstOrNull(),
                 extension = item.text("container_extension").takeIf(String::isNotBlank),
+                imageFallbackUrls = artwork.drop(1),
             )
         }.distinctBy(CatalogItem::id)
     }
@@ -85,8 +87,10 @@ class XtreamCatalogRepository internal constructor(private val transport: JsonTr
         val result = request(connection, "get_vod_info", "vod_id" to item.id).asObject()
         val info = (result["info"] as? JsonObject).orEmpty()
         val movie = (result["movie_data"] as? JsonObject).orEmpty()
+        val artwork = (item.artworkUrls + artworkUrls(info, connection) + artworkUrls(movie, connection)).distinct()
         return MovieDetails(
-            item.copy(extension = movie.text("container_extension").ifBlank { item.extension.orEmpty() }),
+            item.copy(extension = movie.text("container_extension").ifBlank { item.extension.orEmpty() },
+                imageUrl = artwork.firstOrNull(), imageFallbackUrls = artwork.drop(1)),
             info.text("plot").ifBlank { info.text("description") },
         )
     }
@@ -202,7 +206,7 @@ internal class HttpJsonTransport(
                         if (it.code in 300..399) throw ProviderException(FailureReason.REDIRECTED)
                         if (it.code == 401 || it.code == 403) throw ProviderException(FailureReason.ACCESS_DENIED)
                         if (!it.isSuccessful) throw ProviderException(FailureReason.UNAVAILABLE)
-                        val body = it.body ?: throw ProviderException(FailureReason.EMPTY_RESPONSE)
+                        val body = it.body
                         // Never include a raw server response or request URL in an exception.
                         val limit = 20L * 1024 * 1024
                         val buffer = Buffer()

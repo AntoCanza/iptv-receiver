@@ -1,10 +1,15 @@
 package io.github.antocanza.iptvreceiver.ui
 
 import android.net.Uri
+import android.content.pm.ActivityInfo
+import android.content.res.Configuration
+import androidx.activity.compose.BackHandler
+import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.aspectRatio
@@ -16,10 +21,12 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
@@ -32,9 +39,12 @@ import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.ScaffoldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -42,8 +52,9 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
@@ -54,7 +65,6 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
-import coil.compose.AsyncImage
 import io.github.antocanza.iptvreceiver.R
 import io.github.antocanza.iptvreceiver.model.CatalogItem
 import io.github.antocanza.iptvreceiver.model.CatalogRepository
@@ -62,6 +72,7 @@ import io.github.antocanza.iptvreceiver.model.ContentType
 import io.github.antocanza.iptvreceiver.model.FailureReason
 import io.github.antocanza.iptvreceiver.model.PlaybackSource
 import io.github.antocanza.iptvreceiver.model.ProviderConnection
+import io.github.antocanza.iptvreceiver.playback.ExoPlaybackEngine
 
 @Composable
 fun LoginScreen(state: LoginState, connect: (ProviderConnection, Boolean) -> Unit) {
@@ -150,7 +161,7 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
                 })
                 val state by browser.state.collectAsStateWithLifecycle()
                 ScreenFrame(state.title.ifBlank { type.label() }, back = { navigation.popBackStack() }) {
-                    CatalogScreen(state, browser::load,
+                    CatalogScreen(state, session.connection.allowHttpStreams, browser::load,
                         openCategory = { navigation.navigate("browse/${type.name}/${Uri.encode(it)}") },
                         openItem = { item ->
                             if (item.type == ContentType.LIVE) startPlayback {
@@ -172,7 +183,7 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
                     })
                     val state by details.state.collectAsStateWithLifecycle()
                     ScreenFrame(item.title.ifBlank { stringResource(R.string.untitled) }, back = { navigation.popBackStack() }) {
-                        DetailsScreen(state, details::load,
+                        DetailsScreen(state, item, session.connection.allowHttpStreams, details::load,
                             playMovie = { movie -> startPlayback { repository.stream(session.connection, movie) } },
                             playEpisode = { episode -> startPlayback { repository.episodeStream(session.connection, episode) } })
                     }
@@ -182,8 +193,25 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
             }
             composable("player") {
                 val source = model.playbackSource
-                if (source != null) ScreenFrame(source.title.ifBlank { stringResource(R.string.untitled) }, back = { navigation.popBackStack() }, showLanguage = false) {
-                    PlaybackScreen(source)
+                if (source != null) {
+                    val activity = LocalActivity.current
+                    val context = LocalContext.current.applicationContext
+                    val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+                    val playback: PlaybackViewModel = viewModel(factory = viewModelFactory {
+                        initializer { PlaybackViewModel(ExoPlaybackEngine(context, source), landscape) }
+                    })
+                    val fullscreen by playback.fullscreen.collectAsStateWithLifecycle()
+                    LaunchedEffect(landscape) { playback.onOrientationChanged(landscape) }
+                    fun changeFullscreen(enabled: Boolean) {
+                        playback.setFullscreen(enabled)
+                        activity?.requestedOrientation = if (enabled) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
+                            else ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+                    }
+                    BackHandler(enabled = fullscreen) { changeFullscreen(false) }
+                    ScreenFrame(source.title.ifBlank { stringResource(R.string.untitled) },
+                        back = { navigation.popBackStack() }, showLanguage = false, fullscreen = fullscreen) {
+                        PlaybackScreen(playback, fullscreen, ::changeFullscreen)
+                    }
                 } else ScreenFrame(stringResource(R.string.app_name), back = { navigation.popBackStack() }) {
                     Text(stringResource(R.string.select_title_play), Modifier.padding(24.dp))
                 }
@@ -193,8 +221,15 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
 }
 
 @Composable
-private fun CatalogScreen(state: CatalogState, retry: () -> Unit, openCategory: (String) -> Unit, openItem: (CatalogItem) -> Unit) {
+private fun CatalogScreen(state: CatalogState, allowHttp: Boolean, retry: () -> Unit, openCategory: (String) -> Unit, openItem: (CatalogItem) -> Unit) {
     var query by rememberSaveable { mutableStateOf("") }
+    val gridState = rememberLazyGridState()
+    val visibleKeys by remember { derivedStateOf {
+        gridState.layoutInfo.visibleItemsInfo.filter {
+            it.offset.y < gridState.layoutInfo.viewportEndOffset &&
+                it.offset.y + it.size.height > gridState.layoutInfo.viewportStartOffset
+        }.mapTo(mutableSetOf()) { it.key }
+    } }
     if (state.busy) { Loading(); return }
     state.error?.let { ErrorState(it, retry); return }
     val categories = remember(state.categories, query) { state.categories.filter { it.name.contains(query, ignoreCase = true) } }
@@ -202,7 +237,7 @@ private fun CatalogScreen(state: CatalogState, retry: () -> Unit, openCategory: 
     Column(Modifier.fillMaxSize()) {
         OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(16.dp),
             label = { Text(stringResource(R.string.search)) }, singleLine = true)
-        LazyVerticalGrid(GridCells.Adaptive(160.dp), Modifier.weight(1f).padding(horizontal = 16.dp),
+        LazyVerticalGrid(GridCells.Adaptive(160.dp), Modifier.weight(1f).padding(horizontal = 16.dp), state = gridState,
             horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
             items(categories, key = { "category:${it.id}" }) { category ->
                 Card(onClick = { openCategory(category.id) }, Modifier.fillMaxWidth()) {
@@ -211,9 +246,7 @@ private fun CatalogScreen(state: CatalogState, retry: () -> Unit, openCategory: 
             }
             items(titles, key = { "item:${it.id}" }) { item ->
                 Card(onClick = { openItem(item) }, Modifier.fillMaxWidth()) {
-                    if (item.imageUrl != null) AsyncImage(item.imageUrl, contentDescription = null,
-                        modifier = Modifier.fillMaxWidth().aspectRatio(if (item.type == ContentType.LIVE) 16f / 9 else 2f / 3),
-                        contentScale = if (item.type == ContentType.LIVE) ContentScale.Fit else ContentScale.Crop)
+                    CatalogArtwork(item, allowHttp, visible = "item:${item.id}" in visibleKeys)
                     Text(item.title.ifBlank { stringResource(R.string.untitled) }, Modifier.padding(16.dp), style = MaterialTheme.typography.titleMedium)
                 }
             }
@@ -228,6 +261,8 @@ private fun CatalogScreen(state: CatalogState, retry: () -> Unit, openCategory: 
 @Composable
 private fun DetailsScreen(
     state: DetailsState,
+    item: CatalogItem,
+    allowHttp: Boolean,
     retry: () -> Unit,
     playMovie: (CatalogItem) -> Unit,
     playEpisode: (io.github.antocanza.iptvreceiver.model.Episode) -> Unit,
@@ -236,7 +271,11 @@ private fun DetailsScreen(
     state.error?.let { ErrorState(it, retry); return }
     val series = state.series
     val movie = state.movie
-    LazyColumn(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+    val listState = rememberLazyListState()
+    val posterVisible by remember { derivedStateOf { listState.layoutInfo.visibleItemsInfo.any { it.key == "details-artwork" } } }
+    LazyColumn(Modifier.fillMaxSize().padding(24.dp), state = listState, verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        item(key = "details-artwork") { CatalogArtwork(movie?.item ?: item, allowHttp,
+            Modifier.widthIn(max = 240.dp), visible = posterVisible) }
         item { Text(movie?.description ?: series?.description.orEmpty()) }
         if (movie != null) item { Button(onClick = { playMovie(movie.item) }) { Text(stringResource(R.string.play)) } }
         series?.episodes?.groupBy { it.season }?.forEach { (season, episodes) ->
@@ -253,9 +292,11 @@ private fun DetailsScreen(
 }
 
 @Composable
-private fun ScreenFrame(title: String, back: (() -> Unit)? = null, showLanguage: Boolean = true, action: @Composable () -> Unit = {}, content: @Composable () -> Unit) {
-    Scaffold(topBar = {
-        Column {
+private fun ScreenFrame(title: String, back: (() -> Unit)? = null, showLanguage: Boolean = true, fullscreen: Boolean = false,
+    action: @Composable () -> Unit = {}, content: @Composable () -> Unit) {
+    Scaffold(contentWindowInsets = if (fullscreen) WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets,
+        topBar = {
+        if (!fullscreen) Column {
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically) {
                 if (back != null) TextButton(onClick = back) { Text(stringResource(R.string.back)) }

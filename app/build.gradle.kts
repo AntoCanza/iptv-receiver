@@ -5,15 +5,15 @@ plugins {
 
 android {
     namespace = "io.github.antocanza.iptvreceiver"
-    compileSdk = 36
+    compileSdk { version = release(37) { minorApiLevel = 2 } }
     buildToolsVersion = "36.0.0"
 
     defaultConfig {
         applicationId = "io.github.antocanza.iptvreceiver"
         minSdk = 26
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = 2
+        versionName = "0.1.1"
     }
 
     buildFeatures { compose = true }
@@ -54,12 +54,19 @@ dependencies {
     implementation(libs.appcompat)
     implementation(libs.lifecycle.viewmodel.compose)
     implementation(libs.lifecycle.runtime.compose)
+    implementation(libs.lifecycle.process)
     implementation(libs.navigation.compose)
     implementation(libs.media3.exoplayer)
     implementation(libs.media3.hls)
     implementation(libs.media3.ui)
     implementation(libs.coil.compose)
+    implementation(libs.coil.svg)
+    implementation(libs.coil.network)
+    implementation(libs.coil.cache.control)
+    implementation(libs.okhttp)
+    implementation(libs.work.runtime)
     debugImplementation(libs.compose.tooling)
     testImplementation(libs.junit)
     testImplementation(libs.coroutines.test)
+    testImplementation(libs.mockwebserver)
 }

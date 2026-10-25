@@ -1,0 +1,52 @@
+{
+  "en-US": {
+    "title": "IPTV Receiver",
+    "shortDescription": "Connect your IPTV service and browse Live TV, Movies and Series.",
+    "fullDescription": "Bring your own IPTV service to your Android phone or tablet. Sign in with an Xtream-compatible HTTPS server address, username and password, then browse Live TV, Movies and Series.\n\nExplore provider categories, search the current list, view movie details and choose series episodes by season. Play supported streams with playback controls and fullscreen viewing. Rotate your device without restarting the current video.\n\nThe interface follows your device language with English fallback. You can also choose English, Italian, Spanish, French, German, Portuguese, Arabic, Russian, Simplified Chinese or Japanese. Remembering your connection is optional and uses encrypted storage on your device.\n\nIPTV Receiver does not provide channels, films, subscriptions or playlists. You must supply your own compatible service and have permission to access its content. Available titles, artwork, audio, subtitles and stream compatibility depend on your provider. Android TV support is planned for a later version.\n\nStore screenshots use a fictional illustrative catalog. This catalog is not included with the release app."
+  },
+  "it-IT": {
+    "title": "IPTV Receiver",
+    "shortDescription": "Collega il tuo servizio IPTV e sfoglia TV in diretta, film e serie.",
+    "fullDescription": "Usa il tuo servizio IPTV su smartphone o tablet Android. Accedi con l'indirizzo HTTPS di un server compatibile con Xtream, nome utente e password. Sfoglia TV in diretta, film e serie, esplora le categorie del fornitore, cerca nell'elenco corrente e scegli gli episodi per stagione.\n\nRiproduci i flussi supportati con i controlli video e la modalità a schermo intero. La rotazione del dispositivo mantiene la posizione del video. L'interfaccia segue la lingua del dispositivo, con inglese come lingua di riserva, e offre dieci lingue selezionabili. Il salvataggio della connessione è facoltativo e utilizza l'archiviazione cifrata sul dispositivo.\n\nL'app non fornisce canali, film, abbonamenti o playlist. Sono necessari un servizio compatibile e l'autorizzazione ad accedere ai contenuti. Catalogo, immagini, audio, sottotitoli e compatibilità dipendono dal fornitore. Il supporto Android TV è previsto per una versione futura. Le schermate mostrano un catalogo illustrativo inventato, non incluso nell'app distribuita."
+  },
+  "es-ES": {
+    "title": "IPTV Receiver",
+    "shortDescription": "Conecta tu servicio IPTV y explora TV en directo, películas y series.",
+    "fullDescription": "Accede a tu servicio IPTV compatible con Xtream desde un teléfono o una tableta Android con la dirección HTTPS del servidor, usuario y contraseña. Explora categorías, busca en la lista actual y elige películas o episodios por temporada. Reproduce los formatos compatibles a pantalla completa y gira el dispositivo sin reiniciar el vídeo. La interfaz sigue el idioma del dispositivo, con inglés como alternativa, y permite elegir entre diez idiomas.\n\nLa app no proporciona canales, películas, suscripciones ni listas. Debes disponer de un servicio compatible y permiso para ver su contenido. El catálogo y la compatibilidad dependen del proveedor. Android TV está previsto para más adelante. Las capturas muestran un catálogo ficticio que no se incluye en la app de distribución."
+  },
+  "fr-FR": {
+    "title": "IPTV Receiver",
+    "shortDescription": "Connectez votre service IPTV et parcourez TV en direct, films et séries.",
+    "fullDescription": "Connectez votre service IPTV compatible Xtream sur un téléphone ou une tablette Android avec une adresse de serveur HTTPS, un identifiant et un mot de passe. Parcourez les catégories, recherchez dans la liste affichée et choisissez des films ou des épisodes par saison. Regardez les flux compatibles en plein écran et faites pivoter l'appareil sans recommencer la vidéo. L'interface suit la langue de l'appareil, avec l'anglais par défaut si nécessaire, et propose dix langues.\n\nL'application ne fournit ni chaînes, ni films, ni abonnements, ni listes. Un service compatible et les droits d'accès au contenu sont nécessaires. Le catalogue et la compatibilité dépendent du fournisseur. Android TV est prévu ultérieurement. Les captures utilisent un catalogue fictif absent de la version distribuée."
+  },
+  "de-DE": {
+    "title": "IPTV Receiver",
+    "shortDescription": "IPTV-Dienst verbinden und Live-TV, Filme und Serien durchsuchen.",
+    "fullDescription": "Verbinde deinen Xtream-kompatiblen IPTV-Dienst auf einem Android-Smartphone oder -Tablet mit HTTPS-Serveradresse, Benutzername und Passwort. Durchsuche Kategorien, suche in der aktuellen Liste und wähle Filme oder Folgen nach Staffel. Spiele unterstützte Streams im Vollbild ab und drehe das Gerät, ohne das Video neu zu starten. Die Oberfläche folgt der Gerätesprache mit Englisch als Ersatz und bietet zehn wählbare Sprachen.\n\nDie App enthält keine Sender, Filme, Abonnements oder Wiedergabelisten. Ein kompatibler Dienst und eine Zugangsberechtigung sind erforderlich. Katalog und Kompatibilität hängen vom Anbieter ab. Android TV ist für später geplant. Die Screenshots zeigen einen fiktiven Katalog, der nicht Teil der veröffentlichten App ist."
+  },
+  "pt-PT": {
+    "title": "IPTV Receiver",
+    "shortDescription": "Ligue o seu serviço IPTV e explore TV em direto, filmes e séries.",
+    "fullDescription": "Ligue o seu serviço IPTV compatível com Xtream num telemóvel ou tablet Android com o endereço HTTPS do servidor, nome de utilizador e palavra-passe. Explore categorias, pesquise na lista atual e escolha filmes ou episódios por temporada. Reproduza formatos compatíveis em ecrã inteiro e rode o dispositivo sem reiniciar o vídeo. A interface segue o idioma do dispositivo, com inglês como alternativa, e permite escolher entre dez idiomas.\n\nA aplicação não fornece canais, filmes, subscrições ou listas. Precisa de um serviço compatível e autorização para aceder aos conteúdos. O catálogo e a compatibilidade dependem do fornecedor. O suporte Android TV está previsto para mais tarde. As capturas mostram um catálogo fictício que não está incluído na versão distribuída."
+  },
+  "ar": {
+    "title": "IPTV Receiver",
+    "shortDescription": "اتصل بخدمة IPTV الخاصة بك وتصفح البث المباشر والأفلام والمسلسلات.",
+    "fullDescription": "اتصل بخدمة IPTV متوافقة مع Xtream على هاتف أو جهاز لوحي يعمل بنظام Android باستخدام عنوان خادم HTTPS واسم المستخدم وكلمة المرور. تصفح الفئات وابحث في القائمة الحالية واختر الأفلام أو حلقات المسلسلات حسب الموسم. شاهد التدفقات المدعومة بملء الشاشة ودوّر الجهاز دون إعادة تشغيل الفيديو من البداية. تتبع الواجهة لغة الجهاز مع الرجوع إلى الإنجليزية عند الحاجة، وتدعم اختيار عشر لغات.\n\nلا يوفر التطبيق قنوات أو أفلامًا أو اشتراكات أو قوائم تشغيل. يلزم توفير خدمة متوافقة وإذن للوصول إلى محتواها. يعتمد الكتالوج والتوافق على مزود الخدمة. دعم Android TV مخطط له لاحقًا. تعرض لقطات الشاشة كتالوجًا توضيحيًا خياليًا غير مضمن في النسخة الموزعة."
+  },
+  "ru-RU": {
+    "title": "IPTV Receiver",
+    "shortDescription": "Подключите свой IPTV-сервис: прямой эфир, фильмы и сериалы.",
+    "fullDescription": "Подключите IPTV-сервис с поддержкой Xtream на телефоне или планшете Android, указав HTTPS-адрес сервера, имя пользователя и пароль. Просматривайте категории, ищите в текущем списке и выбирайте фильмы или эпизоды по сезонам. Смотрите поддерживаемые потоки на весь экран и поворачивайте устройство без перезапуска видео. Интерфейс следует языку устройства с английским в качестве резервного; доступны десять языков.\n\nПриложение не предоставляет каналы, фильмы, подписки или плейлисты. Требуется совместимый сервис и разрешение на просмотр его контента. Каталог и совместимость зависят от провайдера. Поддержка Android TV запланирована на будущее. На скриншотах показан вымышленный каталог, не включённый в распространяемую версию."
+  },
+  "zh-CN": {
+    "title": "IPTV Receiver",
+    "shortDescription": "连接您自己的 IPTV 服务，浏览直播、电影和剧集。",
+    "fullDescription": "在 Android 手机或平板电脑上，使用 HTTPS 服务器地址、用户名和密码登录兼容 Xtream 的 IPTV 服务。浏览分类、搜索当前列表，并按季选择剧集。以全屏模式播放支持的视频流，旋转设备时不会从头开始播放。界面自动跟随设备语言，无法匹配时使用英语，也可手动选择十种语言。保存连接为可选功能，连接信息在设备上加密存储。\n\n本应用不提供频道、电影、订阅或播放列表。您需要自行提供兼容的服务，并获得访问其内容的许可。内容目录、图片、音轨、字幕和播放兼容性由服务提供商决定。Android TV 支持计划在后续版本推出。商店截图使用虚构的演示目录，该目录不包含在正式发布的应用中。"
+  },
+  "ja-JP": {
+    "title": "IPTV Receiver",
+    "shortDescription": "お持ちのIPTVサービスに接続し、ライブTV・映画・シリーズを閲覧。",
+    "fullDescription": "Androidスマートフォンやタブレットで、HTTPSサーバーアドレス、ユーザー名、パスワードを使ってXtream互換のIPTVサービスに接続できます。カテゴリや現在の一覧を検索し、映画やシーズン別のエピソードを選択できます。対応するストリームを全画面で再生でき、端末を回転しても動画は最初から再生されません。画面表示は端末の言語に従い、対応しない場合は英語になります。10言語から手動で選ぶこともできます。\n\n本アプリはチャンネル、映画、契約、プレイリストを提供しません。互換サービスと、コンテンツにアクセスする権利が必要です。カタログや再生互換性はプロバイダーに依存します。Android TV対応は今後の予定です。ストアのスクリーンショットは架空のカタログで、配布版には含まれません。"
+  }
+}

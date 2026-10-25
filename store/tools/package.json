@@ -1,0 +1,9 @@
+{
+  "name": "iptv-receiver-store-tools",
+  "private": true,
+  "version": "0.1.1",
+  "description": "Reproducible original store artwork and screenshot exports",
+  "engines": { "node": ">=22" },
+  "scripts": { "assets": "node export-assets.cjs" },
+  "dependencies": { "sharp": "0.35.5" }
+}
