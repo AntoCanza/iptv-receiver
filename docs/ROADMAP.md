@@ -14,10 +14,13 @@
 
 Starter screens and provider operations are implemented. Finish by validating on actual hardware:
 
+A Pixel 9 Pro XL smoke test has passed for the three playback paths and all ten language choices; see [verification](VERIFICATION.md). Tablet and broader format/device coverage remain open.
+
 - [ ] Phone and tablet can log in without source-code changes.
-- [ ] Live TV category -> channel -> visible video and audible audio.
-- [ ] Movie category -> movie details -> playback and supported seeking.
-- [ ] Series category -> series -> season -> episode -> correct episode playback.
+- [x] Live TV category -> channel -> visible broadcast video and audio decoder initialization on the Pixel.
+- [x] Movie category -> movie details -> video playback and controls on the Pixel.
+- [x] Series category -> series -> season -> episode -> correct episode video playback on the Pixel.
+- [ ] Independent audio listening check and supported seek/track combinations.
 - [ ] HLS and MPEG-TS tested when the provider supports both.
 - [ ] Confirm movie/episode extensions, audio codecs, subtitles, and any provider-required headers.
 - [ ] Verify one stream at a time, leaving the player, rotation and network recovery.

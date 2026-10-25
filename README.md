@@ -18,7 +18,9 @@ Implemented:
 - English by default, with an app language picker for Italian, Spanish, French, German, Portuguese, Arabic, Russian, Simplified Chinese and Japanese.
 - Provider contract tests with synthetic responses; no live account is required by automated checks.
 
-Still planned: durable catalog caching, watch-progress resume, next-episode playback, a full TV guide, UI/device automation, and Android TV. See [the roadmap](docs/ROADMAP.md) for milestones and release gates. Playback compatibility must be verified on physical Android devices before release.
+Live TV, movie and episode playback have been checked on a Pixel 9 Pro XL, along with switching between all ten languages. The build and 23 automated tests pass; see [verification](docs/VERIFICATION.md) for evidence and limits.
+
+Still planned: durable catalog caching, watch-progress resume, next-episode playback, a full TV guide, UI/device automation, and Android TV. See [the roadmap](docs/ROADMAP.md) for milestones and remaining device/release gates.
 
 ## Run locally
 

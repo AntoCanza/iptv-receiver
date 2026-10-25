@@ -35,6 +35,6 @@ The app supports right-to-left layout with `android:supportsRtl=true`, start/end
 
 Use resources instead of hardcoded user-facing strings. Language names in the picker are displayed in their native form so a user can recover from an unfamiliar interface language. `IPTV Receiver` is a non-translated product name.
 
-The tests verify completeness and formatting, not linguistic quality or visual layout. Native-speaker review of these initial translations remains part of release validation.
+Home-label switching was checked on a physical Pixel for all ten languages. Automated tests verify completeness and formatting, not linguistic quality or full visual layout. Native-speaker review of these initial translations remains part of release validation.
 
 Implementation follows [Android per-app language guidance](https://developer.android.com/guide/topics/resources/app-languages), using `AppCompatActivity` and `AppCompatDelegate.setApplicationLocales` for Compose compatibility on Android 12 and earlier.
