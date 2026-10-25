@@ -13,7 +13,7 @@ Implemented:
 - HTTPS provider login and active/expired account validation.
 - Optional encrypted, device-local connection storage using Android Keystore.
 - Live TV, movie and series categories, including parent categories when supplied.
-- Search within the currently loaded list, responsive catalog grids, movie details, and series seasons/episodes.
+- Search across all movies from the Movies screen, an All movies browser, category-scoped search, responsive catalog grids, movie details, and series seasons/episodes.
 - Foreground Media3 playback with rotation continuity, immersive fullscreen, buffering feedback and retry.
 - Device language by default, with English fallback and a manual picker for ten languages including Italian, Spanish, French, German, Portuguese, Arabic, Russian, Simplified Chinese and Japanese.
 - Viewport-gated poster requests with alternate provider artwork, SVG support and bounded image caches.

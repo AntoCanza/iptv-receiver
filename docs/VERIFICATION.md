@@ -1,8 +1,27 @@
 # Verification record
 
-Date: October 25, 2026. Development version 0.1.1, versionCode 2. Package: `io.github.antocanza.iptvreceiver`.
+Date: October 25, 2026. Latest development version 0.1.2, versionCode 3. Package: `io.github.antocanza.iptvreceiver`.
 
-## Automated checks
+## Movie search update — version 0.1.2
+
+- Movies now offers All movies and Search all movies at the section root. Subcategory searches remain scoped to that category. The complete movie list loads on demand, is reused while the root screen exists, and preserves the query when returning from details.
+- The test provider's complete movie list exceeds the ordinary 20 MiB JSON limit. Item responses now stream through a record-by-record mapper, retaining only compact item metadata. Complete catalogs have a 128 MiB transfer bound; ordinary JSON and category responses retain their 20 MiB bound. Network timeouts, cancellation, HTTPS restrictions and safe errors remain enforced.
+- All 47 JVM tests pass: 3 model, 23 provider and 21 app tests. New cases cover unfiltered requests, category scoping, query changes during loading, retries, cancellation during refresh, empty categories, a synthetic 21,000-record response exceeding 20 MiB, transfer bounds, malformed/truncated data and sanitized errors.
+- Dependency policy verification, debug/release lint, debug APK, minified unsigned release APK and unsigned release AAB all pass in a clean source copy. No lint checks were disabled. Empty generated resource folders in the original checkout still trigger its existing lint error; automatic approval review blocked their removal.
+- On the Pixel 9 Pro XL, the actual complete movie list loads with visible posters. Root search finds a sampled movie and a title sampled from another category. Returning to category browsing clears the query and restores categories; opening details and returning preserves it. No playback changes were made in this update.
+- All four new UI strings are present in all ten languages. The phone checks used Italian with the device-language preference.
+
+Development APK SHA-256:
+
+```text
+590c5117d2aa601ab59b3ee1671654c7ce0ac28023125ae049e9f95de472504f
+```
+
+Catalog pagination and durable indexing are not implemented. Full movie search still waits for the bounded complete list to download; streaming avoids retaining the full raw JSON tree. Catalogs larger than the limit and providers without an unfiltered movie endpoint need further integration work. No store publication was performed.
+
+## Earlier version 0.1.1
+
+### Automated checks
 
 - 35 JVM tests pass: 3 model/security, 17 provider and 15 app state/localization/artwork/temp-cleanup tests. Fixtures are synthetic and need no account.
 - Exact stable-version policy check passes. All 14 managed dependency/plugin families and all four Actions were checked against current primary metadata. See [dependency audit](DEPENDENCY_AUDIT.md), including the complete 212-record resolved inventory.
@@ -11,7 +30,7 @@ Date: October 25, 2026. Development version 0.1.1, versionCode 2. Package: `io.g
 - All 49 app-owned translatable keys are present in ten languages, with matching format arguments. All ten store listing drafts fit Play's title, short-description and full-description limits.
 - Supplied private connection values and access tokens are excluded from the public files. Only fictional-catalog screenshots are included in store assets.
 
-## Physical phone checks
+### Physical phone checks
 
 Pixel 9 Pro XL, Android API 37. Private account and device identifiers are excluded from this record.
 
@@ -31,7 +50,7 @@ Earlier starter checks also verified real Live TV and series-episode video frame
 
 The test provider requires HTTP delivery redirects for some video/artwork. Checks used its explicit per-connection compatibility option while account/catalog traffic remained HTTPS. Decoder initialization and visible frames were checked; this is not an independent listening test or a native-speaker review.
 
-## Development APK
+### Development APK
 
 SHA-256:
 
@@ -41,6 +60,6 @@ SHA-256:
 
 The APK uses development signing. The AAB is unsigned and cannot be submitted until the owner provides production signing and completes the [store checklist](../store/RELEASE_CHECKLIST.md).
 
-## Remaining release validation
+### Remaining release validation
 
 Test the signed/minified build on hardware, tablets, API 26, long sessions, network recovery, large catalogs, subtitles/audio tracks, and mixed-direction metadata. Daily/weekly cache maintenance is scheduled and temp pruning is unit-tested; a multi-day background soak is still needed. Artwork viewport gating was exercised in actual grids but has no automated network-count instrumentation test yet. Upstream missing artwork still displays a placeholder. Durable watch progress after process death, next-episode playback, a full TV guide and Android TV remain roadmap work.

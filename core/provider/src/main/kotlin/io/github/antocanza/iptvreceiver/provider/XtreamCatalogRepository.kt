@@ -14,12 +14,19 @@ import io.github.antocanza.iptvreceiver.model.ProviderException
 import io.github.antocanza.iptvreceiver.model.SeriesDetails
 import io.github.antocanza.iptvreceiver.model.artworkUrls
 import kotlinx.coroutines.suspendCancellableCoroutine
+import kotlinx.serialization.ExperimentalSerializationApi
+import kotlinx.serialization.DeserializationStrategy
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.encoding.CompositeDecoder
+import kotlinx.serialization.encoding.Decoder
+import kotlinx.serialization.encoding.decodeStructure
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonElement
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.decodeFromStream
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.HttpUrl
@@ -28,6 +35,9 @@ import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.Response
 import okio.Buffer
+import okio.BufferedSource
+import okio.ForwardingSource
+import okio.buffer
 import java.io.IOException
 import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
@@ -64,13 +74,14 @@ class XtreamCatalogRepository internal constructor(private val transport: JsonTr
     override suspend fun items(
         connection: ProviderConnection,
         type: ContentType,
-        categoryId: String,
+        categoryId: String?,
     ): List<CatalogItem> {
         val action = if (type == ContentType.SERIES) "get_series" else "get_${type.apiType}_streams"
-        return request(connection, action, "category_id" to categoryId).asArray().mapNotNull { element ->
+        val url = requestUrl(connection, action, categoryId?.let { "category_id" to it })
+        return transport.loadCatalog(url) { element ->
             val item = element.asObject()
             val id = item.text(if (type == ContentType.SERIES) "series_id" else "stream_id")
-                .takeIf { it.matches(Regex("[0-9]+")) } ?: return@mapNotNull null
+                .takeIf { it.matches(Regex("[0-9]+")) } ?: return@loadCatalog null
             val artwork = artworkUrls(item, connection)
             CatalogItem(
                 id = id,
@@ -80,7 +91,7 @@ class XtreamCatalogRepository internal constructor(private val transport: JsonTr
                 extension = item.text("container_extension").takeIf(String::isNotBlank),
                 imageFallbackUrls = artwork.drop(1),
             )
-        }.distinctBy(CatalogItem::id)
+        }
     }
 
     override suspend fun movie(connection: ProviderConnection, item: CatalogItem): MovieDetails {
@@ -152,14 +163,20 @@ class XtreamCatalogRepository internal constructor(private val transport: JsonTr
         connection: ProviderConnection,
         action: String? = null,
         parameter: Pair<String, String>? = null,
-    ): JsonElement {
+    ): JsonElement = transport.load(requestUrl(connection, action, parameter))
+
+    private fun requestUrl(
+        connection: ProviderConnection,
+        action: String? = null,
+        parameter: Pair<String, String>? = null,
+    ): HttpUrl {
         val builder = baseUrl(connection).newBuilder()
             .addPathSegment("player_api.php")
             .addQueryParameter("username", connection.username)
             .addQueryParameter("password", connection.password)
         action?.let { builder.addQueryParameter("action", it) }
         parameter?.let { builder.addQueryParameter(it.first, it.second) }
-        return transport.load(builder.build())
+        return builder.build()
     }
 }
 
@@ -177,6 +194,9 @@ private fun baseUrl(connection: ProviderConnection): HttpUrl {
 
 internal fun interface JsonTransport {
     suspend fun load(url: HttpUrl): JsonElement
+
+    suspend fun loadCatalog(url: HttpUrl, mapItem: (JsonElement) -> CatalogItem?): List<CatalogItem> =
+        load(url).asArray().mapNotNull(mapItem).distinctBy(CatalogItem::id)
 }
 
 internal class HttpJsonTransport(
@@ -187,8 +207,30 @@ internal class HttpJsonTransport(
         .followRedirects(false)
         .followSslRedirects(false)
         .build(),
+    private val fullCatalogLimitBytes: Long = 128L * 1024 * 1024,
 ) : JsonTransport {
-    override suspend fun load(url: HttpUrl): JsonElement = suspendCancellableCoroutine { continuation ->
+    override suspend fun load(url: HttpUrl): JsonElement = fetch(url) { readJson(it) }
+
+    @OptIn(ExperimentalSerializationApi::class)
+    override suspend fun loadCatalog(url: HttpUrl, mapItem: (JsonElement) -> CatalogItem?): List<CatalogItem> = fetch(url) { response ->
+        val limit = if (url.queryParameter("category_id") == null) fullCatalogLimitBytes else JSON_LIMIT_BYTES
+        bounded(response, limit).use { source ->
+            while (source.request(1) && source.buffer[0].toInt().toChar() in " \r\n\t") source.skip(1)
+            if (source.request(1) && source.buffer[0].toInt().toChar() == '[') {
+                try {
+                    // Discard each raw record after mapping it; retain only compact catalog items.
+                    Json.decodeFromStream(CatalogDeserializer(mapItem), source.inputStream())
+                } catch (_: IllegalArgumentException) {
+                    throw ProviderException(FailureReason.UNSUPPORTED_RESPONSE)
+                }
+            } else {
+                // Some providers represent an empty catalog as {}.
+                readJson(source).asArray().mapNotNull(mapItem).distinctBy(CatalogItem::id)
+            }
+        }
+    }
+
+    private suspend fun <T> fetch(url: HttpUrl, parse: (BufferedSource) -> T): T = suspendCancellableCoroutine { continuation ->
         val request = Request.Builder().url(url).header("Accept", "application/json")
             .header("User-Agent", "IPTVReceiver/0.1").build()
         val call = client.newCall(request)
@@ -206,25 +248,8 @@ internal class HttpJsonTransport(
                         if (it.code in 300..399) throw ProviderException(FailureReason.REDIRECTED)
                         if (it.code == 401 || it.code == 403) throw ProviderException(FailureReason.ACCESS_DENIED)
                         if (!it.isSuccessful) throw ProviderException(FailureReason.UNAVAILABLE)
-                        val body = it.body
                         // Never include a raw server response or request URL in an exception.
-                        val limit = 20L * 1024 * 1024
-                        val buffer = Buffer()
-                        val source = body.source()
-                        while (buffer.size <= limit) {
-                            if (source.read(buffer, minOf(8192L, limit + 1 - buffer.size)) == -1L) break
-                        }
-                        if (buffer.size > limit) throw ProviderException(FailureReason.TOO_LARGE)
-                        val text = buffer.readUtf8()
-                        try {
-                            Json.parseToJsonElement(text).also { element ->
-                                if (element !is JsonObject && element !is JsonArray) {
-                                    throw ProviderException(FailureReason.UNSUPPORTED_RESPONSE)
-                                }
-                            }
-                        } catch (_: IllegalArgumentException) {
-                            throw ProviderException(FailureReason.UNSUPPORTED_RESPONSE)
-                        }
+                        parse(it.body.source())
                     }
                 }
                 if (continuation.isActive) continuation.resumeWith(result.recoverCatching {
@@ -232,6 +257,52 @@ internal class HttpJsonTransport(
                 })
             }
         })
+    }
+
+    private fun readJson(source: BufferedSource): JsonElement {
+        val text = bounded(source, JSON_LIMIT_BYTES).use { it.readUtf8() }
+        return try {
+            Json.parseToJsonElement(text).also { element ->
+                if (element !is JsonObject && element !is JsonArray) {
+                    throw ProviderException(FailureReason.UNSUPPORTED_RESPONSE)
+                }
+            }
+        } catch (_: IllegalArgumentException) {
+            throw ProviderException(FailureReason.UNSUPPORTED_RESPONSE)
+        }
+    }
+
+    private fun bounded(source: BufferedSource, limit: Long): BufferedSource = object : ForwardingSource(source) {
+        private var bytesRead = 0L
+        override fun read(sink: Buffer, byteCount: Long): Long {
+            val count = super.read(sink, minOf(byteCount, limit - bytesRead + 1))
+            if (count > 0) bytesRead += count
+            if (bytesRead > limit) throw ProviderException(FailureReason.TOO_LARGE)
+            return count
+        }
+    }.buffer()
+
+    private companion object {
+        const val JSON_LIMIT_BYTES = 20L * 1024 * 1024
+    }
+}
+
+/** Streams the JSON array, validates its closing delimiter, and retains only mapped, unique items. */
+private class CatalogDeserializer(private val mapItem: (JsonElement) -> CatalogItem?) : DeserializationStrategy<List<CatalogItem>> {
+    override val descriptor = ListSerializer(JsonElement.serializer()).descriptor
+
+    override fun deserialize(decoder: Decoder): List<CatalogItem> {
+        val items = linkedMapOf<String, CatalogItem>()
+        decoder.decodeStructure(descriptor) {
+            while (true) {
+                val index = decodeElementIndex(descriptor)
+                if (index == CompositeDecoder.DECODE_DONE) break
+                val element = decodeSerializableElement(descriptor, index, JsonElement.serializer()).asObject()
+                val item = mapItem(element) ?: continue
+                items.putIfAbsent(item.id, item)
+            }
+        }
+        return items.values.toList()
     }
 }
 

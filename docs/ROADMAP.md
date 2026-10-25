@@ -37,7 +37,7 @@ Do this before expanding features. A successful login/catalog request alone does
 - [ ] Phone/tablet navigation UI tests, accessibility checks and screenshot review.
 - [ ] Native-speaker review and device checks for all ten languages, including Arabic RTL and Chinese/Japanese text.
 
-The first baseline includes local search only for the loaded list. Full-catalog search requires an index or provider capability and belongs here.
+The Movies root supports full-catalog search and All movies browsing through an unfiltered provider request. It streams large responses into compact metadata and reuses that list while the screen exists. Individual categories and Live TV/Series retain list-scoped search. Durable indexing, full-catalog search for other content types, and catalogs beyond the bounded transfer size remain future work.
 
 ## Milestone 3 — Playback continuity
 

@@ -49,4 +49,8 @@
   <string name="http_streams_help">部分服务商以未加密方式传输视频。请仅为可信服务启用此选项。</string>
   <string name="err_insecure_stream">此流媒体使用 HTTP。请为此连接启用 HTTP 流媒体后播放。</string>
   <string name="language_system">使用设备语言</string>
+  <string name="all_movies">所有电影</string>
+  <string name="search_all_movies">搜索所有电影</string>
+  <string name="browse_categories">浏览分类</string>
+  <string name="no_search_results">没有与搜索内容匹配的影片。</string>
 </resources>

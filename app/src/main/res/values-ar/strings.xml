@@ -49,4 +49,8 @@
   <string name="http_streams_help">يبث بعض المزودين الفيديو دون تشفير. فعّل هذا الخيار لخدمة تثق بها فقط.</string>
   <string name="err_insecure_stream">يستخدم هذا البث HTTP. اسمح ببث HTTP لهذا الاتصال لتشغيله.</string>
   <string name="language_system">استخدام لغة الجهاز</string>
+  <string name="all_movies">كل الأفلام</string>
+  <string name="search_all_movies">البحث في كل الأفلام</string>
+  <string name="browse_categories">تصفح الفئات</string>
+  <string name="no_search_results">لا توجد عناوين تطابق بحثك.</string>
 </resources>

@@ -50,4 +50,8 @@
   <string name="http_streams_help">Some providers deliver video without encryption. Enable only for a service you trust.</string>
   <string name="err_insecure_stream">This stream uses HTTP. Enable HTTP streams for this connection to play it.</string>
   <string name="language_system">Use device language</string>
+  <string name="all_movies">All movies</string>
+  <string name="search_all_movies">Search all movies</string>
+  <string name="browse_categories">Browse categories</string>
+  <string name="no_search_results">No titles match your search.</string>
 </resources>

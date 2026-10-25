@@ -162,6 +162,8 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
                 val state by browser.state.collectAsStateWithLifecycle()
                 ScreenFrame(state.title.ifBlank { type.label() }, back = { navigation.popBackStack() }) {
                     CatalogScreen(state, session.connection.allowHttpStreams, browser::load,
+                        queryChanged = browser::setQuery, showAllMovies = browser::showAllMovies,
+                        retryMovies = browser::loadAllMovies,
                         openCategory = { navigation.navigate("browse/${type.name}/${Uri.encode(it)}") },
                         openItem = { item ->
                             if (item.type == ContentType.LIVE) startPlayback {
@@ -221,9 +223,20 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
 }
 
 @Composable
-private fun CatalogScreen(state: CatalogState, allowHttp: Boolean, retry: () -> Unit, openCategory: (String) -> Unit, openItem: (CatalogItem) -> Unit) {
-    var query by rememberSaveable { mutableStateOf("") }
+private fun CatalogScreen(
+    state: CatalogState,
+    allowHttp: Boolean,
+    retry: () -> Unit,
+    queryChanged: (String) -> Unit,
+    showAllMovies: (Boolean) -> Unit,
+    retryMovies: () -> Unit,
+    openCategory: (String) -> Unit,
+    openItem: (CatalogItem) -> Unit,
+) {
+    val query = state.query.trim()
+    val allMoviesVisible = state.canBrowseAllMovies && (state.showAllMovies || query.isNotBlank())
     val gridState = rememberLazyGridState()
+    LaunchedEffect(query, state.showAllMovies) { gridState.scrollToItem(0) }
     val visibleKeys by remember { derivedStateOf {
         gridState.layoutInfo.visibleItemsInfo.filter {
             it.offset.y < gridState.layoutInfo.viewportEndOffset &&
@@ -232,13 +245,36 @@ private fun CatalogScreen(state: CatalogState, allowHttp: Boolean, retry: () -> 
     } }
     if (state.busy) { Loading(); return }
     state.error?.let { ErrorState(it, retry); return }
-    val categories = remember(state.categories, query) { state.categories.filter { it.name.contains(query, ignoreCase = true) } }
-    val titles = remember(state.items, query) { state.items.filter { it.title.contains(query, ignoreCase = true) } }
+    val categories = remember(state.categories, query, allMoviesVisible) {
+        if (allMoviesVisible) emptyList() else state.categories.filter { it.name.contains(query, ignoreCase = true) }
+    }
+    val titles = remember(state.items, query, state.canBrowseAllMovies, allMoviesVisible) {
+        if (state.canBrowseAllMovies && !allMoviesVisible) emptyList()
+        else state.items.filter { it.title.contains(query, ignoreCase = true) }
+    }
     Column(Modifier.fillMaxSize()) {
-        OutlinedTextField(query, { query = it }, Modifier.fillMaxWidth().padding(16.dp),
-            label = { Text(stringResource(R.string.search)) }, singleLine = true)
+        OutlinedTextField(state.query, queryChanged, Modifier.fillMaxWidth().padding(16.dp),
+            label = { Text(stringResource(if (state.canBrowseAllMovies) R.string.search_all_movies else R.string.search)) }, singleLine = true)
+        if (state.canBrowseAllMovies && allMoviesVisible) {
+            TextButton(onClick = { showAllMovies(false) }, modifier = Modifier.padding(horizontal = 16.dp)) {
+                Text(stringResource(R.string.browse_categories))
+            }
+        }
+        if (allMoviesVisible && state.itemsBusy) {
+            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Loading() }
+            return@Column
+        }
+        if (allMoviesVisible && state.itemsError != null) {
+            ErrorState(state.itemsError, retryMovies)
+            return@Column
+        }
         LazyVerticalGrid(GridCells.Adaptive(160.dp), Modifier.weight(1f).padding(horizontal = 16.dp), state = gridState,
             horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            if (state.canBrowseAllMovies && !allMoviesVisible) item(key = "all-movies", span = { GridItemSpan(maxLineSpan) }) {
+                Card(onClick = { showAllMovies(true) }, Modifier.fillMaxWidth()) {
+                    Text(stringResource(R.string.all_movies), Modifier.padding(20.dp), style = MaterialTheme.typography.titleMedium)
+                }
+            }
             items(categories, key = { "category:${it.id}" }) { category ->
                 Card(onClick = { openCategory(category.id) }, Modifier.fillMaxWidth()) {
                     Text(category.name.ifBlank { stringResource(R.string.unnamed_category) }, Modifier.padding(20.dp), style = MaterialTheme.typography.titleMedium)
@@ -251,7 +287,7 @@ private fun CatalogScreen(state: CatalogState, allowHttp: Boolean, retry: () -> 
                 }
             }
             if (categories.isEmpty() && titles.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
-                Text(stringResource(R.string.empty_category), Modifier.padding(24.dp))
+                Text(stringResource(if (query.isNotBlank()) R.string.no_search_results else R.string.empty_category), Modifier.padding(24.dp))
             }
             item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(24.dp)) }
         }

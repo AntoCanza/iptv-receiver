@@ -49,4 +49,8 @@
   <string name="http_streams_help">Alguns fornecedores transmitem vídeo sem encriptação. Ative apenas para um serviço de confiança.</string>
   <string name="err_insecure_stream">Esta transmissão usa HTTP. Permita transmissões HTTP para esta ligação para a reproduzir.</string>
   <string name="language_system">Usar o idioma do dispositivo</string>
+  <string name="all_movies">Todos os filmes</string>
+  <string name="search_all_movies">Pesquisar em todos os filmes</string>
+  <string name="browse_categories">Explorar categorias</string>
+  <string name="no_search_results">Nenhum título corresponde à pesquisa.</string>
 </resources>

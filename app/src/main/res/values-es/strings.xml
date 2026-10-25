@@ -49,4 +49,8 @@
   <string name="http_streams_help">Algunos proveedores envían vídeo sin cifrar. Activa esta opción solo para un servicio de confianza.</string>
   <string name="err_insecure_stream">Esta transmisión usa HTTP. Permite las transmisiones HTTP para esta conexión para reproducirla.</string>
   <string name="language_system">Usar el idioma del dispositivo</string>
+  <string name="all_movies">Todas las películas</string>
+  <string name="search_all_movies">Buscar en todas las películas</string>
+  <string name="browse_categories">Explorar categorías</string>
+  <string name="no_search_results">Ningún título coincide con la búsqueda.</string>
 </resources>

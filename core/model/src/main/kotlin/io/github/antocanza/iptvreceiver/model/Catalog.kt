@@ -53,7 +53,8 @@ class PlaybackSource(val url: String, val title: String, val isLive: Boolean, va
 interface CatalogRepository {
     suspend fun authenticate(connection: ProviderConnection): Account
     suspend fun categories(connection: ProviderConnection, type: ContentType): List<Category>
-    suspend fun items(connection: ProviderConnection, type: ContentType, categoryId: String): List<CatalogItem>
+    /** A null category selects the complete catalog for this content type. */
+    suspend fun items(connection: ProviderConnection, type: ContentType, categoryId: String?): List<CatalogItem>
     suspend fun movie(connection: ProviderConnection, item: CatalogItem): MovieDetails
     suspend fun series(connection: ProviderConnection, item: CatalogItem): SeriesDetails
     fun stream(connection: ProviderConnection, item: CatalogItem, liveFormat: String = "m3u8"): PlaybackSource

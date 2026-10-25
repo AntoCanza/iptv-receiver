@@ -49,4 +49,8 @@
   <string name="http_streams_help">Alcuni provider trasmettono video senza crittografia. Attiva solo per un servizio di cui ti fidi.</string>
   <string name="err_insecure_stream">Questo streaming usa HTTP. Abilita lo streaming HTTP per questa connessione per riprodurlo.</string>
   <string name="language_system">Usa la lingua del dispositivo</string>
+  <string name="all_movies">Tutti i film</string>
+  <string name="search_all_movies">Cerca in tutti i film</string>
+  <string name="browse_categories">Sfoglia le categorie</string>
+  <string name="no_search_results">Nessun titolo corrisponde alla ricerca.</string>
 </resources>

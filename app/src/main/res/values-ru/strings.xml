@@ -49,4 +49,8 @@
   <string name="http_streams_help">Некоторые провайдеры передают видео без шифрования. Включайте только для сервиса, которому доверяете.</string>
   <string name="err_insecure_stream">Этот поток использует HTTP. Разрешите потоки HTTP для этого подключения, чтобы воспроизвести его.</string>
   <string name="language_system">Использовать язык устройства</string>
+  <string name="all_movies">Все фильмы</string>
+  <string name="search_all_movies">Поиск по всем фильмам</string>
+  <string name="browse_categories">Просмотр категорий</string>
+  <string name="no_search_results">Нет названий, соответствующих запросу.</string>
 </resources>

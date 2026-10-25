@@ -49,4 +49,8 @@
   <string name="http_streams_help">一部のプロバイダーは動画を暗号化せずに配信します。信頼できるサービスでのみ有効にしてください。</string>
   <string name="err_insecure_stream">このストリームはHTTPを使用しています。この接続でHTTPストリームを許可すると再生できます。</string>
   <string name="language_system">デバイスの言語を使用</string>
+  <string name="all_movies">すべての映画</string>
+  <string name="search_all_movies">すべての映画を検索</string>
+  <string name="browse_categories">カテゴリーを見る</string>
+  <string name="no_search_results">検索に一致する作品がありません。</string>
 </resources>

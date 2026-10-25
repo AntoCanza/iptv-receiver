@@ -3,10 +3,12 @@ package io.github.antocanza.iptvreceiver.provider
 import io.github.antocanza.iptvreceiver.model.CatalogItem
 import io.github.antocanza.iptvreceiver.model.ContentType
 import io.github.antocanza.iptvreceiver.model.Episode
+import io.github.antocanza.iptvreceiver.model.FailureReason
 import io.github.antocanza.iptvreceiver.model.ProviderConnection
 import io.github.antocanza.iptvreceiver.model.ProviderException
 import kotlinx.coroutines.test.runTest
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
 import okhttp3.HttpUrl
 import okhttp3.HttpUrl.Companion.toHttpUrl
 import okhttp3.mockwebserver.MockResponse
@@ -74,6 +76,20 @@ class XtreamCatalogRepositoryTest {
         assertEquals("7", requested?.queryParameter("category_id"))
     }
 
+    @Test fun `complete movie catalog omits the category filter and keeps titles across categories`() = runTest {
+        val items = repository("""[{"stream_id":1,"name":"One","category_id":"7"},{"stream_id":2,"name":"Two","category_id":"8"},{"stream_id":1,"name":"One","category_id":"8"}]""")
+            .items(connection, ContentType.MOVIE, null)
+        assertEquals(listOf("1", "2"), items.map { it.id })
+        assertEquals("get_vod_streams", requested?.queryParameter("action"))
+        assertFalse(checkNotNull(requested).queryParameterNames.contains("category_id"))
+    }
+
+    @Test fun `movie subcategory requests retain their category filter`() = runTest {
+        repository("[]").items(connection, ContentType.MOVIE, "7")
+        assertEquals("get_vod_streams", requested?.queryParameter("action"))
+        assertEquals("7", requested?.queryParameter("category_id"))
+    }
+
     @Test fun `series episodes are sorted numerically and use episode id for playback`() = runTest {
         val item = CatalogItem("55", "Sample", ContentType.SERIES)
         val series = repository("""{"info":{"name":"Sample"},"episodes":{"10":[{"id":"101","episode_num":"2","season":10,"title":"Later","container_extension":"mkv"}],"2":[{"id":"102","episode_num":1,"title":"Earlier","container_extension":"mp4"}]}}""")
@@ -121,6 +137,68 @@ class XtreamCatalogRepositoryTest {
             server.enqueue(MockResponse().setBody("[]"))
             val result = HttpJsonTransport().load(server.url("/player_api.php"))
             assertEquals("[]", result.toString())
+        }
+    }
+
+    @Test fun `streamed full catalogs can exceed the ordinary JSON limit`() = runTest {
+        val payload = buildString {
+            append('[')
+            val ignoredMetadata = "x".repeat(1024)
+            repeat(21_000) { index ->
+                if (index > 0) append(',')
+                append("""{"stream_id":$index,"unused":"$ignoredMetadata"}""")
+            }
+            append(']')
+        }
+        assertTrue(payload.length > 20 * 1024 * 1024)
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setBody(payload))
+            server.enqueue(MockResponse().setBody(payload))
+            val transport = HttpJsonTransport()
+            val items = transport.loadCatalog(server.url("/api?action=get_vod_streams")) { element ->
+                CatalogItem((element as JsonObject)["stream_id"].toString(), "Sample", ContentType.MOVIE)
+            }
+            assertEquals(21_000, items.size)
+            assertEquals("20999", items.last().id)
+            val ordinaryLoad = runCatching { transport.load(server.url("/api")) }.exceptionOrNull()
+            assertEquals(FailureReason.TOO_LARGE, (ordinaryLoad as ProviderException).reason)
+        }
+    }
+
+    @Test fun `streamed catalogs preserve empty array and empty object compatibility`() = runTest {
+        for (body in listOf("[]", " {} ", " \n\t[]")) {
+            MockWebServer().use { server ->
+                server.enqueue(MockResponse().setBody(body))
+                val items = HttpJsonTransport().loadCatalog(server.url("/api")) { error("No items expected") }
+                assertTrue(items.isEmpty())
+            }
+        }
+    }
+
+    @Test fun `streamed catalog byte limit is enforced without exposing private data`() = runTest {
+        MockWebServer().use { server ->
+            server.enqueue(MockResponse().setChunkedBody("""[{"stream_id":1,"unused":"synthetic-secret-${"x".repeat(128)}"}]""", 8))
+            val error = runCatching {
+                HttpJsonTransport(fullCatalogLimitBytes = 64).loadCatalog(server.url("/api?password=synthetic-secret")) { null }
+            }.exceptionOrNull()
+            assertEquals(FailureReason.TOO_LARGE, (error as ProviderException).reason)
+            assertFalse(error.toString().contains("synthetic-secret"))
+            assertNull(error.cause)
+        }
+    }
+
+    @Test fun `malformed streamed catalogs fail safely instead of returning partial results`() = runTest {
+        for ((index, body) in listOf("""[{"stream_id":1},synthetic-secret]""", """[{"stream_id":1},""", """{"error":"synthetic-secret"}""", "[] []", "[] synthetic-secret").withIndex()) {
+            MockWebServer().use { server ->
+                server.enqueue(MockResponse().setBody(body))
+                val error = runCatching {
+                    HttpJsonTransport().loadCatalog(server.url("/api")) { CatalogItem("1", "Sample", ContentType.MOVIE) }
+                }.exceptionOrNull()
+                assertTrue("Malformed catalog case $index must fail safely", error is ProviderException)
+                assertEquals(FailureReason.UNSUPPORTED_RESPONSE, (error as ProviderException).reason)
+                assertFalse(error.toString().contains("synthetic-secret"))
+                assertNull(error.cause)
+            }
         }
     }
 

@@ -12,7 +12,7 @@ Authenticated catalog requests use `/player_api.php` with URL-encoded `username`
 | Live categories | `get_live_categories` | none |
 | Live channels | `get_live_streams` | `category_id` |
 | Movie categories | `get_vod_categories` | none |
-| Movies | `get_vod_streams` | `category_id` |
+| Movies | `get_vod_streams` | `category_id` for a category; omitted for all movies |
 | Movie details | `get_vod_info` | `vod_id` |
 | Series categories | `get_series_categories` | none |
 | Series list | `get_series` | `category_id` |
@@ -41,7 +41,7 @@ The baseline constructs common Xtream paths. Provider-specific direct URLs, cust
 - Authenticated API redirects are rejected to avoid forwarding credentials to another origin.
 - No HTTP logging interceptor is installed.
 - Connection/read/call timeouts are bounded; coroutine cancellation cancels the call.
-- Catalog responses are limited to 20 MiB; large catalogs require paging or incremental import work.
+- Ordinary JSON and category-scoped catalog responses are limited to 20 MiB. Complete item catalogs are streamed one record at a time with a 128 MiB transfer limit; only mapped item metadata is retained, rather than the full raw JSON tree. The Movies screen fetches this catalog on the first search or All movies selection and reuses it for that screen's lifetime. Closing the screen cancels outstanding requests. Providers exceeding the bound still need paging or incremental import work.
 - JSON/parser/network errors are translated into safe messages without the response body, URL or exception cause.
 - The player rejects HTTPS-to-HTTP redirects and HTTP manifest/segment URLs by default. The per-connection **Allow HTTP streams** option permits HTTP video delivery when explicitly enabled; catalog/login requests remain HTTPS-only.
 

@@ -23,7 +23,7 @@ private class DemoCatalog : CatalogRepository {
     override suspend fun categories(connection: ProviderConnection, type: ContentType) = listOf(
         Category("featured", when (type) { ContentType.LIVE -> "Discover"; ContentType.MOVIE -> "Featured movies"; ContentType.SERIES -> "Featured series" }, null),
         Category("nature", "Nature & discovery", null), Category("space", "Space & science", null))
-    override suspend fun items(connection: ProviderConnection, type: ContentType, categoryId: String): List<CatalogItem> {
+    override suspend fun items(connection: ProviderConnection, type: ContentType, categoryId: String?): List<CatalogItem> {
         val names = listOf("Ocean Lines", "Quiet Orbit", "Forest Light", "Golden Hour", "Beyond the Ridge", "Night Signals")
         return names.mapIndexed { index, title -> CatalogItem("demo-$index", title, type,
             "file:///android_asset/demo/poster-$index.svg", "mp4") }

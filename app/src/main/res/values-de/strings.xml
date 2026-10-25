@@ -49,4 +49,8 @@
   <string name="http_streams_help">Manche Anbieter übertragen Videos unverschlüsselt. Nur für einen vertrauenswürdigen Dienst aktivieren.</string>
   <string name="err_insecure_stream">Dieser Stream verwendet HTTP. Lassen Sie HTTP-Streams für diese Verbindung zu, um ihn abzuspielen.</string>
   <string name="language_system">Gerätesprache verwenden</string>
+  <string name="all_movies">Alle Filme</string>
+  <string name="search_all_movies">Alle Filme durchsuchen</string>
+  <string name="browse_categories">Kategorien durchsuchen</string>
+  <string name="no_search_results">Keine Titel entsprechen deiner Suche.</string>
 </resources>

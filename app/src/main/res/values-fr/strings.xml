@@ -49,4 +49,8 @@
   <string name="http_streams_help">Certains fournisseurs diffusent sans chiffrement. Activez cette option uniquement pour un service de confiance.</string>
   <string name="err_insecure_stream">Ce flux utilise HTTP. Autorisez les flux HTTP pour cette connexion afin de le lire.</string>
   <string name="language_system">Utiliser la langue du système</string>
+  <string name="all_movies">Tous les films</string>
+  <string name="search_all_movies">Rechercher dans tous les films</string>
+  <string name="browse_categories">Parcourir les catégories</string>
+  <string name="no_search_results">Aucun titre ne correspond à votre recherche.</string>
 </resources>
