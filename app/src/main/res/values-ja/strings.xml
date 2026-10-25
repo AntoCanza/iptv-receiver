@@ -53,4 +53,12 @@
   <string name="search_all_movies">すべての映画を検索</string>
   <string name="browse_categories">カテゴリーを見る</string>
   <string name="no_search_results">検索に一致する作品がありません。</string>
+  <string name="watch_history">視聴履歴</string>
+  <string name="watch_history_help">過去10日間に視聴したコンテンツを新しい順に表示します。再視聴すると先頭に移動します。</string>
+  <string name="watch_history_empty">再生が始まると、ここに表示されます。</string>
+  <string name="watch_history_error">視聴履歴を読み込み、または保存できませんでした。もう一度お試しください。</string>
+  <string name="watch_history_details">作品紹介</string>
+  <string name="sign_out_confirm_title">ログアウトしますか？</string>
+  <string name="sign_out_confirm_message">このアカウントからログアウトしますか？視聴履歴は保持されます。</string>
+  <string name="cancel">キャンセル</string>
 </resources>

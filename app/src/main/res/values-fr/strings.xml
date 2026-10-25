@@ -53,4 +53,12 @@
   <string name="search_all_movies">Rechercher dans tous les films</string>
   <string name="browse_categories">Parcourir les catégories</string>
   <string name="no_search_results">Aucun titre ne correspond à votre recherche.</string>
+  <string name="watch_history">Historique</string>
+  <string name="watch_history_help">Contenus regardés ces 10 derniers jours, du plus récent au plus ancien. Regarder un contenu à nouveau le place en tête.</string>
+  <string name="watch_history_empty">Les contenus apparaissent ici au début de la lecture.</string>
+  <string name="watch_history_error">Impossible de charger ou enregistrer l’historique. Réessayez.</string>
+  <string name="watch_history_details">Description</string>
+  <string name="sign_out_confirm_title">Se déconnecter ?</string>
+  <string name="sign_out_confirm_message">Voulez-vous vous déconnecter de ce compte ? Votre historique sera conservé.</string>
+  <string name="cancel">Annuler</string>
 </resources>

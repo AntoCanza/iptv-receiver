@@ -64,7 +64,13 @@ The player is owned by the player destination. It pauses when the destination st
 
 ## Persistence plan
 
-Only optional encrypted connection storage is implemented today. Add Room for category/item metadata and watch progress, and DataStore for non-sensitive settings when those features are implemented. Scope every persisted record by provider account and content type. Store identifiers and progress instead of credential-bearing playback URLs. Add migration tests alongside the first schema change.
+Optional encrypted connection storage and durable watch history are implemented. Watch history uses a versioned binary file per provider account under `filesDir/watch-history`, with synchronized reads/writes and atomic replacement. Account filenames hash the normalized server address and username; connection names and password changes do not create a new history. Records contain content type, content/episode identifiers, display titles, stream extensions and the last playback-start timestamp. Artwork and playback URLs are never serialized. Schema version 1 is checked on read; unsupported versions fail visibly without overwriting existing data.
+
+History records only the first `isPlaying` event of each playback session. Rewatching replaces the same content/episode entry and sorts it first. Entries expire exactly 10 days after the last watch; reads, writes and daily maintenance prune expired entries. The history screen refreshes on resume and at the next expiration while visible. Cache cleanup only targets cache directories, so it preserves unexpired history. Signing out hides account history but leaves it available for the next login to that account.
+
+Catalog grids save their position with Compose state scoped to the Navigation entry. Changing the search query or All movies mode creates a new grid state; returning from details or playback restores the existing state without a scroll-to-top effect. This covers in-session navigation and configuration changes; complete catalog/detail restoration after process death remains planned.
+
+Add Room for category/item metadata and watch progress, and DataStore for non-sensitive settings when those features are implemented. Scope every persisted record by provider account and content type. Store identifiers and progress instead of credential-bearing playback URLs. Add migration tests alongside schema changes.
 
 ## References
 

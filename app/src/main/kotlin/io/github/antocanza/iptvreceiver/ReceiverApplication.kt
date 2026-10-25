@@ -11,6 +11,7 @@ import okio.Path.Companion.toOkioPath
 import io.github.antocanza.iptvreceiver.data.artworkHttpClient
 import io.github.antocanza.iptvreceiver.data.scheduleCacheCleanup
 import io.github.antocanza.iptvreceiver.data.ConnectionStore
+import io.github.antocanza.iptvreceiver.data.FileWatchHistoryStore
 import io.github.antocanza.iptvreceiver.model.CatalogRepository
 import io.github.antocanza.iptvreceiver.provider.XtreamCatalogRepository
 
@@ -18,6 +19,7 @@ class ReceiverApplication : Application() {
     override fun onCreate() { super.onCreate(); scheduleCacheCleanup(this) }
     val repository: CatalogRepository by lazy { XtreamCatalogRepository() }
     val connectionStore by lazy { ConnectionStore(this) }
+    val watchHistoryStore by lazy { FileWatchHistoryStore(filesDir.resolve("watch-history")) }
     private val secureArtwork by lazy { artworkLoader(false) }
     private val compatibleArtwork by lazy { artworkLoader(true) }
 

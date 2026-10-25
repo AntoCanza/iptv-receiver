@@ -9,6 +9,7 @@ Do not post credentials, playlist URLs, provider responses or stream URLs in pub
 - Saved connections are encrypted with AES-GCM using a random IV and a key in Android Keystore.
 - App backup is disabled. Passwords do not enter saved-state bundles.
 - Sign out removes encrypted saved connection data and clears in-memory session selections.
+- Account-scoped watch history remains in app-private files for a rolling 10 days, including after sign out or cache cleanup. It stores content/episode identifiers, display metadata and last-watch timestamps, without playback/artwork URLs or account credentials. Android Clear storage removes it.
 - Model `toString` methods redact credential-bearing values.
 - HTTP logs and analytics integrations are absent. Do not add raw network logging.
 - Account/catalog HTTPS redirects are rejected; platform TLS validation remains enabled.

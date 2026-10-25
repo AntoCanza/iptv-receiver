@@ -7,7 +7,7 @@
   <string name="password">Password</string>
   <string name="connect">Connect</string>
   <string name="remember_connection">Remember this connection</string>
-  <string name="sign_out">Sign out</string>
+  <string name="sign_out">Logout</string>
   <string name="back">Back</string>
   <string name="retry">Try again</string>
   <string name="empty_category">There is nothing in this category yet.</string>
@@ -54,4 +54,12 @@
   <string name="search_all_movies">Search all movies</string>
   <string name="browse_categories">Browse categories</string>
   <string name="no_search_results">No titles match your search.</string>
+  <string name="watch_history">Watch history</string>
+  <string name="watch_history_help">Watched in the last 10 days, newest first. Watching again moves a stream to the top.</string>
+  <string name="watch_history_empty">Streams appear here after playback begins.</string>
+  <string name="watch_history_error">Watch history could not be loaded or saved. Try again.</string>
+  <string name="watch_history_details">Description</string>
+  <string name="sign_out_confirm_title">Log out?</string>
+  <string name="sign_out_confirm_message">Log out of this provider account? Your watch history will be kept.</string>
+  <string name="cancel">Cancel</string>
 </resources>

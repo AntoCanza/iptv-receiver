@@ -53,4 +53,12 @@
   <string name="search_all_movies">Поиск по всем фильмам</string>
   <string name="browse_categories">Просмотр категорий</string>
   <string name="no_search_results">Нет названий, соответствующих запросу.</string>
+  <string name="watch_history">История просмотров</string>
+  <string name="watch_history_help">Просмотренное за последние 10 дней, сначала новое. Повторный просмотр перемещает запись наверх.</string>
+  <string name="watch_history_empty">Контент появляется здесь после начала воспроизведения.</string>
+  <string name="watch_history_error">Не удалось загрузить или сохранить историю. Повторите попытку.</string>
+  <string name="watch_history_details">Описание</string>
+  <string name="sign_out_confirm_title">Выйти из аккаунта?</string>
+  <string name="sign_out_confirm_message">Выйти из этого аккаунта? История просмотров сохранится.</string>
+  <string name="cancel">Отмена</string>
 </resources>

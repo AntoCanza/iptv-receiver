@@ -53,4 +53,12 @@
   <string name="search_all_movies">Alle Filme durchsuchen</string>
   <string name="browse_categories">Kategorien durchsuchen</string>
   <string name="no_search_results">Keine Titel entsprechen deiner Suche.</string>
+  <string name="watch_history">Wiedergabeverlauf</string>
+  <string name="watch_history_help">In den letzten 10 Tagen angesehen, neueste zuerst. Erneutes Ansehen verschiebt einen Inhalt nach oben.</string>
+  <string name="watch_history_empty">Inhalte erscheinen hier, sobald die Wiedergabe beginnt.</string>
+  <string name="watch_history_error">Der Verlauf konnte nicht geladen oder gespeichert werden. Bitte erneut versuchen.</string>
+  <string name="watch_history_details">Beschreibung</string>
+  <string name="sign_out_confirm_title">Abmelden?</string>
+  <string name="sign_out_confirm_message">Von diesem Konto abmelden? Dein Wiedergabeverlauf bleibt erhalten.</string>
+  <string name="cancel">Abbrechen</string>
 </resources>

@@ -1,6 +1,24 @@
 # Verification record
 
-Date: October 25, 2026. Latest development version 0.1.2, versionCode 3. Package: `io.github.antocanza.iptvreceiver`.
+Date: October 25, 2026. Latest development version 0.1.3, versionCode 4. Package: `io.github.antocanza.iptvreceiver`.
+
+## Watch history, navigation and logout — version 0.1.3
+
+- Added home-screen Watch history for live channels, movies and individual episodes. It records actual playback starts, lists each stream once with its latest timestamp first, and uses an exact rolling 10-day window. History can replay an entry or open movie/series descriptions.
+- History is scoped to provider account and stored in versioned, atomically replaced app-private files outside cache directories. Credentials, artwork URLs and playback URLs are excluded. Signing out hides history without deleting it; reconnecting to the same account restores it. Cache maintenance only expires entries outside the retention window.
+- Catalog grids now restore their saved position when returning from descriptions/playback. Search or browsing-mode changes still start a new result set at the top. Complete navigation restoration after process death remains future work.
+- Logout now requires a confirmation popup; Cancel, outside dismissal and Android Back leave the session connected. The English and Italian button label is Logout. The popup explains that history is retained.
+- All 58 JVM tests pass: 3 model, 23 provider and 32 app tests. New tests cover ordering, deduplication, exact expiry and rewatch renewal, episode/type/account isolation, password/connection-name changes, reload after cleanup, inactive-account expiry, excluded credentials/URLs, unsupported schemas, sign-out/reconnect and stale callbacks, storage failure/retry, and recording only actual playback.
+- Dependency policy verification, debug/release lint, debug APK, minified unsigned release APK and unsigned release AAB all pass. Local checks used JDK 25 with the existing Gradle 9.8.2/AGP 9.4.1 configuration; CI retains its configured JDK 21. Eight new UI strings have matching keys in all ten languages. The final build used an isolated source copy because Windows locked generated resources in the OneDrive checkout.
+- On the Pixel 9 Pro XL, a full-movie search was scrolled twice, a description opened and Back pressed: the query, visible titles and their exact pixel bounds were restored. Changing the query reset the list to the top.
+- Actual movie playback created one durable history entry. Its title matched the history screen; replaying it from history advanced the timestamp without adding a duplicate. History bytes survived app restart and installation of the final APK over the previous build. Saved login and Italian language were retained.
+- Verified the real-account Logout popup, Cancel and Android Back without signing the account out. Confirming Logout in the offline demo returned to login. Restored the real account and original screen-timeout setting afterward. No real account data or private device captures are committed.
+
+Development APK SHA-256: `2c2913a8f038e6ba598ecc563267e7dc6a4a30efd051a1be49b49a3f61a71a99`.
+
+History expiry is tested with a controlled clock; a multi-day hardware soak, API 26/tablet checks and history replay for live channels/series episodes remain unverified on hardware in this update. Their metadata isolation and serialization are covered by JVM tests.
+
+No store publication was performed. Existing playback history cannot be reconstructed; entries begin with playback in this version.
 
 ## Movie search update — version 0.1.2
 

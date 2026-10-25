@@ -6,7 +6,7 @@
   <string name="password">Password</string>
   <string name="connect">Connetti</string>
   <string name="remember_connection">Ricorda questa connessione</string>
-  <string name="sign_out">Esci</string>
+  <string name="sign_out">Logout</string>
   <string name="back">Indietro</string>
   <string name="retry">Riprova</string>
   <string name="empty_category">Questa categoria è ancora vuota.</string>
@@ -53,4 +53,12 @@
   <string name="search_all_movies">Cerca in tutti i film</string>
   <string name="browse_categories">Sfoglia le categorie</string>
   <string name="no_search_results">Nessun titolo corrisponde alla ricerca.</string>
+  <string name="watch_history">Cronologia</string>
+  <string name="watch_history_help">Contenuti guardati negli ultimi 10 giorni, dal più recente. Guardare di nuovo un contenuto lo porta in cima.</string>
+  <string name="watch_history_empty">I contenuti compaiono qui quando inizia la riproduzione.</string>
+  <string name="watch_history_error">Impossibile caricare o salvare la cronologia. Riprova.</string>
+  <string name="watch_history_details">Descrizione</string>
+  <string name="sign_out_confirm_title">Confermi il logout?</string>
+  <string name="sign_out_confirm_message">Vuoi effettuare il logout da questo account? La cronologia verrà conservata.</string>
+  <string name="cancel">Annulla</string>
 </resources>

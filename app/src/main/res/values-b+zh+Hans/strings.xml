@@ -53,4 +53,12 @@
   <string name="search_all_movies">搜索所有电影</string>
   <string name="browse_categories">浏览分类</string>
   <string name="no_search_results">没有与搜索内容匹配的影片。</string>
+  <string name="watch_history">观看记录</string>
+  <string name="watch_history_help">最近10天观看的内容，最新的排在最前。再次观看会将内容移至顶部。</string>
+  <string name="watch_history_empty">播放开始后，内容会显示在这里。</string>
+  <string name="watch_history_error">无法加载或保存观看记录。请重试。</string>
+  <string name="watch_history_details">简介</string>
+  <string name="sign_out_confirm_title">退出登录？</string>
+  <string name="sign_out_confirm_message">要退出此账号吗？观看记录将会保留。</string>
+  <string name="cancel">取消</string>
 </resources>

@@ -33,6 +33,7 @@ Do this before expanding features. A successful login/catalog request alone does
 - [ ] Fast cached opening, explicit refresh and visible stale-data state.
 - [ ] Measure catalog size; incremental ingestion/paging strategy where required.
 - [ ] Restore categories and scroll positions after playback and process recreation.
+- [x] Keep the current search and scroll position when returning from descriptions or playback within a session.
 - [ ] Handle uncategorized items, malformed parent relationships and cyclic hierarchies.
 - [ ] Phone/tablet navigation UI tests, accessibility checks and screenshot review.
 - [ ] Native-speaker review and device checks for all ten languages, including Arabic RTL and Chinese/Japanese text.
@@ -41,6 +42,7 @@ The Movies root supports full-catalog search and All movies browsing through an 
 
 ## Milestone 3 — Playback continuity
 
+- [x] Durable, account-scoped watch history for live channels, movies and episodes; newest first, rolling 10-day retention, preserved during cache cleanup.
 - [ ] Save progress by provider/content/episode ID; never persist stream URLs.
 - [ ] Resume/restart choice and sensible completion threshold.
 - [ ] Remember audio and subtitle preferences when available.

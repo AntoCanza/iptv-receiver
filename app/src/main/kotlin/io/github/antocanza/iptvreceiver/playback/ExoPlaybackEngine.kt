@@ -12,7 +12,7 @@ import io.github.antocanza.iptvreceiver.data.StreamDataSourceFactory
 import io.github.antocanza.iptvreceiver.model.PlaybackSource
 
 @androidx.annotation.OptIn(UnstableApi::class)
-class ExoPlaybackEngine(context: Context, source: PlaybackSource) : PlaybackEngine {
+class ExoPlaybackEngine(context: Context, source: PlaybackSource, onFirstPlayback: () -> Unit = {}) : PlaybackEngine {
     override val player: ExoPlayer
 
     init {
@@ -22,6 +22,7 @@ class ExoPlaybackEngine(context: Context, source: PlaybackSource) : PlaybackEngi
         player = ExoPlayer.Builder(context.applicationContext)
             .setMediaSourceFactory(DefaultMediaSourceFactory(StreamDataSourceFactory(http, source.allowHttpStreams)))
             .build().apply {
+                addListener(FirstPlaybackListener(onFirstPlayback))
                 setAudioAttributes(AudioAttributes.Builder().setUsage(C.USAGE_MEDIA)
                     .setContentType(C.AUDIO_CONTENT_TYPE_MOVIE).build(), true)
                 setHandleAudioBecomingNoisy(true)

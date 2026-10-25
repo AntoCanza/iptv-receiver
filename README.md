@@ -17,6 +17,9 @@ Implemented:
 - Live TV, movie and series categories, including parent categories when supplied.
 - Search across all movies from the Movies screen, an All movies browser, category-scoped search, responsive catalog grids, movie details, and series seasons/episodes.
 - Foreground Media3 playback with rotation continuity, immersive fullscreen, buffering feedback and retry.
+- Watch history for live channels, movies and episodes, newest first, with a rolling 10-day window. History survives app restarts and temporary-file/cache cleanup, and stays separate for each provider account.
+- Search results retain their query and scroll position when returning from descriptions or playback.
+- Logout asks for confirmation; cancelling or pressing Back keeps the account connected.
 - Device language by default, with English fallback and a manual picker for ten languages including Italian, Spanish, French, German, Portuguese, Arabic, Russian, Simplified Chinese and Japanese.
 - Viewport-gated poster requests with alternate provider artwork, SVG support and bounded image caches.
 - Daily background maintenance of app-owned temporary files and approximately weekly artwork-cache clearing.

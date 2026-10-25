@@ -26,12 +26,12 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.GridItemSpan
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.rememberLazyGridState
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.Checkbox
 import androidx.compose.material3.CircularProgressIndicator
@@ -66,6 +66,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import io.github.antocanza.iptvreceiver.R
+import io.github.antocanza.iptvreceiver.data.WatchTarget
 import io.github.antocanza.iptvreceiver.model.CatalogItem
 import io.github.antocanza.iptvreceiver.model.CatalogRepository
 import io.github.antocanza.iptvreceiver.model.ContentType
@@ -126,9 +127,9 @@ fun LoginScreen(state: LoginState, connect: (ProviderConnection, Boolean) -> Uni
 fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: ReceiverViewModel) {
     val navigation = rememberNavController()
     var playbackError by remember { mutableStateOf<FailureReason?>(null) }
-    fun startPlayback(resolve: () -> PlaybackSource) {
+    fun startPlayback(target: WatchTarget, resolve: () -> PlaybackSource) {
         try {
-            model.playbackSource = resolve()
+            model.preparePlayback(resolve(), target)
             navigation.navigate("player") { launchSingleTop = true }
         } catch (error: Exception) { playbackError = safeMessage(error) }
     }
@@ -141,16 +142,48 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
         }
         NavHost(navigation, startDestination = "home", modifier = Modifier.weight(1f)) {
             composable("home") {
+                var confirmSignOut by rememberSaveable { mutableStateOf(false) }
+                if (confirmSignOut) AlertDialog(
+                    onDismissRequest = { confirmSignOut = false },
+                    title = { Text(stringResource(R.string.sign_out_confirm_title)) },
+                    text = { Text(stringResource(R.string.sign_out_confirm_message)) },
+                    confirmButton = {
+                        TextButton(onClick = { confirmSignOut = false; model.signOut() }) {
+                            Text(stringResource(R.string.sign_out))
+                        }
+                    },
+                    dismissButton = {
+                        TextButton(onClick = { confirmSignOut = false }) { Text(stringResource(R.string.cancel)) }
+                    },
+                )
                 ScreenFrame(session.connection.name, action = {
-                    TextButton(onClick = model::signOut) { Text(stringResource(R.string.sign_out)) }
+                    TextButton(onClick = { confirmSignOut = true }) { Text(stringResource(R.string.sign_out)) }
                 }) {
-                    Column(Modifier.fillMaxSize().padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(24.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                         ContentType.entries.forEach { type ->
                             Card(onClick = { navigation.navigate("browse/${type.name}/root") }, Modifier.fillMaxWidth()) {
                                 Text(type.label(), Modifier.padding(32.dp), style = MaterialTheme.typography.headlineSmall)
                             }
                         }
+                        Card(onClick = { navigation.navigate("history") }, Modifier.fillMaxWidth()) {
+                            Text(stringResource(R.string.watch_history), Modifier.padding(32.dp), style = MaterialTheme.typography.headlineSmall)
+                        }
                     }
+                }
+            }
+            composable("history") {
+                val history by model.history.collectAsStateWithLifecycle()
+                RefreshWatchHistory(model)
+                ScreenFrame(stringResource(R.string.watch_history), back = { navigation.popBackStack() }) {
+                    WatchHistoryScreen(history, retry = { model.refreshHistory() }, play = { target ->
+                        startPlayback(target) {
+                            target.episode?.let { repository.episodeStream(session.connection, it) }
+                                ?: repository.stream(session.connection, target.item, liveFormat(session))
+                        }
+                    }, details = { target ->
+                        model.select(target.item)
+                        navigation.navigate("details/${target.item.type.name}/${Uri.encode(target.item.id)}")
+                    })
                 }
             }
             composable("browse/{type}/{category}") { entry ->
@@ -166,10 +199,8 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
                         retryMovies = browser::loadAllMovies,
                         openCategory = { navigation.navigate("browse/${type.name}/${Uri.encode(it)}") },
                         openItem = { item ->
-                            if (item.type == ContentType.LIVE) startPlayback {
-                                val format = session.account.liveFormats.firstOrNull { it == "ts" }
-                                    ?: session.account.liveFormats.firstOrNull() ?: "ts"
-                                repository.stream(session.connection, item, format)
+                            if (item.type == ContentType.LIVE) startPlayback(WatchTarget(item)) {
+                                repository.stream(session.connection, item, liveFormat(session))
                             } else {
                                 model.select(item)
                                 navigation.navigate("details/${item.type.name}/${item.id}")
@@ -186,8 +217,8 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
                     val state by details.state.collectAsStateWithLifecycle()
                     ScreenFrame(item.title.ifBlank { stringResource(R.string.untitled) }, back = { navigation.popBackStack() }) {
                         DetailsScreen(state, item, session.connection.allowHttpStreams, details::load,
-                            playMovie = { movie -> startPlayback { repository.stream(session.connection, movie) } },
-                            playEpisode = { episode -> startPlayback { repository.episodeStream(session.connection, episode) } })
+                            playMovie = { movie -> startPlayback(WatchTarget(movie)) { repository.stream(session.connection, movie) } },
+                            playEpisode = { episode -> startPlayback(WatchTarget(item, episode)) { repository.episodeStream(session.connection, episode) } })
                     }
                 } else ScreenFrame(stringResource(R.string.app_name), back = { navigation.popBackStack() }) {
                     Text(stringResource(R.string.select_title), Modifier.padding(24.dp))
@@ -199,8 +230,11 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
                     val activity = LocalActivity.current
                     val context = LocalContext.current.applicationContext
                     val landscape = LocalConfiguration.current.orientation == Configuration.ORIENTATION_LANDSCAPE
+                    val target = model.watchTarget
                     val playback: PlaybackViewModel = viewModel(factory = viewModelFactory {
-                        initializer { PlaybackViewModel(ExoPlaybackEngine(context, source), landscape) }
+                        initializer { PlaybackViewModel(ExoPlaybackEngine(context, source) {
+                            if (target != null) model.recordWatch(target, session)
+                        }, landscape) }
                     })
                     val fullscreen by playback.fullscreen.collectAsStateWithLifecycle()
                     LaunchedEffect(landscape) { playback.onOrientationChanged(landscape) }
@@ -222,6 +256,9 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
     }
 }
 
+private fun liveFormat(session: Session): String = session.account.liveFormats.firstOrNull { it == "ts" }
+    ?: session.account.liveFormats.firstOrNull() ?: "ts"
+
 @Composable
 private fun CatalogScreen(
     state: CatalogState,
@@ -235,8 +272,11 @@ private fun CatalogScreen(
 ) {
     val query = state.query.trim()
     val allMoviesVisible = state.canBrowseAllMovies && (state.showAllMovies || query.isNotBlank())
-    val gridState = rememberLazyGridState()
-    LaunchedEffect(query, state.showAllMovies) { gridState.scrollToItem(0) }
+    // These inputs reset a new result set, while Navigation restores the saved position on Back.
+    val gridState = rememberSaveable(query, state.showAllMovies,
+        saver = androidx.compose.foundation.lazy.grid.LazyGridState.Saver) {
+        androidx.compose.foundation.lazy.grid.LazyGridState()
+    }
     val visibleKeys by remember { derivedStateOf {
         gridState.layoutInfo.visibleItemsInfo.filter {
             it.offset.y < gridState.layoutInfo.viewportEndOffset &&
@@ -358,7 +398,7 @@ private fun ErrorState(message: FailureReason, retry: () -> Unit) {
 }
 
 @Composable
-private fun ContentType.label(): String = stringResource(when (this) {
+internal fun ContentType.label(): String = stringResource(when (this) {
     ContentType.LIVE -> R.string.live_tv
     ContentType.MOVIE -> R.string.movies
     ContentType.SERIES -> R.string.series
