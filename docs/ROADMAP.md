@@ -71,6 +71,34 @@ Live TV, Movies and Series roots support full-catalog search and all-content bro
 - [ ] Reuse `core:model` and `core:provider`; extract shared player/storage modules as needed.
 - [ ] Test on physical Google TV/Android TV hardware.
 
+## Windows, webOS and Tizen expansion
+
+The product direction is an installed application for each platform, prioritizing
+device playback and responsiveness. The owner selected compiled native TV apps on
+supported SDK versions: LG webOS 26 Re:New or later and Samsung Tizen 6.0 / 2021
+models or later. See [platform architecture](ARCHITECTURE.md#platform-expansion)
+for implementation candidates and native TV SDK limits. This is a plan only;
+the additional clients and their playback integrations remain unimplemented.
+
+- [ ] Select supported Windows versions/architectures and LG/Samsung TV versions
+  and model groups; confirm physical test-device access.
+- [ ] Validate native TV SDK builds, public media integrations, release packaging
+  and applicable Store/partnership requirements before committing to a full port.
+- [ ] Capture Android playback and interaction baselines without interrupting
+  ongoing mobile work.
+- [ ] Prepare reusable provider/data/error contracts, synthetic compatibility
+  fixtures, parental-control cases and history/progress rules.
+- [ ] Prove a Windows native client: login, catalog, live playback, movie/episode
+  playback and seek, using C#/WinUI 3 and a compatible hardware media path.
+- [ ] Prove compiled LG and Samsung TV clients with vendor-supported players,
+  remote focus/navigation, HTTP/HTTPS streams and network recovery.
+- [ ] Compare release-build startup, first-frame/channel-switch/seek/recovery
+  latency, frame drops, CPU, memory and catalog responsiveness on actual devices.
+- [ ] Extract shared TV code only after both SDKs and playback implementations
+  pass; keep native media, credentials, persistence and lifecycle platform-specific.
+- [ ] Port the remaining catalog, history, parental, localization and settings
+  features, then validate separately signed releases and Store listings.
+
 ## Later product choices
 
 Password-protected parental controls with default adult blocking and settings reset are implemented; device and provider classification coverage remains part of release hardening. Favorites, multiple accounts, a simultaneous multi-channel EPG grid/XMLTV import, casting, downloads, M3U import, background playback and cloud sync remain later product choices. The existing channel guide and Xtream catch-up path still need broader provider and device coverage.

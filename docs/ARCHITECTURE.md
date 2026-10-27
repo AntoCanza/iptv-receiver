@@ -2,6 +2,11 @@
 
 ## Product decisions
 
+The implemented application is Android. The product direction also includes Windows,
+LG webOS and Samsung Tizen, with installed applications and performance assessed on
+each platform. The platform expansion below is a design direction, not a claim that
+those additional clients or their playback integrations have been implemented.
+
 - Phones and tablets first; Android TV after the mobile release criteria are met.
 - Native Kotlin, Jetpack Compose, lifecycle-aware ViewModels, coroutines and Flow.
 - Xtream-compatible provider login: HTTP or HTTPS base URL, username and password.
@@ -14,6 +19,97 @@
 The build pins AGP 9.1.0, Gradle 9.3.1 and Kotlin/Compose compiler 2.2.10. AGP provides built-in Kotlin for Android; do not also apply `org.jetbrains.kotlin.android`. Android dependencies are pinned in the version catalog. These are explicit baseline versions, not a claim that every dependency is the newest release.
 
 Lint treats correctness warnings as errors. Dependency-version and target-SDK migration notices remain informational. Dependencies are handled through Dependabot review; the deliberately pinned API 36 target must be reviewed against current platform/store requirements before release. This avoids an unrelated upstream release unexpectedly breaking a development build.
+
+## Platform expansion
+
+The priority is reliable playback and responsive interaction on each device.
+Code sharing must preserve access to the platform's media pipeline, hardware
+decoders, lifecycle, input and storage facilities. Framework choice alone does
+not establish which implementation is fastest; measure release builds on hardware.
+
+### Initial implementation candidates
+
+| Platform | Application and interface | Playback boundary |
+| --- | --- | --- |
+| Android | Retain Kotlin and Jetpack Compose | Retain Media3 and the existing recovery/session handling |
+| Windows | C# and WinUI 3 as the initial native desktop candidate | Evaluate Windows MediaPlayer/Media Foundation against the required streams before selecting the engine |
+| LG webOS | Evaluate the vendor's compiled Flutter SDK | Prove the public native media integration, supported formats and release eligibility before porting features |
+| Samsung Tizen | Evaluate Flutter for Tizen, allowing TV code reuse with LG | Use the supported TV media integration; verify playback, plugin/toolchain compatibility and distribution |
+
+Flutter uses its own rendered widgets; compiling an application with Flutter does
+not make it use Windows, Android or TV system widgets. The proposed TV clients
+would be compiled applications rather than hosted websites. Their common source
+must still build separately with each vendor's SDK. No migration of the existing
+Android interface to Flutter is implied.
+
+Vendor documentation checked on 2026-10-27:
+
+- [LG Flutter SDK requirements](https://github.com/lg-flutter-webos/flutter-webos/blob/main/doc/getting-started.md):
+  webOS 26 Re:New or later; Ubuntu is the supported build host, with WSL2 or a
+  compatible container suggested for Windows. The web simulator does not validate
+  this native application's media integration.
+- [Samsung Flutter TV support](https://developer.samsung.com/smarttv/develop/native/flutter.html):
+  Tizen 6.0 / 2021 models or later. Use the required current TV SDK and compatible
+  native libraries. [Distribution instructions](https://github.com/flutter-tizen/flutter-tizen/blob/main/doc/publish-app.md)
+  require release-device testing and describe partnership requirements for
+  distribution outside the United States.
+- [Windows media playback](https://learn.microsoft.com/en-us/windows/apps/develop/media-playback/media-playback):
+  WinUI 3 integrates Windows playback facilities, including adaptive streaming.
+  This does not establish compatibility with every provider codec or transport.
+
+The owner selected compiled native applications on supported TVs as the priority.
+The planning baselines are webOS 26 Re:New or later for LG and Tizen 6.0 / 2021
+models or later for Samsung. Exact model groups and test devices still need to be
+identified. An older-TV web application is outside this plan. Confirm LG's public
+playback APIs and Store submission path for the native package; developer-mode
+installation alone does not prove release eligibility.
+
+This work is planning only. Implementing clients, installing SDKs, changing
+application code, creating releases and submitting to stores are separate work.
+
+### What to share
+
+- Share provider operation definitions, normalized data contracts, error meanings,
+  parental-control behavior, history/progress semantics and feature acceptance
+  criteria across all clients. Use one set of synthetic input/expected-output
+  fixtures to verify independent implementations.
+- Reuse translations, original artwork and design conventions, adapting layout,
+  focus, typography and navigation for touch, desktop and remote control.
+- Keep the existing Kotlin models/provider modules reusable by Android clients.
+  They are JVM modules today, not portable binaries for WinUI or the TV SDKs.
+- If both TV prototypes pass, share Dart provider/domain logic and appropriate TV
+  interface components between the Flutter clients. Keep player, storage, input
+  and lifecycle integrations behind explicit platform boundaries. Share only
+  dependencies compatible with both vendor toolchains.
+- Introduce a common compiled library across additional languages only after a
+  measured benefit and successful packaging/distribution proof. A universal FFI
+  layer is not a prerequisite for starting Windows or TV development.
+
+Each client owns its HTTP implementation, secure credential handling, local
+persistence, media session and hardware decoder integration. Preserve TLS
+validation, credential redaction, account isolation and default parental blocking
+from [security](../SECURITY.md). Shared fixtures must contain fictional providers
+and media identifiers; private account responses must never become fixtures.
+
+### Playback and performance proof
+
+Before a full feature port, build a small client per new platform that can log in,
+read a bounded catalog, play a live channel and play/seek a movie or episode.
+Cover HLS and progressive MPEG-TS where required, HTTP/HTTPS delivery and redirects,
+session expiry/reconnect, audio/subtitle selection and supported codecs. The
+existing Android implementation is the behavioral reference, not proof that a TV
+or Windows player supports the same input.
+
+Record device/model, firmware, SDK, release build, stream format and test procedure
+with cold/warm launch time, time to first frame, channel-switch time, seek/recovery
+latency, frame drops, CPU and peak/steady memory. Confirm hardware decoding where
+the device exposes evidence. Evaluate catalog scrolling/search at repeatable sizes
+and verify cancellation and player release. Establish budgets from those baselines;
+do not label an unmeasured implementation as providing maximum performance.
+
+Physical TV playback is a release gate. Simulator, emulator, build and contract
+test results remain useful but cannot replace it. Complete native SDK/media and
+Store eligibility checks before expanding TV features or restructuring shared code.
 
 ## Boundaries
 
