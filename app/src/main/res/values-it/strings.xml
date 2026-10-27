@@ -52,7 +52,7 @@
   <string name="browse_categories">Sfoglia le categorie</string>
   <string name="no_search_results">Nessun titolo corrisponde alla ricerca.</string>
   <string name="watch_history">Cronologia</string>
-  <string name="watch_history_help">Contenuti guardati negli ultimi 10 giorni, dal più recente. Guardare di nuovo un contenuto lo porta in cima.</string>
+  <string name="watch_history_help">Film ed episodi degli ultimi sei mesi (180 giorni); canali in diretta degli ultimi 10 giorni. Dal più recente. Stato di visione e punti di ripresa rimangono finché non li cancelli.</string>
   <string name="watch_history_empty">I contenuti compaiono qui quando inizia la riproduzione.</string>
   <string name="watch_history_error">Impossibile caricare o salvare la cronologia. Riprova.</string>
   <string name="watch_history_details">Descrizione</string>
@@ -155,7 +155,6 @@
   <string name="resume_action">Riprendi</string>
   <string name="restart_action">Ricomincia</string>
   <string name="history_progress">%1$s / %2$s</string>
-  <string name="history_completed">Completato</string>
   <string name="subscription_reminder_title">Scadenza abbonamento</string>
   <string name="subscription_expires">Il tuo abbonamento scade il %1$s.</string>
   <string name="subscription_expired">Il tuo abbonamento è scaduto il %1$s.</string>
@@ -168,4 +167,23 @@
   <string name="player_track_number">Traccia %1$d · %2$s</string>
   <string name="player_speed">Velocità di riproduzione</string>
   <string name="guide_schedule_conflict">Il provider riporta programmi sovrapposti. Gli orari sono quelli ricevuti; durante una sovrapposizione non è possibile confermare il programma in onda.</string>
+  <string name="watch_unwatched">Da vedere</string>
+  <string name="watch_watched">Visto</string>
+  <string name="watch_in_progress">In corso</string>
+  <string name="watch_rewatching">Visto · nuova visione</string>
+  <string name="watch_resume_at">Riprendi da %1$s</string>
+  <string name="watch_again">Guarda di nuovo</string>
+  <string name="watch_mark_watched">Segna come visto</string>
+  <string name="watch_mark_unwatched">Segna come da vedere</string>
+  <string name="watch_remaining">Tempo rimanente: %1$s</string>
+  <string name="watch_continue_episode">Continua · S%1$d · E%2$d</string>
+  <string name="watch_season_count">Episodi visti: %1$d / %2$d</string>
+  <string name="watch_progress_error">Impossibile caricare o salvare i progressi. Riprova.</string>
+  <string name="watch_load_more">Mostra la cronologia precedente</string>
+  <string name="watch_storage_title">Cronologia e progressi</string>
+  <string name="watch_storage_help">Lo stato di visione e i punti di ripresa rimangono finché non li cancelli. La cronologia mostra film ed episodi per sei mesi (180 giorni) e canali in diretta per 10 giorni. Questi dati restano sul dispositivo e non vengono eliminati svuotando la cache.</string>
+  <string name="watch_clear">Cancella per questo account</string>
+  <string name="watch_clear_confirm">Rimuovere cronologia, stato di visione e punti di ripresa di questo account? Gli altri account non saranno interessati. Questa operazione non può essere annullata.</string>
+  <string name="watch_clear_error">Impossibile cancellare tutti i dati di visione. Riprova.</string>
+  <string name="watch_cleared">Dati di visione cancellati per questo account.</string>
 </resources>

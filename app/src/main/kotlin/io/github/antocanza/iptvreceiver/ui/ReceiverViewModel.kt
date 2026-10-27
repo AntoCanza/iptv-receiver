@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import io.github.antocanza.iptvreceiver.data.SavedConnectionStore
 import io.github.antocanza.iptvreceiver.data.WatchHistoryEntry
 import io.github.antocanza.iptvreceiver.data.WatchHistoryStore
+import io.github.antocanza.iptvreceiver.data.HistoryPage
 import io.github.antocanza.iptvreceiver.data.WatchTarget
 import io.github.antocanza.iptvreceiver.data.ParentalCatalogRepository
 import io.github.antocanza.iptvreceiver.data.PlaybackProgress
@@ -32,7 +33,9 @@ import kotlinx.coroutines.withContext
 
 data class Session(val connection: ProviderConnection, val account: Account)
 data class LoginState(val busy: Boolean = true, val session: Session? = null, val error: FailureReason? = null)
-data class HistoryState(val busy: Boolean = true, val entries: List<WatchHistoryEntry> = emptyList(), val failed: Boolean = false)
+data class HistoryState(val busy: Boolean = true, val entries: List<WatchHistoryEntry> = emptyList(), val failed: Boolean = false,
+    val hasMore: Boolean = false)
+data class ViewingDataState(val busy: Boolean = false, val failed: Boolean = false, val cleared: Boolean = false)
 
 class ReceiverViewModel(
     private val repository: CatalogRepository,
@@ -47,6 +50,12 @@ class ReceiverViewModel(
     val state = mutableState.asStateFlow()
     private val mutableHistory = MutableStateFlow(HistoryState())
     val history = mutableHistory.asStateFlow()
+    private val mutableProgressRevision = MutableStateFlow(0L)
+    val progressRevision = mutableProgressRevision.asStateFlow()
+    private val mutableViewingData = MutableStateFlow(ViewingDataState())
+    val viewingData = mutableViewingData.asStateFlow()
+    private var historyLimit = 50
+    @Volatile private var viewingGeneration = 0L
     private val mutableExpiryNotice = MutableStateFlow<SubscriptionNotice?>(null)
     val expiryNotice = mutableExpiryNotice.asStateFlow()
     private var reminderAcknowledgement: Job? = null
@@ -97,6 +106,8 @@ class ReceiverViewModel(
                 return
             }
             mutableState.value = LoginState(busy = false, session = Session(connection, account))
+            historyLimit = 50
+            mutableViewingData.value = ViewingDataState()
             mutableHistory.value = HistoryState()
             refreshHistory()
         } catch (error: CancellationException) { throw error } catch (error: Exception) {
@@ -119,7 +130,7 @@ class ReceiverViewModel(
     }
 
     suspend fun resumeProgress(target: WatchTarget, session: Session): PlaybackProgress? = withContext(storageDispatcher) {
-        if (target.item.type == io.github.antocanza.iptvreceiver.model.ContentType.LIVE) null else progressStore?.load(session.connection)?.get(target.key)
+        if (target.item.type == io.github.antocanza.iptvreceiver.model.ContentType.LIVE) null else progressStore?.read(session.connection, target)
     }
 
     fun recordProgress(target: WatchTarget, session: Session, progress: PlaybackProgress, source: PlaybackSource? = null): Job? {
@@ -127,18 +138,54 @@ class ReceiverViewModel(
         if (mutableState.value.session !== session) return null
         if (source != null && watchTarget?.key == target.key && playbackSource !== source) return null
         val observed = System.nanoTime()
+        val generation = viewingGeneration
+        val checkpoint = if (source != null) progress.copy(lastPlayedAtMillis = System.currentTimeMillis()) else progress
         return (persistenceScope ?: viewModelScope).launch(storageDispatcher) {
             historyMutex.withLock {
+                if (generation != viewingGeneration) return@withLock
                 try {
-                    destination.save(session.connection, target, progress, observed)
+                    destination.save(session.connection, target, checkpoint, observed)
                     if (mutableState.value.session === session) {
-                        val current = destination.load(session.connection)[target.key]
+                        val current = destination.read(session.connection, target)
+                        mutableProgressRevision.value++
                         mutableHistory.value = mutableHistory.value.copy(entries = mutableHistory.value.entries.map {
                             if (it.target.key == target.key) it.copy(progress = current) else it
                         })
                     }
                 } catch (error: CancellationException) { throw error }
                 catch (_: Exception) { if (mutableState.value.session === session) mutableHistory.value = mutableHistory.value.copy(failed = true) }
+            }
+        }
+    }
+
+    suspend fun restartProgress(target: WatchTarget, session: Session) = withContext(storageDispatcher) {
+        historyMutex.withLock {
+            if (mutableState.value.session === session) {
+                progressStore?.restart(session.connection, target)
+                mutableProgressRevision.value++
+            }
+        }
+    }
+
+    fun clearViewingData() {
+        val session = mutableState.value.session ?: return
+        if (mutableViewingData.value.busy) return
+        viewingGeneration++
+        mutableViewingData.value = ViewingDataState(busy = true)
+        (persistenceScope ?: viewModelScope).launch(storageDispatcher) {
+            historyMutex.withLock {
+                try {
+                    historyStore.clear(session.connection)
+                    progressStore?.clear(session.connection)
+                    if (mutableState.value.session === session) {
+                        mutableHistory.value = HistoryState(busy = false)
+                        mutableProgressRevision.value++
+                        mutableViewingData.value = ViewingDataState(cleared = true)
+                    }
+                } catch (error: CancellationException) { throw error }
+                catch (_: Exception) {
+                    if (mutableState.value.session === session) mutableViewingData.value = ViewingDataState(failed = true)
+                }
             }
         }
     }
@@ -161,33 +208,42 @@ class ReceiverViewModel(
         }
     }
 
-    fun refreshHistory(): Job = updateHistory { historyStore.load(it) }
+    fun refreshHistory(): Job = updateHistory { historyStore.page(it, historyLimit) }
+
+    fun loadMoreHistory() {
+        if (mutableHistory.value.busy || !mutableHistory.value.hasMore) return
+        historyLimit = (historyLimit + 50).coerceAtMost(100_000)
+        mutableHistory.value = mutableHistory.value.copy(busy = true)
+        refreshHistory()
+    }
 
     fun recordWatch(target: WatchTarget, session: Session): Job =
-        updateHistory(session) { historyStore.record(it, target) }
+        updateHistory(session) { historyStore.record(it, target); historyStore.page(it, historyLimit) }
 
     private fun updateHistory(
         session: Session? = mutableState.value.session,
-        update: (ProviderConnection) -> List<WatchHistoryEntry>,
-    ): Job = viewModelScope.launch {
-        if (session == null) return@launch
-        historyMutex.withLock {
-            if (mutableState.value.session !== session) return@withLock
-            val revision = (repository as? ParentalCatalogRepository)?.policy?.value?.revision
-            try {
-                val entries = withContext(storageDispatcher) {
-                    val stored = update(session.connection)
-                    val visible = if (repository is ParentalCatalogRepository) repository.visibleHistory(session.connection, stored) else stored
-                    val progress = progressStore?.load(session.connection).orEmpty()
-                    visible.map { entry -> entry.copy(progress = progress[entry.target.key]) }
-                }
-                if (mutableState.value.session === session &&
-                    revision == (repository as? ParentalCatalogRepository)?.policy?.value?.revision) {
-                    mutableHistory.value = HistoryState(false, entries)
-                }
-            } catch (error: CancellationException) { throw error } catch (_: Exception) {
-                if (mutableState.value.session === session) {
-                    mutableHistory.value = HistoryState(busy = false, failed = true)
+        update: (ProviderConnection) -> HistoryPage,
+    ): Job {
+        val generation = viewingGeneration
+        return viewModelScope.launch {
+            if (session == null) return@launch
+            historyMutex.withLock {
+                if (mutableState.value.session !== session || generation != viewingGeneration) return@withLock
+                val revision = (repository as? ParentalCatalogRepository)?.policy?.value?.revision
+                try {
+                    val page = withContext(storageDispatcher) {
+                        val stored = update(session.connection)
+                        val visible = if (repository is ParentalCatalogRepository) repository.visibleHistory(session.connection, stored.entries) else stored.entries
+                        stored.copy(entries = visible.map { entry -> entry.copy(progress = progressStore?.read(session.connection, entry.target)) })
+                    }
+                    if (mutableState.value.session === session &&
+                        revision == (repository as? ParentalCatalogRepository)?.policy?.value?.revision) {
+                        mutableHistory.value = HistoryState(false, page.entries, hasMore = page.hasMore)
+                    }
+                } catch (error: CancellationException) { throw error } catch (_: Exception) {
+                    if (mutableState.value.session === session) {
+                        mutableHistory.value = HistoryState(busy = false, failed = true)
+                    }
                 }
             }
         }
@@ -201,6 +257,8 @@ class ReceiverViewModel(
         playbackStartMs = 0
         mutableExpiryNotice.value = null
         mutableHistory.value = HistoryState()
+        historyLimit = 50
+        mutableViewingData.value = ViewingDataState()
         mutableState.value = LoginState(busy = true)
         connectionJob = viewModelScope.launch {
             try {

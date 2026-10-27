@@ -10,6 +10,10 @@ import io.github.antocanza.iptvreceiver.model.FailureReason
 import io.github.antocanza.iptvreceiver.model.MovieDetails
 import io.github.antocanza.iptvreceiver.model.ProviderConnection
 import io.github.antocanza.iptvreceiver.model.SeriesDetails
+import io.github.antocanza.iptvreceiver.model.Episode
+import io.github.antocanza.iptvreceiver.data.PlaybackProgress
+import io.github.antocanza.iptvreceiver.data.PlaybackProgressStore
+import io.github.antocanza.iptvreceiver.data.WatchTarget
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -111,15 +115,61 @@ data class DetailsState(
     val error: FailureReason? = null,
 )
 
+data class DetailProgressState(
+    val busy: Boolean = true,
+    val entries: Map<List<String>, PlaybackProgress> = emptyMap(),
+    val failed: Boolean = false,
+    val saving: Boolean = false,
+)
+
 class DetailsViewModel(
     private val repository: CatalogRepository,
     private val connection: ProviderConnection,
     private val item: CatalogItem,
+    private val progressStore: PlaybackProgressStore? = null,
+    private val storageDispatcher: CoroutineDispatcher = Dispatchers.IO,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(DetailsState())
     val state = mutableState.asStateFlow()
     private var job: Job? = null
-    init { load() }
+    private var progressJob: Job? = null
+    private val mutableProgress = MutableStateFlow(DetailProgressState())
+    val progress = mutableProgress.asStateFlow()
+    init { load(); refreshProgress() }
+
+    fun refreshProgress(): Job? {
+        if (mutableProgress.value.saving) return null
+        progressJob?.cancel()
+        progressJob = viewModelScope.launch {
+            try {
+                val entries = withContext(storageDispatcher) { progressStore?.forItem(connection, item).orEmpty() }
+                mutableProgress.value = DetailProgressState(busy = false, entries = entries)
+            } catch (error: CancellationException) { throw error }
+            catch (_: Exception) { mutableProgress.value = mutableProgress.value.copy(busy = false, failed = true) }
+        }
+        return progressJob
+    }
+
+    fun setWatched(episode: Episode?, watched: Boolean) {
+        val destination = progressStore ?: return
+        if (mutableProgress.value.saving || mutableProgress.value.busy || mutableProgress.value.failed) return
+        if (item.type == ContentType.SERIES && state.value.series?.episodes?.none { it == episode } != false) return
+        if (item.type == ContentType.MOVIE && (episode != null || state.value.movie == null)) return
+        val target = WatchTarget(item, episode)
+        val observed = System.nanoTime()
+        progressJob?.cancel()
+        mutableProgress.value = mutableProgress.value.copy(saving = true)
+        progressJob = viewModelScope.launch {
+            try {
+                val entries = withContext(storageDispatcher) {
+                    destination.setWatched(connection, target, watched, observed)
+                    destination.forItem(connection, item)
+                }
+                mutableProgress.value = DetailProgressState(busy = false, entries = entries)
+            } catch (error: CancellationException) { throw error }
+            catch (_: Exception) { mutableProgress.value = mutableProgress.value.copy(saving = false, failed = true) }
+        }
+    }
 
     fun load() {
         job?.cancel()

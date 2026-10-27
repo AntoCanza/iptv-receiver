@@ -51,14 +51,32 @@ internal fun NavigationCard(@DrawableRes icon: Int, title: String, onClick: () -
 }
 
 @Composable
-internal fun SettingsScreen(account: () -> Unit, server: () -> Unit, parental: () -> Unit) {
+internal fun SettingsScreen(account: () -> Unit, server: () -> Unit, parental: () -> Unit, viewing: () -> Unit) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
         NavigationCard(R.drawable.ic_account, stringResource(R.string.settings_account), account)
         NavigationCard(R.drawable.ic_server, stringResource(R.string.settings_server), server)
         NavigationCard(R.drawable.ic_lock, stringResource(R.string.parental_controls), parental)
+        NavigationCard(R.drawable.ic_history, stringResource(R.string.watch_storage_title), viewing)
         Card(Modifier.fillMaxWidth()) { LanguageSelector(asRow = true) }
     }
+}
+
+@Composable
+internal fun ViewingDataSettingsScreen(state: ViewingDataState, clear: () -> Unit) {
+    var confirming by rememberSaveable { mutableStateOf(false) }
+    Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Text(stringResource(R.string.watch_storage_help))
+        if (state.failed) Text(stringResource(R.string.watch_clear_error), color = MaterialTheme.colorScheme.error)
+        if (state.cleared) Text(stringResource(R.string.watch_cleared))
+        OutlinedButton(onClick = { confirming = true }, enabled = !state.busy, modifier = Modifier.fillMaxWidth()) {
+            Text(stringResource(R.string.watch_clear))
+        }
+    }
+    if (confirming) AlertDialog(onDismissRequest = { confirming = false },
+        title = { Text(stringResource(R.string.watch_clear)) }, text = { Text(stringResource(R.string.watch_clear_confirm)) },
+        confirmButton = { TextButton(onClick = { confirming = false; clear() }) { Text(stringResource(R.string.watch_clear)) } },
+        dismissButton = { TextButton(onClick = { confirming = false }) { Text(stringResource(R.string.cancel)) } })
 }
 
 @Composable

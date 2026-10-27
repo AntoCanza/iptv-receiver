@@ -182,18 +182,19 @@ class ReceiverViewModelTest {
         model.recordWatch(target, session); advanceUntilIdle()
         val point = PlaybackProgress(900_000, 6_600_000)
         model.recordProgress(target, session, point, first); advanceUntilIdle()
-        assertEquals(point, model.history.value.entries.single().progress)
-        assertEquals(point, model.resumeProgress(target, session))
+        val recorded = checkNotNull(model.resumeProgress(target, session))
+        assertEquals(point, recorded.copy(lastPlayedAtMillis = null))
+        assertEquals(recorded, model.history.value.entries.single().progress)
         model.preparePlayback(replacement, target, 900_000)
         model.recordProgress(target, session, point.copy(positionMs = 0), first); advanceUntilIdle()
-        assertEquals(point, model.resumeProgress(target, session))
+        assertEquals(recorded, model.resumeProgress(target, session))
         model.signOut(); advanceUntilIdle()
         model.connect(connection.with(username = "other"), false); advanceUntilIdle()
         model.recordProgress(target, session, point.copy(positionMs = 0)); advanceUntilIdle()
         assertNull(model.resumeProgress(target, checkNotNull(model.state.value.session)))
         model.connect(connection, false); advanceUntilIdle()
-        assertEquals(point, model.history.value.entries.single().progress)
-        assertEquals(point, FilePlaybackProgressStore(folder.root.resolve("progress")).load(connection)[target.key])
+        assertEquals(recorded, model.history.value.entries.single().progress)
+        assertEquals(recorded, FilePlaybackProgressStore(folder.root.resolve("progress")).load(connection)[target.key])
     }
 
     @Test fun `expiry popup OK persists and signout hides it`() = runTest(dispatcher) {
@@ -220,6 +221,43 @@ class ReceiverViewModelTest {
         assertNotNull(reopened.expiryNotice.value)
         reopened.signOut(); advanceUntilIdle()
         assertNull(reopened.expiryNotice.value)
+    }
+
+    @Test fun `history is paged and clear cannot be undone by checkpoints queued before the user action`() = runTest(dispatcher) {
+        val history = historyStore
+        val progress = FilePlaybackProgressStore(folder.root.resolve("progress"))
+        repeat(60) { history.record(connection, WatchTarget(CatalogItem("$it", "Movie $it", ContentType.MOVIE))) }
+        val model = ReceiverViewModel(FakeRepository(), FakeStore(), history, dispatcher, progress)
+        advanceUntilIdle(); model.connect(connection, false); advanceUntilIdle()
+        assertEquals(50, model.history.value.entries.size)
+        assertTrue(model.history.value.hasMore)
+        model.loadMoreHistory(); advanceUntilIdle()
+        assertEquals(60, model.history.value.entries.size)
+        assertFalse(model.history.value.hasMore)
+        val session = checkNotNull(model.state.value.session)
+        val target = WatchTarget(CatalogItem("42", "Movie", ContentType.MOVIE))
+        model.recordProgress(target, session, PlaybackProgress(60_000, null))
+        model.recordWatch(target, session)
+        model.clearViewingData(); advanceUntilIdle()
+        assertTrue(model.viewingData.value.cleared)
+        assertTrue(model.history.value.entries.isEmpty())
+        assertTrue(progress.load(connection).isEmpty())
+        assertTrue(history.load(connection).isEmpty())
+    }
+
+    @Test fun `restart preserves watched state and duration and updates details revision`() = runTest(dispatcher) {
+        val progress = FilePlaybackProgressStore(folder.root.resolve("progress"))
+        val target = WatchTarget(CatalogItem("42", "Movie", ContentType.MOVIE))
+        progress.save(connection, target, PlaybackProgress.checkpoint(100_000, 100_000))
+        val model = ReceiverViewModel(FakeRepository(), FakeStore(), historyStore, dispatcher, progress)
+        advanceUntilIdle(); model.connect(connection, false); advanceUntilIdle()
+        model.restartProgress(target, checkNotNull(model.state.value.session))
+        val point = checkNotNull(progress.read(connection, target))
+        assertTrue(point.watched)
+        assertFalse(point.completed)
+        assertEquals(0L, point.positionMs)
+        assertEquals(100_000L, point.durationMs)
+        assertTrue(model.progressRevision.value > 0)
     }
 
     private class FakeStore : SavedConnectionStore {

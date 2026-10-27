@@ -25,11 +25,17 @@ data class WatchTarget(val item: CatalogItem, val episode: Episode? = null) {
 
 /** Progress is enriched from its own durable store; the existing history file remains version 1. */
 data class WatchHistoryEntry(val target: WatchTarget, val watchedAtMillis: Long, val progress: PlaybackProgress? = null)
+data class HistoryPage(val entries: List<WatchHistoryEntry>, val hasMore: Boolean)
 
 interface WatchHistoryStore {
     fun load(connection: ProviderConnection): List<WatchHistoryEntry>
     fun record(connection: ProviderConnection, target: WatchTarget): List<WatchHistoryEntry>
     fun pruneExpired()
+    fun page(connection: ProviderConnection, limit: Int): HistoryPage {
+        val entries = load(connection)
+        return HistoryPage(entries.take(limit), entries.size > limit)
+    }
+    fun clear(connection: ProviderConnection)
 }
 
 /** Durable app files, outside cacheDir. One atomic, versioned file per provider account. */
@@ -62,8 +68,13 @@ class FileWatchHistoryStore(private val directory: File, private val now: () -> 
         }
     }
 
+    @Synchronized override fun clear(connection: ProviderConnection) {
+        val file = accountFile(connection)
+        if (file.exists() && !file.delete()) throw IOException("Cannot clear watch history")
+    }
+
     private fun retained(entries: List<WatchHistoryEntry>, timestamp: Long) = entries
-        .filter { it.watchedAtMillis > timestamp - RETENTION_MILLIS }
+        .filter { it.watchedAtMillis > timestamp - retentionMillis(it.target.item.type) }
         .sortedByDescending { it.watchedAtMillis }
 
     private fun accountFile(connection: ProviderConnection): File {
@@ -131,5 +142,7 @@ class FileWatchHistoryStore(private val directory: File, private val now: () -> 
     companion object {
         private const val SCHEMA_VERSION = 1
         val RETENTION_MILLIS: Long = TimeUnit.DAYS.toMillis(10)
+        val VOD_RETENTION_MILLIS: Long = TimeUnit.DAYS.toMillis(180)
+        fun retentionMillis(type: ContentType): Long = if (type == ContentType.LIVE) RETENTION_MILLIS else VOD_RETENTION_MILLIS
     }
 }

@@ -52,7 +52,7 @@
   <string name="browse_categories">Просмотр категорий</string>
   <string name="no_search_results">Нет названий, соответствующих запросу.</string>
   <string name="watch_history">История просмотров</string>
-  <string name="watch_history_help">Просмотренное за последние 10 дней, сначала новое. Повторный просмотр перемещает запись наверх.</string>
+  <string name="watch_history_help">Фильмы и эпизоды за последние шесть месяцев (180 дней), прямые каналы — за 10 дней. Сначала новые. Статус просмотра и позиции продолжения хранятся до удаления вручную.</string>
   <string name="watch_history_empty">Контент появляется здесь после начала воспроизведения.</string>
   <string name="watch_history_error">Не удалось загрузить или сохранить историю. Повторите попытку.</string>
   <string name="watch_history_details">Описание</string>
@@ -155,7 +155,6 @@
   <string name="resume_action">Продолжить</string>
   <string name="restart_action">С начала</string>
   <string name="history_progress">%1$s / %2$s</string>
-  <string name="history_completed">Просмотрено</string>
   <string name="subscription_reminder_title">Окончание подписки</string>
   <string name="subscription_expires">Ваша подписка заканчивается %1$s.</string>
   <string name="subscription_expired">Ваша подписка закончилась %1$s.</string>
@@ -168,4 +167,23 @@
   <string name="player_track_number">Дорожка %1$d · %2$s</string>
   <string name="player_speed">Скорость воспроизведения</string>
   <string name="guide_schedule_conflict">Поставщик указал пересекающиеся программы. Время сохранено как получено; при пересечении нельзя подтвердить текущую программу.</string>
+  <string name="watch_unwatched">Не просмотрено</string>
+  <string name="watch_watched">Просмотрено</string>
+  <string name="watch_in_progress">В процессе</string>
+  <string name="watch_rewatching">Просмотрено · повторный просмотр</string>
+  <string name="watch_resume_at">Продолжить с %1$s</string>
+  <string name="watch_again">Смотреть снова</string>
+  <string name="watch_mark_watched">Отметить просмотренным</string>
+  <string name="watch_mark_unwatched">Отметить непросмотренным</string>
+  <string name="watch_remaining">Осталось: %1$s</string>
+  <string name="watch_continue_episode">Продолжить · С%1$d · Э%2$d</string>
+  <string name="watch_season_count">Просмотрено эпизодов: %1$d / %2$d</string>
+  <string name="watch_progress_error">Не удалось загрузить или сохранить прогресс. Повторите попытку.</string>
+  <string name="watch_load_more">Показать более раннюю историю</string>
+  <string name="watch_storage_title">История и прогресс просмотра</string>
+  <string name="watch_storage_help">Статус просмотра и позиции продолжения хранятся до удаления вручную. История показывает фильмы и эпизоды за шесть месяцев (180 дней), а прямые каналы — за 10 дней. Данные остаются на этом устройстве и сохраняются при очистке кеша.</string>
+  <string name="watch_clear">Очистить для этого аккаунта</string>
+  <string name="watch_clear_confirm">Удалить историю, статусы просмотра и позиции продолжения этого аккаунта? Другие аккаунты не будут затронуты. Это действие нельзя отменить.</string>
+  <string name="watch_clear_error">Не удалось удалить все данные просмотра. Повторите попытку.</string>
+  <string name="watch_cleared">Данные просмотра этого аккаунта удалены.</string>
 </resources>

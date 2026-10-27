@@ -10,7 +10,7 @@ Do not post credentials, playlist URLs, provider responses or stream URLs in pub
 - App backup is disabled. Passwords do not enter saved-state bundles. The unfinished login form stays in an activity ViewModel across configuration changes and is cleared after successful sign-in; process death discards it.
 - Password entry is hidden initially. A trailing eye button reveals/hides it in memory; visibility is not persisted across activity recreation.
 - Sign out removes encrypted saved connection data and clears in-memory session selections.
-- Account-scoped watch history remains in app-private files for a rolling 10 days, including after sign out or cache cleanup. It stores content/episode identifiers, display metadata and last-watch timestamps, without playback/artwork URLs or account credentials. Android Clear storage removes it.
+- Account-scoped watch history remains in an app-private SQLite database for 180 days for movies/episodes and ten days for live channels, including after sign out or cache cleanup. It stores content/episode identifiers, display titles, stream extensions and last-watch timestamps, without playback/artwork URLs or credentials. Settings explicitly clears the current account’s viewing data; Android Clear storage removes all local data.
 - Model `toString` methods redact credential-bearing values.
 - HTTP logs and analytics integrations are absent. Do not add raw network logging.
 - Account/catalog redirects are rejected; platform TLS validation remains enabled for HTTPS.
@@ -21,7 +21,7 @@ Do not post credentials, playlist URLs, provider responses or stream URLs in pub
 
 Runtime memory still contains credentials while a connection is active. Keystore protects the stored key; it cannot hide credentials from a fully compromised device. Avoid making stronger security claims.
 
-Movie/episode progress and expiry acknowledgements use separate versioned, atomically replaced app-private files outside cache directories. Account filenames are hashed from normalized server/account identifiers. Progress stores content/episode IDs, position, optional duration and completion only; acknowledgement stores the provider expiry and last dismissal time. Neither contains credentials or playback URLs. Logout hides these records without deleting them; app-data clearing/uninstallation removes them. Existing parental checks still run before offering or resolving resumed playback.
+Movie/episode progress shares the versioned, transactional `viewing.db` database with history. Account keys hash normalized server/account identifiers. Progress stores content/episode IDs, position, optional duration, current completion, a separate watched flag and the last actual playback timestamp. Watched status and resume points do not expire. Legacy account files import transactionally once; unsupported formats fail without being overwritten, and explicit clearing removes the corresponding legacy files as well. Credentials, provider addresses and playback/artwork URLs never enter the database. Expiry acknowledgements retain separate atomic files with hashed account filenames and the provider expiry/last dismissal time. Logout hides records without deleting them; app-data clearing/uninstallation removes them. Existing parental checks still run before resumed playback, and policy changes recreate detail state.
 
 ## Parental controls
 

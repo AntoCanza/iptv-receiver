@@ -37,8 +37,6 @@ class WatchHistoryStoreTest {
 
     @Test fun `ten day cutoff is rolling and exact and rewatch renews retention`() {
         val store = store()
-        store.record(connection, movie)
-        now += 1
         store.record(connection, channel)
         now += FileWatchHistoryStore.RETENTION_MILLIS - 1
         assertEquals(listOf(channel), store.load(connection).map { it.target })
@@ -57,6 +55,32 @@ class WatchHistoryStoreTest {
         assertTrue(store.load(ProviderConnection("Test", "https://other.example.test", "demo", "secret")).isEmpty())
         val renamed = ProviderConnection("Renamed", "https://PROVIDER.example.test:443/", "demo", "new-secret")
         assertEquals(listOf(movie), store.load(renamed).map { it.target })
+    }
+
+    @Test fun `movies and episodes remain for 180 days while live entries expire after ten days`() {
+        val episode = WatchTarget(CatalogItem("show", "Show", ContentType.SERIES), Episode("ep", "Episode", 1, 1, "mkv"))
+        val store = store()
+        listOf(channel, movie, episode).forEach { store.record(connection, it) }
+        now += FileWatchHistoryStore.RETENTION_MILLIS
+        assertEquals(setOf(movie, episode), store().load(connection).map { it.target }.toSet())
+        now += FileWatchHistoryStore.VOD_RETENTION_MILLIS - FileWatchHistoryStore.RETENTION_MILLIS - 1
+        assertEquals(2, store.load(connection).size)
+        now++
+        assertTrue(store.load(connection).isEmpty())
+    }
+
+    @Test fun `history pages report older entries and clearing does not affect other accounts`() {
+        val other = ProviderConnection("Other", connection.serverUrl, "other", "secret")
+        val store = store()
+        store.record(other, movie)
+        repeat(55) { store.record(connection, movie.copy(item = movie.item.copy(id = it.toString()))); now++ }
+        assertEquals(50, store.page(connection, 50).entries.size)
+        assertTrue(store.page(connection, 50).hasMore)
+        assertEquals(55, store.page(connection, 100).entries.size)
+        assertFalse(store.page(connection, 100).hasMore)
+        store.clear(connection)
+        assertTrue(store().load(connection).isEmpty())
+        assertEquals(listOf(movie), store().load(other).map { it.target })
     }
 
     @Test fun `episodes with colliding stream IDs remain independent of other shows and content types`() {
@@ -82,7 +106,7 @@ class WatchHistoryStoreTest {
     @Test fun `maintenance expires history for accounts that are not currently signed in`() {
         val other = ProviderConnection("Other", connection.serverUrl, "other", "secret")
         val store = store()
-        store.record(other, movie)
+        store.record(other, channel)
         now += 1_000
         store.record(connection, channel)
         now += FileWatchHistoryStore.RETENTION_MILLIS - 1_000

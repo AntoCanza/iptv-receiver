@@ -52,7 +52,7 @@
   <string name="browse_categories">تصفح الفئات</string>
   <string name="no_search_results">لا توجد عناوين تطابق بحثك.</string>
   <string name="watch_history">سجل المشاهدة</string>
-  <string name="watch_history_help">المحتوى الذي شاهدته خلال آخر 10 أيام، الأحدث أولاً. إعادة المشاهدة تنقل المحتوى إلى الأعلى.</string>
+  <string name="watch_history_help">الأفلام والحلقات خلال آخر ستة أشهر (180 يومًا)، والقنوات المباشرة خلال آخر 10 أيام. الأحدث أولًا. تُحفظ حالة المشاهدة ونقاط الاستئناف حتى تمسحها.</string>
   <string name="watch_history_empty">يظهر المحتوى هنا عند بدء التشغيل.</string>
   <string name="watch_history_error">تعذر تحميل سجل المشاهدة أو حفظه. حاول مرة أخرى.</string>
   <string name="watch_history_details">الوصف</string>
@@ -155,7 +155,6 @@
   <string name="resume_action">استئناف</string>
   <string name="restart_action">من البداية</string>
   <string name="history_progress">%1$s / %2$s</string>
-  <string name="history_completed">مكتمل</string>
   <string name="subscription_reminder_title">انتهاء الاشتراك</string>
   <string name="subscription_expires">ينتهي اشتراكك في %1$s.</string>
   <string name="subscription_expired">انتهى اشتراكك في %1$s.</string>
@@ -168,4 +167,23 @@
   <string name="player_track_number">المسار %1$d · %2$s</string>
   <string name="player_speed">سرعة التشغيل</string>
   <string name="guide_schedule_conflict">يعرض المزوّد برامج متداخلة. تُحفظ الأوقات كما وردت؛ ولا يمكن تأكيد البرنامج الحالي أثناء التداخل.</string>
+  <string name="watch_unwatched">لم تتم المشاهدة</string>
+  <string name="watch_watched">تمت المشاهدة</string>
+  <string name="watch_in_progress">قيد المشاهدة</string>
+  <string name="watch_rewatching">تمت المشاهدة · إعادة المشاهدة</string>
+  <string name="watch_resume_at">استئناف من %1$s</string>
+  <string name="watch_again">المشاهدة مجددًا</string>
+  <string name="watch_mark_watched">وضع علامة تمت المشاهدة</string>
+  <string name="watch_mark_unwatched">وضع علامة لم تتم المشاهدة</string>
+  <string name="watch_remaining">الوقت المتبقي: %1$s</string>
+  <string name="watch_continue_episode">متابعة · الموسم %1$d · الحلقة %2$d</string>
+  <string name="watch_season_count">الحلقات التي تمت مشاهدتها: %1$d / %2$d</string>
+  <string name="watch_progress_error">تعذر تحميل تقدم المشاهدة أو حفظه. حاول مجددًا.</string>
+  <string name="watch_load_more">عرض السجل الأقدم</string>
+  <string name="watch_storage_title">سجل المشاهدة والتقدم</string>
+  <string name="watch_storage_help">تُحفظ حالة المشاهدة ونقاط الاستئناف حتى تمسحها. يعرض السجل الأفلام والحلقات لمدة ستة أشهر (180 يومًا)، والقنوات المباشرة لمدة 10 أيام. تبقى البيانات على هذا الجهاز ولا تُحذف عند تنظيف ذاكرة التخزين المؤقت.</string>
+  <string name="watch_clear">مسح لهذا الحساب</string>
+  <string name="watch_clear_confirm">هل تريد إزالة سجل المشاهدة وحالتها ونقاط الاستئناف لهذا الحساب؟ لن تتأثر الحسابات الأخرى. لا يمكن التراجع عن هذا الإجراء.</string>
+  <string name="watch_clear_error">تعذر مسح جميع بيانات المشاهدة. حاول مجددًا.</string>
+  <string name="watch_cleared">تم مسح بيانات المشاهدة لهذا الحساب.</string>
 </resources>

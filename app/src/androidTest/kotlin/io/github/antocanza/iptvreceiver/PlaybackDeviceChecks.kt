@@ -5,6 +5,7 @@ import android.app.Instrumentation
 import android.app.Application
 import android.content.res.Configuration
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.os.Bundle
 import android.os.SystemClock
 import android.view.View
@@ -51,17 +52,28 @@ class PlaybackDeviceChecks : Instrumentation() {
     private var displayOnly = false
     private var progressPhase: String? = null
     private var uxPhase: String? = null
+    private var viewingPhase: String? = null
     private var engine: PlaybackEngine? = null
     private var server: ServerSocket? = null
     private var completed = 0
     private var stage = "starting"
-    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); real = arguments?.getString("real") == "true"; normalUi = arguments?.getString("normalUi") == "true"; displayOnly = arguments?.getString("displayOnly") == "true"; progressPhase = arguments?.getString("progressPhase"); uxPhase = arguments?.getString("uxPhase"); start() }
+    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); real = arguments?.getString("real") == "true"; normalUi = arguments?.getString("normalUi") == "true"; displayOnly = arguments?.getString("displayOnly") == "true"; progressPhase = arguments?.getString("progressPhase"); uxPhase = arguments?.getString("uxPhase"); viewingPhase = arguments?.getString("viewingPhase"); start() }
     override fun onStart() {
         val result = Bundle()
         try {
-            activity = startActivitySync(Intent(targetContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)) as MainActivity
+            if (viewingPhase == "data") {
+                ViewingStoreChecks(targetContext, ::passed).run()
+                result.putString("result", "PASS; completed=$completed; synthetic viewing storage")
+                finish(Activity.RESULT_OK, result)
+                return
+            }
+            val fixture = if (viewingPhase == "ui") startMediaFixture() else null
+            val intent = Intent(targetContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+            if (fixture != null) intent.putExtra("store_preview", true).putExtra("preview_fixture_port", android.net.Uri.parse(fixture).port)
+            activity = startActivitySync(intent) as MainActivity
             onMain { activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
-            if (uxPhase != null) { check(real); usabilityChecks(checkNotNull(uxPhase)) }
+            if (viewingPhase == "ui") viewingUiChecks()
+            else if (uxPhase != null) { check(real); usabilityChecks(checkNotNull(uxPhase)) }
             else if (progressPhase != null) when (progressPhase) {
                 "seed" -> { check(real); progressSeedChecks() }
                 "verify" -> { check(real); progressNavigationChecks() }
@@ -80,7 +92,7 @@ class PlaybackDeviceChecks : Instrumentation() {
                 "class=${it.className}; checkable=${it.isCheckable}; textName=${it.text?.toString()?.contains(label(R.string.remember_connection)) == true}; descName=${it.contentDescription?.toString()?.contains(label(R.string.remember_connection)) == true}; parentCheck=${it.parent?.isCheckable}"
             }) }
             // Never publish exception messages/causes, media URLs, content titles or provider responses.
-            val location = error.stackTrace.firstOrNull { it.className == javaClass.name }
+            val location = error.stackTrace.firstOrNull { it.className.startsWith(javaClass.name) }
             result.putString("result", "FAIL; completed=$completed; type=${error.javaClass.simpleName}; method=${location?.methodName}; line=${location?.lineNumber}")
             finish(Activity.RESULT_CANCELED, result)
         } finally {
@@ -104,8 +116,11 @@ class PlaybackDeviceChecks : Instrumentation() {
         val deadline = SystemClock.elapsedRealtime() + timeout
         while (SystemClock.elapsedRealtime() < deadline) {
             val nodes = nodes().filter { it.text?.toString()?.equals(label, true) == true || it.contentDescription?.toString()?.equals(label, true) == true }
+                .sortedByDescending { it.isClickable || it.parent?.isClickable == true }
             for (node in nodes) {
                 node.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SHOW_ON_SCREEN.id)
+                SystemClock.sleep(150)
+                node.refresh()
                 val bounds = Rect(); node.getBoundsInScreen(bounds)
                 if (!node.isVisibleToUser || bounds.isEmpty) continue
                 val time = SystemClock.uptimeMillis()
@@ -608,8 +623,7 @@ class PlaybackDeviceChecks : Instrumentation() {
         check(successful >= 5)
         check(!archiveAvailable || archiveTested)
     }
-    private fun subtitleChecks() {
-        status("subtitle fixture starting")
+    private fun startMediaFixture(): String {
         val socket = ServerSocket(0, 8, InetAddress.getByName("127.0.0.1")); server = socket
         val pcm = ByteArray(120 * 8000 * 2)
         val wav = ByteBuffer.allocate(44 + pcm.size).order(ByteOrder.LITTLE_ENDIAN).apply {
@@ -630,7 +644,11 @@ class PlaybackDeviceChecks : Instrumentation() {
                 }
             }
         }
-        val base = "http://127.0.0.1:${socket.localPort}"
+        return "http://127.0.0.1:${socket.localPort}"
+    }
+    private fun subtitleChecks() {
+        status("subtitle fixture starting")
+        val base = startMediaFixture()
         lateinit var player: ExoPlayer
         onMain { player = ExoPlayer.Builder(targetContext).build(); player.volume = 0f; player.setMediaItem(MediaItem.fromUri("$base/fixture.wav")) }
         val wrapper = object : PlaybackEngine {
@@ -668,6 +686,138 @@ class PlaybackDeviceChecks : Instrumentation() {
         SystemClock.sleep(500)
         check(!visible(label(R.string.player_subtitles)))
         passed("subtitle control hidden when tracks disappear")
-        onMain { player.release(); engine = null }; socket.close()
+        onMain { player.release(); engine = null }; server?.close()
+    }
+
+    private fun viewingUiChecks() = runBlocking {
+        homeReady()
+        val app = targetContext.applicationContext as ReceiverApplication
+        lateinit var model: ReceiverViewModel
+        onMain { model = ViewModelProvider.create(activity)["store-preview", ReceiverViewModel::class] }
+        waitUntil { model.state.value.session != null }
+        val connection = checkNotNull(model.state.value.session).connection
+        val catalog = checkNotNull(StorePreview.create(activity.intent)).first
+        val title = catalog.items(connection, ContentType.MOVIE, null).first()
+        val show = catalog.items(connection, ContentType.SERIES, null).first()
+        val episodes = catalog.series(connection, show).episodes
+        val callbacks = object : Application.ActivityLifecycleCallbacks {
+            override fun onActivityResumed(value: Activity) {
+                if (value is MainActivity) {
+                    activity = value
+                    value.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+                }
+            }
+            override fun onActivityCreated(value: Activity, state: Bundle?) {}
+            override fun onActivityStarted(value: Activity) {}
+            override fun onActivityPaused(value: Activity) {}
+            override fun onActivityStopped(value: Activity) {}
+            override fun onActivitySaveInstanceState(value: Activity, state: Bundle) {}
+            override fun onActivityDestroyed(value: Activity) {}
+        }
+        app.registerActivityLifecycleCallbacks(callbacks)
+        fun scroll(text: String) {
+            repeat(18) {
+                if (visible(text)) return
+                nodes().firstOrNull { it.isScrollable }?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+                SystemClock.sleep(250)
+            }
+            error("Fixture control not reachable")
+        }
+        fun top() {
+            repeat(16) {
+                val node = nodes().firstOrNull { it.isScrollable } ?: return
+                if (!node.performAction(AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)) return
+                SystemClock.sleep(120)
+            }
+        }
+        fun activateNamedAction(description: String) {
+            repeat(24) {
+                var action = nodes().firstOrNull { it.contentDescription?.toString()?.contains(description) == true }
+                while (action != null && !action.isClickable) action = action.parent
+                val button = action
+                if (button != null) {
+                    button.performAction(AccessibilityNodeInfo.AccessibilityAction.ACTION_SHOW_ON_SCREEN.id)
+                    SystemClock.sleep(200)
+                    button.refresh()
+                    if (button.isVisibleToUser && button.performAction(AccessibilityNodeInfo.ACTION_CLICK)) {
+                        SystemClock.sleep(350)
+                        return
+                    }
+                }
+                nodes().firstOrNull { it.isScrollable }?.performAction(AccessibilityNodeInfo.ACTION_SCROLL_FORWARD)
+                SystemClock.sleep(200)
+            }
+            error("Named fixture action not reachable")
+        }
+        fun screenshot(name: String) {
+            java.io.FileOutputStream(java.io.File(targetContext.getExternalFilesDir(null), "watch-progress-$name.png")).use {
+                uiAutomation.takeScreenshot()?.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
+            }
+        }
+        try {
+            app.watchHistoryStore.clear(connection)
+            app.playbackProgressStore.clear(connection)
+            app.playbackProgressStore.save(connection, WatchTarget(title), PlaybackProgress(60_000, 120_000))
+            episodes.take(2).forEach { app.playbackProgressStore.setWatched(connection, WatchTarget(show, it), true) }
+            app.playbackProgressStore.save(connection, WatchTarget(show, episodes[2]), PlaybackProgress(30_000, 120_000, lastPlayedAtMillis = System.currentTimeMillis()))
+            click(label(R.string.movies)); click("Featured movies"); click(title.title)
+            waitUi(activity.getString(R.string.watch_resume_at, "1:00"))
+            click(activity.getString(R.string.watch_resume_at, "1:00"))
+            waitUntil { view()?.player?.isPlaying == true && checkNotNull(view()?.player).currentPosition in 59_000..80_000 }
+            onMain { view()?.player?.pause() }
+            sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)
+            waitUi(title.title)
+            scroll(label(R.string.restart_action)); click(label(R.string.restart_action))
+            waitUntil { view()?.player?.isPlaying == true }
+            onMain { check(checkNotNull(view()?.player).currentPosition < 8_000); view()?.player?.pause() }
+            sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)
+            waitUi(title.title)
+            scroll(label(R.string.watch_mark_watched)); click(label(R.string.watch_mark_watched))
+            waitUi(label(R.string.watch_again))
+            screenshot("movie")
+            passed("movie detail resumes directly, Start over seeks to zero and manual watched status updates")
+
+            val previous = activity
+            onMain { activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
+            waitUntil { activity !== previous && activity.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE }
+            waitUi(label(R.string.watch_again))
+            onMain { activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
+            waitUntil { activity.resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT }
+            waitUi(label(R.string.watch_again))
+            check(app.playbackProgressStore.read(connection, WatchTarget(title))?.watched == true)
+            passed("watched status survives landscape and portrait recreation")
+
+            repeat(3) { sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK); SystemClock.sleep(300) }
+            homeReady()
+            click(label(R.string.series)); click("Featured series"); click(show.title)
+            waitUi(activity.getString(R.string.watch_continue_episode, 1, 3))
+            scroll(activity.getString(R.string.watch_resume_at, "0:30")); click(activity.getString(R.string.watch_resume_at, "0:30"))
+            waitUntil { view()?.player?.isPlaying == true && checkNotNull(view()?.player).currentPosition in 29_000..50_000 }
+            onMain { view()?.player?.pause() }
+            sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK)
+            waitUi(show.title)
+            val markEpisode = activity.getString(R.string.action_for_title, label(R.string.watch_mark_watched), episodes[2].title)
+            activateNamedAction(markEpisode)
+            waitUntil { app.playbackProgressStore.read(connection, WatchTarget(show, episodes[2]))?.watched == true }
+            top()
+            waitUi(activity.getString(R.string.watch_continue_episode, 1, 4))
+            scroll(activity.getString(R.string.watch_season_count, 3, 4))
+            waitUi(activity.getString(R.string.watch_season_count, 3, 4))
+            screenshot("series")
+            passed("series continues episode three, per-episode marking updates the season count and advances the Continue action")
+
+            repeat(3) { sendKeyDownUpSync(android.view.KeyEvent.KEYCODE_BACK); SystemClock.sleep(300) }
+            homeReady(); click(label(R.string.settings)); click(label(R.string.watch_storage_title))
+            click(label(R.string.watch_clear)); click(label(R.string.cancel))
+            check(app.playbackProgressStore.read(connection, WatchTarget(title))?.watched == true)
+            click(label(R.string.watch_clear)); click(label(R.string.watch_clear))
+            waitUi(label(R.string.watch_cleared))
+            check(app.playbackProgressStore.load(connection).isEmpty())
+            check(app.watchHistoryStore.load(connection).isEmpty())
+            passed("settings clear requires confirmation; cancellation preserves data and confirmation clears only the fixture account")
+        } finally {
+            app.unregisterActivityLifecycleCallbacks(callbacks)
+            onMain { activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED }
+        }
     }
 }

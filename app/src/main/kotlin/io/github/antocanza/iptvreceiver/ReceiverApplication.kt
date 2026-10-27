@@ -11,8 +11,7 @@ import okio.Path.Companion.toOkioPath
 import io.github.antocanza.iptvreceiver.data.artworkHttpClient
 import io.github.antocanza.iptvreceiver.data.scheduleCacheCleanup
 import io.github.antocanza.iptvreceiver.data.ConnectionStore
-import io.github.antocanza.iptvreceiver.data.FileWatchHistoryStore
-import io.github.antocanza.iptvreceiver.data.FilePlaybackProgressStore
+import io.github.antocanza.iptvreceiver.data.ViewingStore
 import io.github.antocanza.iptvreceiver.data.SubscriptionReminders
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -28,8 +27,9 @@ class ReceiverApplication : Application() {
     val parentalControls by lazy { ParentalControls(filesDir.resolve("parental-controls/settings.bin")) }
     val repository: CatalogRepository by lazy { ParentalCatalogRepository(unfilteredRepository, parentalControls) }
     val connectionStore by lazy { ConnectionStore(this) }
-    val watchHistoryStore by lazy { FileWatchHistoryStore(filesDir.resolve("watch-history")) }
-    val playbackProgressStore by lazy { FilePlaybackProgressStore(filesDir.resolve("playback-progress")) }
+    private val viewingStore by lazy { ViewingStore(this) }
+    val watchHistoryStore get() = viewingStore.history
+    val playbackProgressStore get() = viewingStore.progress
     val subscriptionReminders by lazy { SubscriptionReminders(filesDir.resolve("subscription-reminders")) }
     // Final checkpoints must survive a navigation entry or Activity being destroyed.
     val persistenceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)

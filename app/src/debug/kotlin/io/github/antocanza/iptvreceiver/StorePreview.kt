@@ -14,11 +14,11 @@ internal object StorePreview {
             override fun save(connection: ProviderConnection) { this.connection = connection }
             override fun clear() { connection = null }
         }
-        return DemoCatalog() to store
+        return DemoCatalog(intent.getIntExtra("preview_fixture_port", 0).takeIf { it in 1..65535 }) to store
     }
 }
 
-private class DemoCatalog : CatalogRepository {
+private class DemoCatalog(private val fixturePort: Int? = null) : CatalogRepository {
     override suspend fun authenticate(connection: ProviderConnection) = Account("Active",
         System.currentTimeMillis() / 1000 + 30 * 24 * 60 * 60, listOf("m3u8", "ts"), activeConnections = 0, maxConnections = 2,
         serverInfo = ServerInfo("Europe/Rome", System.currentTimeMillis() / 1000))
@@ -44,8 +44,10 @@ private class DemoCatalog : CatalogRepository {
             imageUrls = listOf("file:///android_asset/demo/poster-${(it - 1) % 6}.svg"), durationSeconds = 2820) },
         metadata = item.metadata.copy(durationSeconds = 2820), imageUrls = item.artworkUrls,
         seasons = listOf(Season(1, "Season 1", "The journey begins."), Season(2, "Season 2", "New horizons.")))
-    override fun stream(connection: ProviderConnection, item: CatalogItem, liveFormat: String): PlaybackSource =
-        throw ProviderException(FailureReason.UNAVAILABLE)
-    override fun episodeStream(connection: ProviderConnection, episode: Episode): PlaybackSource =
-        throw ProviderException(FailureReason.UNAVAILABLE)
+    override fun stream(connection: ProviderConnection, item: CatalogItem, liveFormat: String): PlaybackSource = fixturePort?.let {
+        PlaybackSource("http://127.0.0.1:$it/fixture.wav", item.title, item.type == ContentType.LIVE)
+    } ?: throw ProviderException(FailureReason.UNAVAILABLE)
+    override fun episodeStream(connection: ProviderConnection, episode: Episode): PlaybackSource = fixturePort?.let {
+        PlaybackSource("http://127.0.0.1:$it/fixture.wav", episode.title, false)
+    } ?: throw ProviderException(FailureReason.UNAVAILABLE)
 }

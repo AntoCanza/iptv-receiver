@@ -52,7 +52,7 @@
   <string name="browse_categories">Explorar categorías</string>
   <string name="no_search_results">Ningún título coincide con la búsqueda.</string>
   <string name="watch_history">Historial</string>
-  <string name="watch_history_help">Contenido visto en los últimos 10 días, del más reciente al más antiguo. Al verlo de nuevo, pasa al principio.</string>
+  <string name="watch_history_help">Películas y episodios de los últimos seis meses (180 días); canales en directo de los últimos 10 días. Del más reciente al más antiguo. El estado y los puntos de reanudación se conservan hasta que los borres.</string>
   <string name="watch_history_empty">El contenido aparece aquí cuando comienza la reproducción.</string>
   <string name="watch_history_error">No se pudo cargar o guardar el historial. Inténtalo de nuevo.</string>
   <string name="watch_history_details">Descripción</string>
@@ -155,7 +155,6 @@
   <string name="resume_action">Continuar</string>
   <string name="restart_action">Desde el principio</string>
   <string name="history_progress">%1$s / %2$s</string>
-  <string name="history_completed">Completado</string>
   <string name="subscription_reminder_title">Caducidad de la suscripción</string>
   <string name="subscription_expires">Tu suscripción caduca el %1$s.</string>
   <string name="subscription_expired">Tu suscripción caducó el %1$s.</string>
@@ -168,4 +167,23 @@
   <string name="player_track_number">Pista %1$d · %2$s</string>
   <string name="player_speed">Velocidad de reproducción</string>
   <string name="guide_schedule_conflict">El proveedor muestra programas superpuestos. Se conservan los horarios recibidos; durante una superposición no se puede confirmar el programa en emisión.</string>
+  <string name="watch_unwatched">Sin ver</string>
+  <string name="watch_watched">Visto</string>
+  <string name="watch_in_progress">En curso</string>
+  <string name="watch_rewatching">Visto · viendo de nuevo</string>
+  <string name="watch_resume_at">Reanudar en %1$s</string>
+  <string name="watch_again">Volver a ver</string>
+  <string name="watch_mark_watched">Marcar como visto</string>
+  <string name="watch_mark_unwatched">Marcar como no visto</string>
+  <string name="watch_remaining">Tiempo restante: %1$s</string>
+  <string name="watch_continue_episode">Continuar · T%1$d · E%2$d</string>
+  <string name="watch_season_count">Episodios vistos: %1$d / %2$d</string>
+  <string name="watch_progress_error">No se pudieron cargar o guardar los avances. Inténtalo de nuevo.</string>
+  <string name="watch_load_more">Mostrar historial anterior</string>
+  <string name="watch_storage_title">Historial y progreso</string>
+  <string name="watch_storage_help">El estado de visualización y los puntos de reanudación se conservan hasta que los borres. El historial muestra películas y episodios durante seis meses (180 días) y canales en directo durante 10 días. Los datos permanecen en este dispositivo y se conservan al limpiar la caché.</string>
+  <string name="watch_clear">Borrar para esta cuenta</string>
+  <string name="watch_clear_confirm">¿Borrar el historial, el estado de visualización y los puntos de reanudación de esta cuenta? Las demás cuentas no se verán afectadas. Esta acción no se puede deshacer.</string>
+  <string name="watch_clear_error">No se pudieron borrar todos los datos de visualización. Inténtalo de nuevo.</string>
+  <string name="watch_cleared">Datos de visualización borrados para esta cuenta.</string>
 </resources>

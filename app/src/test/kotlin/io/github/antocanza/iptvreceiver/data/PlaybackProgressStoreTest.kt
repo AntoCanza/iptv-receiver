@@ -20,7 +20,7 @@ class PlaybackProgressStoreTest {
         var time = 1_000L
         val history = FileWatchHistoryStore(folder.root.resolve("history")) { time }
         history.record(connection, movie)
-        time += FileWatchHistoryStore.RETENTION_MILLIS
+        time += FileWatchHistoryStore.VOD_RETENTION_MILLIS
         assertTrue(history.load(connection).isEmpty())
         assertEquals(point, store().load(connection)[movie.key])
         assertTrue(store().load(connection).getValue(movie.key).canResume)
@@ -57,16 +57,75 @@ class PlaybackProgressStoreTest {
         assertFalse(directory.exists())
     }
 
+    @Test fun `watched state survives restart and partial rewatch until manually cleared`() {
+        val store = store()
+        store.save(connection, movie, PlaybackProgress.checkpoint(6_270_000, 6_600_000), 10)
+        assertTrue(store.read(connection, movie)!!.watched)
+        store.restart(connection, movie, 20)
+        assertTrue(store().read(connection, movie)!!.watched)
+        assertFalse(store.read(connection, movie)!!.completed)
+        assertEquals(6_600_000L, store.read(connection, movie)!!.durationMs)
+        store.save(connection, movie, point, 30)
+        assertTrue(store().read(connection, movie)!!.watched)
+        assertTrue(store.read(connection, movie)!!.canResume)
+        store.setWatched(connection, movie, false, 40)
+        store.save(connection, movie, point.copy(completed = true), 35)
+        assertFalse(store().read(connection, movie)!!.watched)
+        assertFalse(store.read(connection, movie)!!.canResume)
+    }
+
+    @Test fun `manual marking supports unknown durations and does not invent a play date`() {
+        val store = store()
+        store.setWatched(connection, movie, true)
+        val marked = store().read(connection, movie)!!
+        assertTrue(marked.watched)
+        assertTrue(marked.completed)
+        assertNull(marked.lastPlayedAtMillis)
+        assertNull(marked.durationMs)
+        store.restart(connection, movie)
+        store.save(connection, movie, PlaybackProgress(5_000, null, lastPlayedAtMillis = 1234))
+        assertTrue(store().read(connection, movie)!!.watched)
+        assertEquals(1234L, store.read(connection, movie)!!.lastPlayedAtMillis)
+    }
+
+    @Test fun `version one bookmarks migrate on write and completed titles remain watched`() {
+        val file = directory.resolve("${accountKey(connection)}.bin")
+        file.parentFile!!.mkdirs()
+        java.io.DataOutputStream(file.outputStream()).use { out ->
+            out.writeInt(1); out.writeInt(1); movie.key.forEach(out::writeUTF)
+            out.writeLong(6_600_000); out.writeLong(6_600_000); out.writeBoolean(true)
+        }
+        store().restart(connection, movie)
+        assertTrue(store().read(connection, movie)!!.watched)
+        assertEquals(0L, store().read(connection, movie)!!.positionMs)
+        assertEquals(2, java.io.DataInputStream(file.inputStream()).use { it.readInt() })
+    }
+
+    @Test fun `clearing progress removes only the selected account`() {
+        val other = connection.with(username = "other")
+        val store = store()
+        store.save(connection, movie, point)
+        store.save(other, movie, point)
+        val staleObservation = System.nanoTime()
+        store.clear(connection)
+        store.save(connection, movie, point, staleObservation)
+        assertTrue(store().load(connection).isEmpty())
+        assertEquals(point, store().read(other, movie))
+        store.save(connection, movie, point)
+        assertEquals(point, store().read(connection, movie))
+    }
+
     @Test fun `completion invalid duration and resume thresholds are bounded`() {
         assertFalse(PlaybackProgress.checkpoint(4_999, null).canResume)
         assertTrue(PlaybackProgress.checkpoint(5_000, null).canResume)
         assertNull(PlaybackProgress.checkpoint(15_000, -9223372036854775807).durationMs)
         assertEquals(0L, PlaybackProgress.checkpoint(-1, 100_000).positionMs)
-        assertFalse(PlaybackProgress.checkpoint(6_569_999, 6_600_000).completed)
-        assertTrue(PlaybackProgress.checkpoint(6_570_000, 6_600_000).completed)
-        assertFalse(PlaybackProgress.checkpoint(6_570_000, 6_600_000).canResume)
+        assertFalse(PlaybackProgress.checkpoint(6_269_999, 6_600_000).completed)
+        assertTrue(PlaybackProgress.checkpoint(6_270_000, 6_600_000).completed)
+        assertFalse(PlaybackProgress.checkpoint(6_270_000, 6_600_000).canResume)
         assertTrue(PlaybackProgress.checkpoint(99_000, 100_000).completed)
-        assertFalse(PlaybackProgress.checkpoint(98_999, 100_000).completed)
+        assertFalse(PlaybackProgress.checkpoint(94_999, 100_000).completed)
+        assertTrue(PlaybackProgress.checkpoint(95_000, 100_000).completed)
         assertTrue(PlaybackProgress.checkpoint(20_000, null, ended = true).completed)
         assertEquals(100_000L, PlaybackProgress.checkpoint(Long.MAX_VALUE, 100_000).positionMs)
     }

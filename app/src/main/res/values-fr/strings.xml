@@ -52,7 +52,7 @@
   <string name="browse_categories">Parcourir les catégories</string>
   <string name="no_search_results">Aucun titre ne correspond à votre recherche.</string>
   <string name="watch_history">Historique</string>
-  <string name="watch_history_help">Contenus regardés ces 10 derniers jours, du plus récent au plus ancien. Regarder un contenu à nouveau le place en tête.</string>
+  <string name="watch_history_help">Films et épisodes des six derniers mois (180 jours) ; chaînes en direct des 10 derniers jours. Du plus récent au plus ancien. Le statut de visionnage et les points de reprise sont conservés jusqu’à leur suppression.</string>
   <string name="watch_history_empty">Les contenus apparaissent ici au début de la lecture.</string>
   <string name="watch_history_error">Impossible de charger ou enregistrer l’historique. Réessayez.</string>
   <string name="watch_history_details">Description</string>
@@ -155,7 +155,6 @@
   <string name="resume_action">Reprendre</string>
   <string name="restart_action">Recommencer</string>
   <string name="history_progress">%1$s / %2$s</string>
-  <string name="history_completed">Terminé</string>
   <string name="subscription_reminder_title">Expiration de l’abonnement</string>
   <string name="subscription_expires">Votre abonnement expire le %1$s.</string>
   <string name="subscription_expired">Votre abonnement a expiré le %1$s.</string>
@@ -168,4 +167,23 @@
   <string name="player_track_number">Piste %1$d · %2$s</string>
   <string name="player_speed">Vitesse de lecture</string>
   <string name="guide_schedule_conflict">Le fournisseur indique des programmes qui se chevauchent. Les horaires reçus sont conservés ; le programme en cours ne peut pas être confirmé pendant un chevauchement.</string>
+  <string name="watch_unwatched">Non vu</string>
+  <string name="watch_watched">Vu</string>
+  <string name="watch_in_progress">En cours</string>
+  <string name="watch_rewatching">Vu · nouveau visionnage</string>
+  <string name="watch_resume_at">Reprendre à %1$s</string>
+  <string name="watch_again">Revoir</string>
+  <string name="watch_mark_watched">Marquer comme vu</string>
+  <string name="watch_mark_unwatched">Marquer comme non vu</string>
+  <string name="watch_remaining">Temps restant : %1$s</string>
+  <string name="watch_continue_episode">Continuer · S%1$d · E%2$d</string>
+  <string name="watch_season_count">Épisodes vus : %1$d / %2$d</string>
+  <string name="watch_progress_error">Impossible de charger ou enregistrer la progression. Réessayez.</string>
+  <string name="watch_load_more">Afficher les éléments plus anciens</string>
+  <string name="watch_storage_title">Historique et progression</string>
+  <string name="watch_storage_help">Le statut de visionnage et les points de reprise sont conservés jusqu’à leur suppression. L’historique affiche les films et épisodes pendant six mois (180 jours), et les chaînes en direct pendant 10 jours. Ces données restent sur cet appareil et sont conservées lors du nettoyage du cache.</string>
+  <string name="watch_clear">Effacer pour ce compte</string>
+  <string name="watch_clear_confirm">Supprimer l’historique, le statut de visionnage et les points de reprise de ce compte ? Les autres comptes ne sont pas concernés. Cette action est irréversible.</string>
+  <string name="watch_clear_error">Impossible de supprimer toutes les données de visionnage. Réessayez.</string>
+  <string name="watch_cleared">Données de visionnage supprimées pour ce compte.</string>
 </resources>

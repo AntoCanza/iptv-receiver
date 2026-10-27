@@ -42,8 +42,10 @@ internal fun RefreshWatchHistory(model: ReceiverViewModel) {
         lifecycleOwner.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             while (isActive) {
                 model.refreshHistory().join()
-                val oldest = model.history.value.entries.lastOrNull()?.watchedAtMillis
-                val remaining = oldest?.let { it + FileWatchHistoryStore.RETENTION_MILLIS - System.currentTimeMillis() }
+                val expiration = model.history.value.entries.minOfOrNull {
+                    it.watchedAtMillis + FileWatchHistoryStore.retentionMillis(it.target.item.type)
+                }
+                val remaining = expiration?.let { it - System.currentTimeMillis() }
                 delay(remaining?.coerceIn(1L, 60_000L) ?: 60_000L)
             }
         }
@@ -51,7 +53,8 @@ internal fun RefreshWatchHistory(model: ReceiverViewModel) {
 }
 
 @Composable
-internal fun WatchHistoryScreen(state: HistoryState, retry: () -> Unit, play: (WatchTarget) -> Unit, details: (WatchTarget) -> Unit) {
+internal fun WatchHistoryScreen(state: HistoryState, retry: () -> Unit, play: (WatchTarget) -> Unit, details: (WatchTarget) -> Unit,
+    loadMore: () -> Unit = {}) {
     val locale = LocalConfiguration.current.locales[0]
     val dateFormat = remember(locale) { DateFormat.getDateTimeInstance(DateFormat.SHORT, DateFormat.SHORT, locale) }
     LazyColumn(Modifier.fillMaxSize().padding(horizontal = 16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -78,10 +81,7 @@ internal fun WatchHistoryScreen(state: HistoryState, retry: () -> Unit, play: (W
                     Text(target.item.type.label() + " · " + dateFormat.format(Date(entry.watchedAtMillis)),
                         style = MaterialTheme.typography.bodySmall)
                     entry.progress?.let { progress ->
-                        Text(if (progress.completed) stringResource(R.string.history_completed) else progress.durationMs?.let {
-                            stringResource(R.string.history_progress, formatWatchTime(progress.positionMs), formatWatchTime(it))
-                        } ?: stringResource(R.string.resume_message_unknown, formatWatchTime(progress.positionMs)))
-                        progress.durationMs?.let { duration -> LinearProgressIndicator(progress = { (progress.positionMs.toFloat() / duration).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth()) }
+                        WatchProgressSummary(progress)
                     }
                     Row {
                         val title = target.episode?.title ?: target.item.title
@@ -91,6 +91,11 @@ internal fun WatchHistoryScreen(state: HistoryState, retry: () -> Unit, play: (W
                             stringResource(R.string.action_for_title, stringResource(R.string.watch_history_details), title)) { details(target) }
                     }
                 }
+            }
+        }
+        if (state.hasMore) item {
+            TextButton(onClick = loadMore, enabled = !state.busy, modifier = Modifier.fillMaxWidth()) {
+                Text(stringResource(R.string.watch_load_more))
             }
         }
     }

@@ -42,9 +42,11 @@ Live TV, Movies and Series roots support full-catalog search and all-content bro
 
 ## Milestone 3 — Playback continuity
 
-- [x] Durable, account-scoped watch history for live channels, movies and episodes; newest first, rolling 10-day retention, preserved during cache cleanup.
+- [x] Durable, account-scoped history: newest first, 180-day movie/episode and ten-day live retention, preserved during cache cleanup, with bounded paging.
 - [x] Save progress by provider/content/episode ID; never persist stream URLs.
 - [x] Resume/restart choice, visible history progress and completion threshold.
+- [x] Detail-page progress and watched markers, per-season counts, Continue episode/season selection, manual correction and rewatch-safe watched state.
+- [x] Indexed checkpoint updates, transactional legacy migration and confirmed account-specific clearing; durable progress kept until cleared.
 - [x] In-app subscription reminders from two calendar months before expiry, increasingly frequent and dismissible with OK.
 - [ ] Remember audio and subtitle preferences when available.
 - [x] In-session aspect/scale selection, visible subtitle Off/language selection and current stream information.

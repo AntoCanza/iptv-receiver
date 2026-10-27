@@ -52,7 +52,7 @@
   <string name="browse_categories">Kategorien durchsuchen</string>
   <string name="no_search_results">Keine Titel entsprechen deiner Suche.</string>
   <string name="watch_history">Wiedergabeverlauf</string>
-  <string name="watch_history_help">In den letzten 10 Tagen angesehen, neueste zuerst. Erneutes Ansehen verschiebt einen Inhalt nach oben.</string>
+  <string name="watch_history_help">Filme und Folgen der letzten sechs Monate (180 Tage), Live-Sender der letzten 10 Tage. Neueste zuerst. Gesehen-Status und Wiedergabepositionen bleiben bis zum Löschen erhalten.</string>
   <string name="watch_history_empty">Inhalte erscheinen hier, sobald die Wiedergabe beginnt.</string>
   <string name="watch_history_error">Der Verlauf konnte nicht geladen oder gespeichert werden. Bitte erneut versuchen.</string>
   <string name="watch_history_details">Beschreibung</string>
@@ -155,7 +155,6 @@
   <string name="resume_action">Fortsetzen</string>
   <string name="restart_action">Von vorne</string>
   <string name="history_progress">%1$s / %2$s</string>
-  <string name="history_completed">Abgeschlossen</string>
   <string name="subscription_reminder_title">Ablauf des Abonnements</string>
   <string name="subscription_expires">Dein Abonnement läuft am %1$s ab.</string>
   <string name="subscription_expired">Dein Abonnement ist am %1$s abgelaufen.</string>
@@ -168,4 +167,23 @@
   <string name="player_track_number">Spur %1$d · %2$s</string>
   <string name="player_speed">Wiedergabegeschwindigkeit</string>
   <string name="guide_schedule_conflict">Der Anbieter meldet überlappende Sendungen. Die empfangenen Zeiten bleiben erhalten; während einer Überschneidung lässt sich die aktuelle Sendung nicht bestätigen.</string>
+  <string name="watch_unwatched">Ungesehen</string>
+  <string name="watch_watched">Gesehen</string>
+  <string name="watch_in_progress">Begonnen</string>
+  <string name="watch_rewatching">Gesehen · erneut begonnen</string>
+  <string name="watch_resume_at">Bei %1$s fortsetzen</string>
+  <string name="watch_again">Erneut ansehen</string>
+  <string name="watch_mark_watched">Als gesehen markieren</string>
+  <string name="watch_mark_unwatched">Als ungesehen markieren</string>
+  <string name="watch_remaining">Verbleibend: %1$s</string>
+  <string name="watch_continue_episode">Fortsetzen · S%1$d · E%2$d</string>
+  <string name="watch_season_count">Gesehene Folgen: %1$d / %2$d</string>
+  <string name="watch_progress_error">Wiedergabefortschritt konnte nicht geladen oder gespeichert werden. Erneut versuchen.</string>
+  <string name="watch_load_more">Älteren Verlauf anzeigen</string>
+  <string name="watch_storage_title">Verlauf und Wiedergabefortschritt</string>
+  <string name="watch_storage_help">Gesehen-Status und Wiedergabepositionen bleiben erhalten, bis du sie löschst. Der Verlauf zeigt Filme und Folgen sechs Monate (180 Tage) lang und Live-Sender 10 Tage lang. Die Daten bleiben auf diesem Gerät und überstehen das Leeren des Caches.</string>
+  <string name="watch_clear">Für dieses Konto löschen</string>
+  <string name="watch_clear_confirm">Verlauf, Gesehen-Status und Wiedergabepositionen dieses Kontos löschen? Andere Konten sind nicht betroffen. Dies kann nicht rückgängig gemacht werden.</string>
+  <string name="watch_clear_error">Nicht alle Wiedergabedaten konnten gelöscht werden. Erneut versuchen.</string>
+  <string name="watch_cleared">Wiedergabedaten für dieses Konto gelöscht.</string>
 </resources>

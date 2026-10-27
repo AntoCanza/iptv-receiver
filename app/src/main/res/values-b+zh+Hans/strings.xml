@@ -52,7 +52,7 @@
   <string name="browse_categories">浏览分类</string>
   <string name="no_search_results">没有与搜索内容匹配的影片。</string>
   <string name="watch_history">观看记录</string>
-  <string name="watch_history_help">最近10天观看的内容，最新的排在最前。再次观看会将内容移至顶部。</string>
+  <string name="watch_history_help">最近六个月（180天）的电影和剧集，以及最近10天的直播频道，最新的排在最前。观看状态和续播位置将保留，直到手动清除。</string>
   <string name="watch_history_empty">播放开始后，内容会显示在这里。</string>
   <string name="watch_history_error">无法加载或保存观看记录。请重试。</string>
   <string name="watch_history_details">简介</string>
@@ -155,7 +155,6 @@
   <string name="resume_action">继续播放</string>
   <string name="restart_action">从头播放</string>
   <string name="history_progress">%1$s / %2$s</string>
-  <string name="history_completed">已看完</string>
   <string name="subscription_reminder_title">订阅到期</string>
   <string name="subscription_expires">您的订阅将于 %1$s 到期。</string>
   <string name="subscription_expired">您的订阅已于 %1$s 到期。</string>
@@ -168,4 +167,23 @@
   <string name="player_track_number">轨道 %1$d · %2$s</string>
   <string name="player_speed">播放速度</string>
   <string name="guide_schedule_conflict">提供商的节目时间存在重叠。时间保持原样；重叠期间无法确认当前节目。</string>
+  <string name="watch_unwatched">未观看</string>
+  <string name="watch_watched">已观看</string>
+  <string name="watch_in_progress">观看中</string>
+  <string name="watch_rewatching">已观看 · 再次观看中</string>
+  <string name="watch_resume_at">从 %1$s 继续</string>
+  <string name="watch_again">再次观看</string>
+  <string name="watch_mark_watched">标记为已观看</string>
+  <string name="watch_mark_unwatched">标记为未观看</string>
+  <string name="watch_remaining">剩余：%1$s</string>
+  <string name="watch_continue_episode">继续 · 第%1$d季 · 第%2$d集</string>
+  <string name="watch_season_count">已观看集数：%1$d / %2$d</string>
+  <string name="watch_progress_error">无法加载或保存观看进度。请重试。</string>
+  <string name="watch_load_more">显示更早的记录</string>
+  <string name="watch_storage_title">观看记录与进度</string>
+  <string name="watch_storage_help">观看状态和续播位置将一直保留，直到您手动清除。观看记录显示最近六个月（180天）的电影和剧集，以及最近10天的直播频道。这些数据保存在此设备上，清理缓存不会删除。</string>
+  <string name="watch_clear">清除此账号的数据</string>
+  <string name="watch_clear_confirm">要删除此账号的观看记录、观看状态和续播位置吗？其他账号不受影响。此操作无法撤销。</string>
+  <string name="watch_clear_error">无法清除全部观看数据。请重试。</string>
+  <string name="watch_cleared">已清除此账号的观看数据。</string>
 </resources>

@@ -20,8 +20,9 @@ Implemented:
 - Foreground Media3 playback with rotation continuity, immersive fullscreen, buffering feedback and retry. Live TV buffers ahead and reconnects automatically after temporary interruptions or an unexpected stream ending.
 - Icon controls for Fit/Zoom/Stretch and automatic, 16:9, 4:3 or 21:9 display ratios; subtitle selection with Off when tracks are present, audio selection when multiple tracks exist, and current stream information. Display choices survive rotation and reconnects within the player session.
 - A channel programme guide with current/upcoming schedules, search, recent programmes and provider-advertised catch-up playback. Guide and archive access follow parental category restrictions.
-- Watch history for live channels, movies and episodes, newest first, with a rolling 10-day window. History survives app restarts and temporary-file/cache cleanup, and stays separate for each provider account.
-- Movie and episode progress survives app closure, with position/duration in history and a Resume/Start over choice. Resume points remain available beyond the recent-history window.
+- Watch history, newest first: movies and episodes for six months (180 days), live channels for 10 days. Indexed local storage loads history in pages and updates individual bookmarks. History survives app restarts and cache cleanup and stays separate for each provider account.
+- Movie details and episode rows show watched status, position/duration, progress bars and Resume/Start over actions. Series details offer a Continue episode and per-season watched counts. Playback ending or reaching 95% marks a title watched; manual watched/unwatched actions allow corrections. Rewatching preserves the watched flag while saving a separate current position.
+- Watched status and resume points stay until explicitly cleared, beyond the recent-history window. Settings clears this account’s history and progress after confirmation. Existing bookmarks migrate automatically.
 - Subscription expiry popups start two calendar months ahead and become more frequent near expiry. OK acknowledges each reminder; playback defers it until browsing resumes.
 - Search results retain their query and scroll position when returning from descriptions or playback.
 - Phone-friendly title details with year, rating, runtime, genres and provider artwork when available. Movies keep Play within reach; long descriptions and credits expand on demand.
@@ -39,7 +40,7 @@ Implemented:
 
 Live TV, movie and episode playback have been checked on a Pixel 9 Pro XL. See [verification](docs/VERIFICATION.md) for the latest build, test and device evidence and limits.
 
-Still planned: durable catalog caching, watch-progress resume, next-episode playback, a simultaneous multi-channel guide grid, broader UI/device automation, and Android TV. See [the roadmap](docs/ROADMAP.md) for milestones and remaining device/release gates.
+Still planned: durable catalog caching, automatic next-episode playback, a simultaneous multi-channel guide grid, broader UI/device automation, and Android TV. See [the roadmap](docs/ROADMAP.md) for milestones and remaining device/release gates.
 
 ## Run locally
 

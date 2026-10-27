@@ -19,11 +19,13 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -39,19 +41,25 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import io.github.antocanza.iptvreceiver.R
 import io.github.antocanza.iptvreceiver.model.CatalogItem
 import io.github.antocanza.iptvreceiver.model.ContentMetadata
 import io.github.antocanza.iptvreceiver.model.Episode
 import io.github.antocanza.iptvreceiver.model.artworkUrls
+import io.github.antocanza.iptvreceiver.data.WatchTarget
 
 @Composable
 internal fun DetailsScreen(
     state: DetailsState,
     item: CatalogItem,
     retry: () -> Unit,
-    playMovie: (CatalogItem) -> Unit,
-    playEpisode: (Episode) -> Unit,
+    playMovie: (CatalogItem, Boolean) -> Unit,
+    playEpisode: (Episode, Boolean) -> Unit,
+    progress: DetailProgressState = DetailProgressState(busy = false),
+    retryProgress: () -> Unit = {},
+    setWatched: (Episode?, Boolean) -> Unit = { _, _ -> },
 ) {
     if (state.busy) { Loading(); return }
     state.error?.let { ErrorState(it, retry); return }
@@ -61,11 +69,18 @@ internal fun DetailsScreen(
     val title = movie?.item?.title ?: series?.title ?: item.title
     val poster = movie?.item?.artworkUrls ?: series?.imageUrls?.ifEmpty { item.artworkUrls } ?: item.artworkUrls
     val description = movie?.description ?: series?.description.orEmpty()
-    val seasons = remember(series) { series?.episodes?.map { it.season }?.distinct().orEmpty() }
+    val seasons = remember(series) { series?.episodes?.map { it.season }?.distinct()?.sorted().orEmpty() }
+    val continuation = remember(series, progress.entries) { continueEpisode(item, series?.episodes.orEmpty(), progress.entries) }
+    val movieProgress = progress.entries[WatchTarget(item).key]
+    val progressReady = !progress.busy && !progress.failed
     var selectedSeason by rememberSaveable(item.id) { mutableStateOf<Int?>(null) }
-    val seasonNumber = selectedSeason?.takeIf { it in seasons } ?: seasons.firstOrNull()
+    LaunchedEffect(item.id, series, progressReady) {
+        if (selectedSeason == null && progressReady) selectedSeason = continuation?.season ?: seasons.firstOrNull()
+    }
+    val seasonNumber = selectedSeason?.takeIf { it in seasons } ?: continuation?.season ?: seasons.firstOrNull()
     val seasonInfo = series?.seasons?.firstOrNull { it.number == seasonNumber }
-    val episodes = remember(series, seasonNumber) { series?.episodes?.filter { it.season == seasonNumber }.orEmpty() }
+    val episodes = remember(series, seasonNumber) { series?.episodes?.filter { it.season == seasonNumber }
+        ?.sortedWith(compareBy<Episode> { it.number }.thenBy { it.id }).orEmpty() }
     val listState = rememberLazyListState()
     val visibleKeys by remember { derivedStateOf {
         listState.layoutInfo.visibleItemsInfo.filter {
@@ -88,6 +103,39 @@ internal fun DetailsScreen(
                         MetadataSummary(metadata, compact = series != null)
                         if (metadata.genres.isNotEmpty()) Text(metadata.genres.joinToString(" · "),
                             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                }
+            }
+            item(key = "watch-progress") {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (progress.busy || progress.saving) LinearProgressIndicator(Modifier.fillMaxWidth())
+                    if (progress.failed) {
+                        Text(stringResource(R.string.watch_progress_error), color = MaterialTheme.colorScheme.error)
+                        TextButton(onClick = retryProgress) { Text(stringResource(R.string.retry)) }
+                    } else if (progressReady && movie != null) {
+                        WatchProgressSummary(movieProgress)
+                        Row(Modifier.fillMaxWidth()) {
+                            if (movieProgress != null) TextButton(onClick = { playMovie(movie.item, true) },
+                                enabled = !progress.saving, modifier = Modifier.weight(1f)) { Text(stringResource(R.string.restart_action)) }
+                            TextButton(onClick = { setWatched(null, movieProgress?.watched != true) },
+                                enabled = !progress.saving, modifier = Modifier.weight(1f)) {
+                                Text(stringResource(if (movieProgress?.watched == true) R.string.watch_mark_unwatched else R.string.watch_mark_watched))
+                            }
+                        }
+                    } else if (progressReady && continuation != null) {
+                        val point = progress.entries[WatchTarget(item, continuation).key]
+                        Card(Modifier.fillMaxWidth()) {
+                            Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(stringResource(R.string.watch_continue_episode, continuation.season, continuation.number),
+                                    style = MaterialTheme.typography.titleMedium)
+                                Text(continuation.title, style = MaterialTheme.typography.bodyMedium)
+                                WatchProgressSummary(point)
+                                Button(onClick = { playEpisode(continuation, false) }, enabled = !progress.saving, modifier = Modifier.fillMaxWidth()) {
+                                    Icon(painterResource(R.drawable.ic_play), contentDescription = null)
+                                    Text(watchPlayLabel(point), Modifier.padding(start = 8.dp))
+                                }
+                            }
+                        }
                     }
                 }
             }
@@ -115,12 +163,18 @@ internal fun DetailsScreen(
                                 }
                             }
                         }
-                        Text(stringResource(R.string.season_episode_count, episodes.size), style = MaterialTheme.typography.labelLarge)
+                        Text(if (progressReady) stringResource(R.string.watch_season_count,
+                            episodes.count { progress.entries[WatchTarget(item, it).key]?.watched == true }, episodes.size)
+                            else stringResource(R.string.season_episode_count, episodes.size), style = MaterialTheme.typography.labelLarge)
                         seasonInfo?.description?.takeIf { it.isNotBlank() }?.let { Synopsis(it) }
                     }
                 }
                 items(episodes, key = { "episode:${it.id}" }) { episode ->
-                    Card(onClick = { playEpisode(episode) }, modifier = Modifier.fillMaxWidth()) {
+                    val point = progress.entries[WatchTarget(item, episode).key]
+                    val markLabel = stringResource(if (point?.watched == true) R.string.watch_mark_unwatched else R.string.watch_mark_watched)
+                    val markDescription = stringResource(R.string.action_for_title, markLabel, episode.title)
+                    val restartDescription = stringResource(R.string.action_for_title, stringResource(R.string.restart_action), episode.title)
+                    Card(onClick = { playEpisode(episode, false) }, enabled = progressReady && !progress.saving, modifier = Modifier.fillMaxWidth()) {
                         Row(Modifier.padding(12.dp), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                             if (episode.imageUrls.isNotEmpty()) ProviderArtwork(episode.imageUrls,
                                 Modifier.width(80.dp).clip(MaterialTheme.shapes.small), visible = "episode:${episode.id}" in visibleKeys)
@@ -132,8 +186,19 @@ internal fun DetailsScreen(
                                     style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant) }
                                 if (episode.description.isNotBlank()) Text(episode.description,
                                     maxLines = 2, overflow = TextOverflow.Ellipsis, style = MaterialTheme.typography.bodySmall)
+                                if (progressReady) WatchProgressSummary(point)
+                                if (progressReady) {
+                                    if (point != null) TextButton(onClick = { playEpisode(episode, true) }, enabled = !progress.saving,
+                                        modifier = Modifier.semantics { contentDescription = restartDescription }) {
+                                        Text(stringResource(R.string.restart_action))
+                                    }
+                                    TextButton(onClick = { setWatched(episode, point?.watched != true) }, enabled = !progress.saving,
+                                        modifier = Modifier.semantics { contentDescription = markDescription }) {
+                                        Text(markLabel)
+                                    }
+                                }
                             }
-                            Icon(painterResource(R.drawable.ic_play), contentDescription = stringResource(R.string.play),
+                            Icon(painterResource(R.drawable.ic_play), contentDescription = watchPlayLabel(point),
                                 modifier = Modifier.size(24.dp).align(Alignment.CenterVertically), tint = MaterialTheme.colorScheme.primary)
                         }
                     }
@@ -144,9 +209,9 @@ internal fun DetailsScreen(
         }
         // A full-width primary action remains within reach while the synopsis/credits scroll.
         if (movie != null || metadata.trailerUrl != null) Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
-            if (movie != null) Button(onClick = { playMovie(movie.item) }, modifier = Modifier.fillMaxWidth()) {
+            if (movie != null) Button(onClick = { playMovie(movie.item, false) }, enabled = progressReady && !progress.saving, modifier = Modifier.fillMaxWidth()) {
                 Icon(painterResource(R.drawable.ic_play), contentDescription = null)
-                Text(stringResource(R.string.play), Modifier.padding(start = 8.dp))
+                Text(watchPlayLabel(movieProgress), Modifier.padding(start = 8.dp))
             }
             metadata.trailerUrl?.let { TrailerButton(it) }
         }

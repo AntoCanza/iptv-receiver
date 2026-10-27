@@ -1,6 +1,22 @@
 # Verification record
 
-Date: October 27, 2026. Latest development version 0.1.13, versionCode 14. Package: `io.github.antocanza.iptvreceiver`.
+Date: October 27, 2026. Latest development version 0.1.14, versionCode 15. Package: `io.github.antocanza.iptvreceiver`.
+
+## Detail watch progress — version 0.1.14
+
+Movie details and episode rows show watched status, position/duration, remaining time and resume/restart controls. Series select the continuation season, show watched counts and continue the last unfinished or next unwatched regular episode in numeric order. A playback-ending event or 95% of a known duration completes the current viewing; the separate watched flag survives restarting and partial rewatching. Manual watched/unwatched edits do not invent playback dates or history entries. A briefly started episode stays selected before the five-second resume threshold.
+
+Indexed SQLite storage updates one checkpoint row and reads history in 50-entry increments. Movies/episodes remain in history for 180 days, live channels for ten days; durable progress stays until explicitly cleared. Legacy account files migrate transactionally once. Unknown/corrupt versions remain untouched and can retry after repair. Account-specific clearing requires confirmation and rejects previously queued checkpoints and manual edits. No new dependency was added; all ten languages have matching resource keys/format arguments.
+
+The full README verification command passes: **163 JVM tests** (117 app, 6 model, 40 provider), dependency policy, debug/release lint, debug APK, minified unsigned release APK and unsigned release AAB. Both lint variants have zero errors/warnings and the existing target-SDK informational hint. The additional device-check APK builds and its latest runner changes pass debug lint.
+
+Physical Pixel 9 Pro XL, Android 17, data-preserving installation of versionCode 15. Eight dedicated storage groups pass: version-one migration/source preservation, rewatch/stale-write handling, account/type/episode isolation, bounded history pages, retention independent of bookmarks, reopen/clear without resurrection, migration rollback/retry, and exclusion of provider credentials/addresses.
+
+Four normal-navigation groups pass at font scales **1.15 and 2.0** with the fictional offline catalog: direct movie resume and Start over, watched state through landscape/portrait recreation, episode-three resume and manual marking advancing Continue/counts, and clearing cancellation/confirmation. Screen captures were visually reviewed for readable, reachable controls. Media is a seekable two-minute silent WAV served on device loopback; these checks validate Media3 positions and UI integration, not video codec/provider compatibility. The saved real provider is not used by these new checks. API 26/tablets, RTL, other providers and the minified build on hardware remain outside this verification.
+
+Reproduction uses the existing runner with `-e viewingPhase data` or `-e viewingPhase ui`; neither requires a provider account. Eight original app files/preferences were verified against the private pre-update snapshot and restored where changed before normal reopening. Font scale, density and screen-power behavior were restored and verified. The updated app was reopened with offline test mode disabled. Screenshots and recovery snapshots remain private and outside Git.
+
+Development APK SHA-256: `f45f5719e2109cd9cfb985011be5b8d60e205d1454de83d5ff2c824bd433b9ea`.
 
 ## Usability fixes — version 0.1.13
 

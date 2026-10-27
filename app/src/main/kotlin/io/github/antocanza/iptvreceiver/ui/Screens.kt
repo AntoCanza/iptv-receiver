@@ -65,6 +65,9 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -87,6 +90,7 @@ import io.github.antocanza.iptvreceiver.model.preferredLiveFormat
 import io.github.antocanza.iptvreceiver.playback.ExoPlaybackEngine
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.awaitCancellation
 
 @Composable
 fun LoginScreen(state: LoginState, connect: (ProviderConnection, Boolean) -> Unit, draft: LoginDraftViewModel = viewModel()) {
@@ -154,7 +158,7 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
         if (repository is ParentalCatalogRepository) repository.authorizeEpisode(session.connection, target)
         val source = resolve()
         model.preparePlayback(source, target, position)
-        if (restart) model.recordProgress(target, session, PlaybackProgress(0, null))?.join()
+        if (restart) model.restartProgress(target, session)
         navigation.navigate("player") { launchSingleTop = true }
     }
     fun launchPlayback(target: WatchTarget, resolve: () -> PlaybackSource, position: Long, restart: Boolean = false) {
@@ -178,6 +182,21 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
                 val progress = model.resumeProgress(target, session)
                 if (progress?.canResume == true) resumeRequest = ResumeRequest(target, progress, resolve)
                 else openPlayback(target, resolve, 0)
+            } catch (error: CancellationException) { throw error }
+            catch (error: Exception) { playbackError = safeMessage(error) }
+            finally { resolvingPlayback = false }
+        }
+    }
+    fun playFromDetails(target: WatchTarget, restart: Boolean, resolve: () -> PlaybackSource) {
+        if (resolvingPlayback || resumeRequest != null) return
+        playbackError = null
+        resolvingPlayback = true
+        scope.launch {
+            try {
+                if (repository is ParentalCatalogRepository) repository.authorizeEpisode(session.connection, target)
+                val progress = model.resumeProgress(target, session)
+                openPlayback(target, resolve, if (!restart && progress?.canResume == true) progress.positionMs else 0,
+                    restart = restart || progress?.completed == true)
             } catch (error: CancellationException) { throw error }
             catch (error: Exception) { playbackError = safeMessage(error) }
             finally { resolvingPlayback = false }
@@ -219,7 +238,13 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
             composable("settings") {
                 ScreenFrame(stringResource(R.string.settings), back = { navigation.popBackStack() }) {
                     SettingsScreen(account = { navigation.navigate("settings/account") }, server = { navigation.navigate("settings/server") },
-                        parental = { navigation.navigate("settings/parental") })
+                        parental = { navigation.navigate("settings/parental") }, viewing = { navigation.navigate("settings/viewing") })
+                }
+            }
+            composable("settings/viewing") {
+                val state by model.viewingData.collectAsStateWithLifecycle()
+                ScreenFrame(stringResource(R.string.watch_storage_title), back = { navigation.popBackStack() }) {
+                    ViewingDataSettingsScreen(state, model::clearViewingData)
                 }
             }
             composable("settings/account") {
@@ -252,7 +277,7 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
                     }, details = { target ->
                         model.select(target.item)
                         navigation.navigate("details/${target.item.type.name}/${Uri.encode(target.item.id)}")
-                    })
+                    }, loadMore = model::loadMoreHistory)
                 }
             }
             composable("browse/{type}/{category}") { entry ->
@@ -305,15 +330,22 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
             composable("details/{type}/{id}") {
                 val item = model.selectedItem
                 if (item != null) {
-                    val details: DetailsViewModel = viewModel(factory = viewModelFactory {
-                        initializer { DetailsViewModel(repository, session.connection, item) }
+                    val details: DetailsViewModel = viewModel(key = "details:${policy.revision}", factory = viewModelFactory {
+                        initializer { DetailsViewModel(repository, session.connection, item, container.playbackProgressStore) }
                     })
                     val state by details.state.collectAsStateWithLifecycle()
+                    val progress by details.progress.collectAsStateWithLifecycle()
+                    val revision by model.progressRevision.collectAsStateWithLifecycle()
+                    val owner = LocalLifecycleOwner.current
+                    LaunchedEffect(details, owner, revision) {
+                        owner.repeatOnLifecycle(Lifecycle.State.RESUMED) { details.refreshProgress()?.join(); awaitCancellation() }
+                    }
                     ScreenFrame((state.movie?.item?.title ?: state.series?.title ?: item.title)
                         .ifBlank { stringResource(R.string.untitled) }, back = { navigation.popBackStack() }) {
                         DetailsScreen(state, item, details::load,
-                            playMovie = { movie -> startPlayback(WatchTarget(movie)) { repository.stream(session.connection, movie) } },
-                            playEpisode = { episode -> startPlayback(WatchTarget(item, episode)) { repository.episodeStream(session.connection, episode) } })
+                            playMovie = { movie, restart -> playFromDetails(WatchTarget(movie), restart) { repository.stream(session.connection, movie) } },
+                            playEpisode = { episode, restart -> playFromDetails(WatchTarget(item, episode), restart) { repository.episodeStream(session.connection, episode) } },
+                            progress = progress, retryProgress = { details.refreshProgress() }, setWatched = details::setWatched)
                     }
                 } else ScreenFrame(stringResource(R.string.app_name), back = { navigation.popBackStack() }) {
                     Text(stringResource(R.string.select_title), Modifier.padding(24.dp))

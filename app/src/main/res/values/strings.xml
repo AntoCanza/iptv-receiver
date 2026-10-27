@@ -53,7 +53,7 @@
   <string name="browse_categories">Browse categories</string>
   <string name="no_search_results">No titles match your search.</string>
   <string name="watch_history">Watch history</string>
-  <string name="watch_history_help">Watched in the last 10 days, newest first. Watching again moves a stream to the top.</string>
+  <string name="watch_history_help">Movies and episodes from the last six months (180 days); live channels from the last 10 days. Newest first. Watched status and resume points stay until cleared.</string>
   <string name="watch_history_empty">Streams appear here after playback begins.</string>
   <string name="watch_history_error">Watch history could not be loaded or saved. Try again.</string>
   <string name="watch_history_details">Description</string>
@@ -156,7 +156,6 @@
   <string name="resume_action">Resume</string>
   <string name="restart_action">Start over</string>
   <string name="history_progress">%1$s / %2$s</string>
-  <string name="history_completed">Completed</string>
   <string name="subscription_reminder_title">Subscription expiry</string>
   <string name="subscription_expires">Your subscription expires on %1$s.</string>
   <string name="subscription_expired">Your subscription expired on %1$s.</string>
@@ -170,4 +169,23 @@
   <string name="player_track_number">Track %1$d · %2$s</string>
   <string name="player_speed">Playback speed</string>
   <string name="guide_schedule_conflict">The provider lists overlapping programmes. Times are shown as received; the current programme cannot be confirmed during an overlap.</string>
+  <string name="watch_unwatched">Unwatched</string>
+  <string name="watch_watched">Watched</string>
+  <string name="watch_in_progress">In progress</string>
+  <string name="watch_rewatching">Watched · watching again</string>
+  <string name="watch_resume_at">Resume at %1$s</string>
+  <string name="watch_again">Watch again</string>
+  <string name="watch_mark_watched">Mark watched</string>
+  <string name="watch_mark_unwatched">Mark unwatched</string>
+  <string name="watch_remaining">Remaining: %1$s</string>
+  <string name="watch_continue_episode">Continue · S%1$d · E%2$d</string>
+  <string name="watch_season_count">Episodes watched: %1$d / %2$d</string>
+  <string name="watch_progress_error">Could not load or save watch progress. Try again.</string>
+  <string name="watch_load_more">Show older history</string>
+  <string name="watch_storage_title">Watch history and progress</string>
+  <string name="watch_storage_help">Watched status and resume points stay until you clear them. History shows movies and episodes for six months (180 days), and live channels for 10 days. These records stay on this device and survive cache cleanup.</string>
+  <string name="watch_clear">Clear for this account</string>
+  <string name="watch_clear_confirm">Remove this account’s history, watched status and resume points? Other accounts are unaffected. This cannot be undone.</string>
+  <string name="watch_clear_error">Could not clear all viewing data. Try again.</string>
+  <string name="watch_cleared">Viewing data cleared for this account.</string>
 </resources>
