@@ -37,7 +37,8 @@ Automatic detection depends on provider metadata and recognizable naming; it is 
 
 - `.gitignore` excludes local settings, secrets, signing material and build outputs.
 - Automated tests use synthetic data and require no provider account.
-- CI has read-only repository permissions and does not run `pull_request_target` code from contributors.
+- Pull-request verification has read-only repository permissions, receives no signing secrets and does not run `pull_request_target` code from contributors. Only the verified-main publishing job gets `contents: write` for the rolling APK release/tag and `actions: write` for old APK-artifact cleanup. It uses GitHub's short-lived `GITHUB_TOKEN`.
+- APK signing keys/passwords are encrypted Actions secrets, exposed only to the main signing step. A checked-in public certificate fingerprint rejects accidentally changed signing identities. Temporary keystores are removed after signing; no private signing material enters Git, build reports or release assets. See [CI and release policy](docs/CI_RELEASES.md).
 - GitHub Actions are pinned to commit SHAs; Dependabot proposes updates for review.
 - The Gradle distribution is checksum-pinned and the official Wrapper JAR is committed.
 - Never embed release signing keys, personal tokens or private provider configuration.

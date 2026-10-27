@@ -4,6 +4,8 @@ Date: October 27, 2026. Latest development version 0.1.14, versionCode 15. Packa
 
 ## Detail watch progress — version 0.1.14
 
+Distribution uses the repository's main-only [rolling APK workflow](CI_RELEASES.md). Its nine synthetic release-policy tests and workflow syntax checks pass locally. Signing the optimized APK was checked against the existing development installation's certificate. Hosted build/publication status is recorded in [Android CI](https://github.com/AntoCanza/iptv-receiver/actions/workflows/android.yml).
+
 Movie details and episode rows show watched status, position/duration, remaining time and resume/restart controls. Series select the continuation season, show watched counts and continue the last unfinished or next unwatched regular episode in numeric order. A playback-ending event or 95% of a known duration completes the current viewing; the separate watched flag survives restarting and partial rewatching. Manual watched/unwatched edits do not invent playback dates or history entries. A briefly started episode stays selected before the five-second resume threshold.
 
 Indexed SQLite storage updates one checkpoint row and reads history in 50-entry increments. Movies/episodes remain in history for 180 days, live channels for ten days; durable progress stays until explicitly cleared. Legacy account files migrate transactionally once. Unknown/corrupt versions remain untouched and can retry after repair. Account-specific clearing requires confirmation and rejects previously queued checkpoints and manual edits. No new dependency was added; all ten languages have matching resource keys/format arguments.

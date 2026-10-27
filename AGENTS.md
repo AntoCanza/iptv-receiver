@@ -41,6 +41,19 @@ Per pagine pubbliche, metadati e collegamenti del sito:
 python tools/check_site.py
 ```
 
+Per modifiche alla CI, firma o pubblicazione dell'APK, verificare anche:
+
+```powershell
+python -m unittest discover -s tools/tests -v
+actionlint .github/workflows/android.yml
+```
+
+La pubblicazione avviene soltanto da `main` dopo le verifiche, aggiornando una sola
+release `latest`. Conservare le chiavi nei secrets di Actions, il fingerprint
+pubblico nel repository e i privilegi di scrittura nel solo job di pubblicazione.
+Le pull request non devono ricevere chiavi di firma. Seguire `docs/CI_RELEASES.md`
+per sostituzione, rollback e rimozione degli APK precedenti.
+
 Il controllo del sito usa Python 3.10 o successivo e la libreria standard.
 Su Linux e macOS usare `./gradlew` per gli stessi task. Se mancano strumenti o
 dispositivi, riportare il controllo non eseguito e la causa. Test JVM, lint e build

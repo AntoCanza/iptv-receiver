@@ -2,7 +2,7 @@ name: Android CI
 
 on:
   push:
-    branches: [main, 'fix/**', 'feature/**']
+    branches: [main]
   pull_request:
   workflow_dispatch:
 
@@ -11,7 +11,8 @@ permissions:
 
 concurrency:
   group: android-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  # Let main finish publishing; a newer run must not interrupt asset replacement.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   verify:
@@ -33,6 +34,8 @@ jobs:
         run: '"${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "platforms;android-37.2" "build-tools;36.0.0"'
       - name: Unit tests, lint, and debug/release builds
         run: ./gradlew --no-daemon verifyDependencyPolicy :core:model:test :core:provider:test :app:testDebugUnitTest :app:lintDebug :app:lintRelease :app:assembleDebug :app:assembleRelease :app:bundleRelease
+      - name: Test release publishing policy
+        run: python3 -m unittest discover -s tools/tests -v
       - name: Upload test and lint reports
         if: always()
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
@@ -42,9 +45,59 @@ jobs:
             **/build/reports/
             **/build/test-results/
           retention-days: 7
-      - name: Upload development APK
+      - name: Transfer unsigned APK to publishing job
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        id: apk
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
-          name: development-apk
-          path: app/build/outputs/apk/debug/*.apk
-          retention-days: 7
+          name: unsigned-apk
+          path: app/build/outputs/apk/release/app-release-unsigned.apk
+          if-no-files-found: error
+          retention-days: 1
+    outputs:
+      apk-artifact-id: ${{ steps.apk.outputs.artifact-id }}
+
+  publish-latest:
+    needs: verify
+    if: github.repository == 'AntoCanza/iptv-receiver' && github.ref == 'refs/heads/main' && (github.event_name == 'push' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - name: Check out the verified commit
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.sha }}
+          persist-credentials: false
+      - name: Set up Java
+        uses: actions/setup-java@b843ebf9b913146b38da2eaa7aeddf76074ae1ad # v6.1.0
+        with:
+          distribution: temurin
+          java-version: '21'
+      - name: Install Android signing tools
+        run: '"${ANDROID_HOME}/cmdline-tools/latest/bin/sdkmanager" "build-tools;36.0.0"'
+      - name: Download the verified APK
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          artifact-ids: ${{ needs.verify.outputs.apk-artifact-id }}
+          path: ${{ runner.temp }}/unsigned
+          merge-multiple: true
+      - name: Sign and verify APK
+        env:
+          ANDROID_SIGNING_KEYSTORE_BASE64: ${{ secrets.ANDROID_SIGNING_KEYSTORE_BASE64 }}
+          ANDROID_SIGNING_STORE_PASSWORD: ${{ secrets.ANDROID_SIGNING_STORE_PASSWORD }}
+          ANDROID_SIGNING_KEY_PASSWORD: ${{ secrets.ANDROID_SIGNING_KEY_PASSWORD }}
+          ANDROID_SIGNING_KEY_ALIAS: ${{ secrets.ANDROID_SIGNING_KEY_ALIAS }}
+        run: python3 tools/sign_apk.py "${RUNNER_TEMP}/unsigned/app-release-unsigned.apk" "${RUNNER_TEMP}/release/iptv-receiver.apk"
+      - name: Publish the latest main build and remove previous downloads
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: python3 tools/publish_latest.py "${RUNNER_TEMP}/release/iptv-receiver.apk"
+      - name: Remove temporary APK transfer
+        if: always()
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+          APK_ARTIFACT_ID: ${{ needs.verify.outputs.apk-artifact-id }}
+        run: python3 tools/publish_latest.py --delete-artifact "${APK_ARTIFACT_ID}"

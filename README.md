@@ -4,7 +4,7 @@ Native Android IPTV client for phones and tablets, with an Android TV interface 
 
 Connect to an Xtream-compatible provider, browse Live TV, Movies and Series, and play content using Android Media3. The application does not include an IPTV subscription or bundled content.
 
-**[Project website](https://antocanza.github.io/iptv-receiver/)** · [Source code](https://github.com/AntoCanza/iptv-receiver) · [Roadmap](docs/ROADMAP.md)
+**[Download latest APK](https://github.com/AntoCanza/iptv-receiver/releases/latest/download/iptv-receiver.apk)** · [Project website](https://antocanza.github.io/iptv-receiver/) · [Source code](https://github.com/AntoCanza/iptv-receiver) · [Roadmap](docs/ROADMAP.md)
 
 ## Status
 
@@ -41,6 +41,10 @@ Implemented:
 Live TV, movie and episode playback have been checked on a Pixel 9 Pro XL. See [verification](docs/VERIFICATION.md) for the latest build, test and device evidence and limits.
 
 Still planned: durable catalog caching, automatic next-episode playback, a simultaneous multi-channel guide grid, broader UI/device automation, and Android TV. See [the roadmap](docs/ROADMAP.md) for milestones and remaining device/release gates.
+
+## Download for Android
+
+The [latest APK](https://github.com/AntoCanza/iptv-receiver/releases/latest/download/iptv-receiver.apk) is built from the latest successfully verified `main` commit. GitHub Actions publishes one rolling release and removes previous APK downloads after the replacement is ready. The signed APK updates existing installations using the same certificate. See [CI and release policy](docs/CI_RELEASES.md) for signing, retention and manual builds.
 
 ## Run locally
 
