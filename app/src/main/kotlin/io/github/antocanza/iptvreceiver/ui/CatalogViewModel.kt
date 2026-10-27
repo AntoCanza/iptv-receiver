@@ -26,8 +26,8 @@ data class CatalogState(
     val title: String = "",
     val error: FailureReason? = null,
     val query: String = "",
-    val canBrowseAllMovies: Boolean = false,
-    val showAllMovies: Boolean = false,
+    val canBrowseAll: Boolean = false,
+    val showAll: Boolean = false,
     val itemsBusy: Boolean = false,
     val itemsError: FailureReason? = null,
 )
@@ -39,18 +39,18 @@ class CatalogViewModel(
     private val categoryId: String?,
     private val catalogDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
-    private val canBrowseAllMovies = type == ContentType.MOVIE && categoryId == null
-    private val mutableState = MutableStateFlow(CatalogState(canBrowseAllMovies = canBrowseAllMovies))
+    private val canBrowseAll = type != ContentType.LIVE && categoryId == null
+    private val mutableState = MutableStateFlow(CatalogState(canBrowseAll = canBrowseAll))
     val state = mutableState.asStateFlow()
     private var job: Job? = null
     private var itemsJob: Job? = null
-    private var allMovies: List<CatalogItem>? = null
+    private var allItems: List<CatalogItem>? = null
     init { load() }
 
     fun load() {
         job?.cancel()
         itemsJob?.cancel()
-        allMovies = null
+        allItems = null
         job = viewModelScope.launch {
             mutableState.value = mutableState.value.copy(busy = true, error = null, items = emptyList(),
                 itemsBusy = false, itemsError = null)
@@ -64,8 +64,8 @@ class CatalogViewModel(
                 val items = if (categoryId == null) emptyList() else repository.items(connection, type, categoryId)
                 mutableState.value = mutableState.value.copy(busy = false, categories = children, items = items,
                     title = categories.firstOrNull { it.id == categoryId }?.name.orEmpty())
-                if (canBrowseAllMovies && (mutableState.value.showAllMovies || mutableState.value.query.isNotBlank())) {
-                    loadAllMovies()
+                if (canBrowseAll && (mutableState.value.showAll || mutableState.value.query.isNotBlank())) {
+                    loadAllItems()
                 }
             } catch (error: CancellationException) { throw error } catch (error: Exception) {
                 mutableState.value = mutableState.value.copy(busy = false, error = safeMessage(error))
@@ -75,18 +75,18 @@ class CatalogViewModel(
 
     fun setQuery(query: String) {
         mutableState.value = mutableState.value.copy(query = query)
-        if (canBrowseAllMovies && query.isNotBlank() && mutableState.value.itemsError == null) loadAllMovies()
+        if (canBrowseAll && query.isNotBlank() && mutableState.value.itemsError == null) loadAllItems()
     }
 
-    fun showAllMovies(show: Boolean) {
-        if (!canBrowseAllMovies) return
-        mutableState.value = mutableState.value.copy(showAllMovies = show, query = "")
-        if (show) loadAllMovies()
+    fun showAll(show: Boolean) {
+        if (!canBrowseAll) return
+        mutableState.value = mutableState.value.copy(showAll = show, query = "")
+        if (show) loadAllItems()
     }
 
-    fun loadAllMovies() {
-        if (!canBrowseAllMovies || mutableState.value.busy || itemsJob?.isActive == true) return
-        allMovies?.let {
+    fun loadAllItems() {
+        if (!canBrowseAll || mutableState.value.busy || itemsJob?.isActive == true) return
+        allItems?.let {
             mutableState.value = mutableState.value.copy(items = it)
             return
         }
@@ -95,7 +95,7 @@ class CatalogViewModel(
             try {
                 // Mapping a complete provider catalog must not block typing on the main thread.
                 val items = withContext(catalogDispatcher) { repository.items(connection, type, null) }
-                allMovies = items
+                allItems = items
                 mutableState.value = mutableState.value.copy(items = items, itemsBusy = false)
             } catch (error: CancellationException) { throw error } catch (error: Exception) {
                 mutableState.value = mutableState.value.copy(itemsBusy = false, itemsError = safeMessage(error))

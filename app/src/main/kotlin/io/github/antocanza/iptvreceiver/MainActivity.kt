@@ -52,7 +52,7 @@ class MainActivity : AppCompatActivity() {
                     val repository = preview?.first ?: container.repository
                     val store = preview?.second ?: container.connectionStore
                     val model: ReceiverViewModel = viewModel(key = if (preview != null) "store-preview" else "receiver",
-                        factory = viewModelFactory { initializer { ReceiverViewModel(repository, store) } })
+                        factory = viewModelFactory { initializer { ReceiverViewModel(repository, store, container.watchHistoryStore) } })
                     val state by model.state.collectAsStateWithLifecycle()
                     val session = state.session
                     if (session == null) LoginScreen(state, model::connect)

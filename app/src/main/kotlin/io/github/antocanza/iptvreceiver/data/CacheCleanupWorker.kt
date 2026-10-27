@@ -27,6 +27,7 @@ class CacheCleanupWorker(context: Context, parameters: WorkerParameters) : Corou
         val cutoff = now - TimeUnit.DAYS.toMillis(1)
         pruneExpiredTempFiles(app.cacheDir.resolve("tmp"), cutoff)
         pruneExpiredTempFiles(app.cacheDir.resolve("temporary"), cutoff)
+        app.watchHistoryStore.pruneExpired()
         val preferences = app.getSharedPreferences("cache_maintenance", Context.MODE_PRIVATE)
         if (now - preferences.getLong("artwork_cleared_at", now) >= TimeUnit.DAYS.toMillis(7)) {
             app.clearArtworkDiskCaches()

@@ -7,6 +7,7 @@ import kotlinx.coroutines.flow.asStateFlow
 
 class PlaybackViewModel(private val engine: PlaybackEngine, landscape: Boolean) : ViewModel() {
     val player get() = engine.player
+    val recoveryState get() = engine.recoveryState
     private var lastLandscape = landscape
     private val mutableFullscreen = MutableStateFlow(landscape)
     val fullscreen = mutableFullscreen.asStateFlow()

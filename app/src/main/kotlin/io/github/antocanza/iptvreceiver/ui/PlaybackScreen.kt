@@ -25,13 +25,15 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.media3.common.PlaybackException
 import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import io.github.antocanza.iptvreceiver.R
-import io.github.antocanza.iptvreceiver.data.InsecureStreamException
+import io.github.antocanza.iptvreceiver.data.InvalidStreamSchemeException
 import io.github.antocanza.iptvreceiver.model.FailureReason
+import io.github.antocanza.iptvreceiver.playback.PlaybackRecoveryState
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.core.view.WindowInsetsControllerCompat
@@ -42,14 +44,25 @@ fun PlaybackScreen(model: PlaybackViewModel, fullscreen: Boolean, onFullscreenCh
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val activity = LocalActivity.current
     val player = model.player
+    val recoveryState by model.recoveryState.collectAsStateWithLifecycle()
+    val reconnecting = recoveryState == PlaybackRecoveryState.RECONNECTING
     var failed by remember(player) { mutableStateOf(player.playerError != null) }
     var buffering by remember(player) { mutableStateOf(player.playbackState == Player.STATE_BUFFERING) }
-    var insecureStream by remember(player) { mutableStateOf(false) }
+    var invalidStreamScheme by remember(player) { mutableStateOf(false) }
+    var decodingFailure by remember(player) { mutableStateOf(isDecodingFailure(player.playerError)) }
     DisposableEffect(player, lifecycle) {
         val listener = object : Player.Listener {
-            override fun onPlaybackStateChanged(playbackState: Int) { buffering = playbackState == Player.STATE_BUFFERING }
+            override fun onPlaybackStateChanged(playbackState: Int) {
+                buffering = playbackState == Player.STATE_BUFFERING
+                if (playbackState == Player.STATE_BUFFERING || playbackState == Player.STATE_READY) {
+                    failed = false
+                    invalidStreamScheme = false
+                    decodingFailure = false
+                }
+            }
             override fun onPlayerError(error: PlaybackException) {
-                insecureStream = generateSequence(error as Throwable) { it.cause }.any { it is InsecureStreamException }
+                invalidStreamScheme = generateSequence(error as Throwable) { it.cause }.any { it is InvalidStreamSchemeException }
+                decodingFailure = isDecodingFailure(error)
                 failed = true
                 buffering = false
             }
@@ -93,9 +106,13 @@ fun PlaybackScreen(model: PlaybackViewModel, fullscreen: Boolean, onFullscreenCh
             it.setFullscreenButtonState(fullscreen)
             it.setFullscreenButtonClickListener(onFullscreenChange)
         }, onRelease = { it.setFullscreenButtonClickListener(null); it.player = null })
-        if (buffering && !failed) CircularProgressIndicator(Modifier.align(Alignment.Center))
-        if (failed) Column(Modifier.align(Alignment.Center).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(if (insecureStream) FailureReason.INSECURE_STREAM.localized() else stringResource(R.string.playback_failed),
+        if (reconnecting || (buffering && !failed)) CircularProgressIndicator(Modifier.align(Alignment.Center))
+        if (!reconnecting && (failed || recoveryState == PlaybackRecoveryState.FAILED)) Column(Modifier.align(Alignment.Center).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(when {
+                invalidStreamScheme -> FailureReason.INVALID_STREAM.localized()
+                decodingFailure -> stringResource(R.string.playback_decoding_failed)
+                else -> stringResource(R.string.playback_failed)
+            },
                 color = MaterialTheme.colorScheme.error)
             Button(onClick = { failed = false; buffering = true; model.retry() }) {
                 Text(stringResource(R.string.retry))
@@ -103,3 +120,11 @@ fun PlaybackScreen(model: PlaybackViewModel, fullscreen: Boolean, onFullscreenCh
         }
     }
 }
+
+private fun isDecodingFailure(error: PlaybackException?): Boolean = error?.errorCode in setOf(
+    PlaybackException.ERROR_CODE_DECODER_INIT_FAILED,
+    PlaybackException.ERROR_CODE_DECODER_QUERY_FAILED,
+    PlaybackException.ERROR_CODE_DECODING_FAILED,
+    PlaybackException.ERROR_CODE_DECODING_FORMAT_EXCEEDS_CAPABILITIES,
+    PlaybackException.ERROR_CODE_DECODING_FORMAT_UNSUPPORTED,
+)

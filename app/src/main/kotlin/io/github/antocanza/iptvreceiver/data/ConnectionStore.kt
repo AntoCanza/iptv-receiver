@@ -25,7 +25,6 @@ class ConnectionStore(context: Context) : SavedConnectionStore {
             put("server", connection.serverUrl)
             put("username", connection.username)
             put("password", connection.password)
-            put("allowHttpStreams", connection.allowHttpStreams)
         }.toString().toByteArray(Charsets.UTF_8)
         try {
             val cipher = Cipher.getInstance("AES/GCM/NoPadding")
@@ -50,7 +49,7 @@ class ConnectionStore(context: Context) : SavedConnectionStore {
             try {
                 val value = JSONObject(String(plaintext, Charsets.UTF_8))
                 ProviderConnection(value.getString("name"), value.getString("server"),
-                    value.getString("username"), value.getString("password"), value.optBoolean("allowHttpStreams", false))
+                    value.getString("username"), value.getString("password"))
             } finally { plaintext.fill(0) }
         } catch (_: Exception) {
             clear()

@@ -12,8 +12,8 @@ android {
         applicationId = "io.github.antocanza.iptvreceiver"
         minSdk = 26
         targetSdk = 36
-        versionCode = 3
-        versionName = "0.1.2"
+        versionCode = 11
+        versionName = "0.1.10"
     }
 
     buildFeatures { compose = true }

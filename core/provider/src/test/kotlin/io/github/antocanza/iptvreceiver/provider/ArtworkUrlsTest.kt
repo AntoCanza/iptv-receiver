@@ -12,15 +12,14 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ArtworkUrlsTest {
-    private fun connection(allowHttp: Boolean = false) =
-        ProviderConnection("Test", "https://provider.example.test/base", "demo", "synthetic-secret", allowHttp)
-    private fun urls(json: String, allowHttp: Boolean = false) =
-        artworkUrls(Json.parseToJsonElement(json).jsonObject, connection(allowHttp))
+    private fun connection() =
+        ProviderConnection("Test", "https://provider.example.test/base", "demo", "synthetic-secret")
+    private fun urls(json: String) =
+        artworkUrls(Json.parseToJsonElement(json).jsonObject, connection())
 
-    @Test fun `HTTP posters try HTTPS first and retain HTTP fallback only for an opted in connection`() {
+    @Test fun `HTTP posters try HTTPS first and always retain HTTP fallback`() {
         val json = """{"cover":"http://images.example.test:80/poster.jpg"}"""
-        assertEquals(listOf("https://images.example.test/poster.jpg"), urls(json))
-        assertEquals(listOf("https://images.example.test/poster.jpg", "http://images.example.test/poster.jpg"), urls(json, true))
+        assertEquals(listOf("https://images.example.test/poster.jpg", "http://images.example.test/poster.jpg"), urls(json))
     }
 
     @Test fun `invalid primary artwork does not hide a valid cover and alternates are preserved`() {
@@ -36,7 +35,7 @@ class ArtworkUrlsTest {
 
     @Test fun `unsafe schemes embedded credentials and empty sentinels are rejected`() {
         for (value in listOf("file:///private/poster.jpg", "content://private/picture", "https://user:secret@images.example.test/poster.jpg", "null", "none", "0", "")) {
-            assertTrue(urls("""{"cover":"$value"}""", true).isEmpty())
+            assertTrue(urls("""{"cover":"$value"}""").isEmpty())
         }
     }
 

@@ -6,6 +6,8 @@ import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.media3.common.Player
 import io.github.antocanza.iptvreceiver.playback.PlaybackEngine
+import io.github.antocanza.iptvreceiver.playback.PlaybackRecoveryState
+import kotlinx.coroutines.flow.MutableStateFlow
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertSame
@@ -70,6 +72,7 @@ class PlaybackViewModelTest {
 
     private class FakeEngine : PlaybackEngine {
         override val player: Player get() = error("UI-only player access is not needed by the retained session test")
+        override val recoveryState = MutableStateFlow(PlaybackRecoveryState.NONE)
         var prepareCalls = 0
         var releaseCalls = 0
         var positionMs = 0L

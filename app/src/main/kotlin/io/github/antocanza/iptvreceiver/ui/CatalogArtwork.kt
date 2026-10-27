@@ -25,15 +25,27 @@ import io.github.antocanza.iptvreceiver.model.ContentType
 import io.github.antocanza.iptvreceiver.model.artworkUrls
 
 @Composable
-internal fun CatalogArtwork(item: CatalogItem, allowHttp: Boolean, modifier: Modifier = Modifier, visible: Boolean = true) {
+internal fun CatalogArtwork(item: CatalogItem, modifier: Modifier = Modifier, visible: Boolean = true) {
+    ProviderArtwork(item.artworkUrls, modifier, visible,
+        ratio = if (item.type == ContentType.LIVE) 16f / 9 else 2f / 3,
+        fit = item.type == ContentType.LIVE)
+}
+
+@Composable
+internal fun ProviderArtwork(
+    candidates: List<String>,
+    modifier: Modifier = Modifier,
+    visible: Boolean = true,
+    ratio: Float = 16f / 9,
+    fit: Boolean = false,
+) {
     val context = LocalContext.current
     val application = context.applicationContext as ReceiverApplication
-    val candidates = remember(item) { item.artworkUrls }
-    var candidateIndex by remember(item, allowHttp) { mutableIntStateOf(0) }
+    var candidateIndex by remember(candidates) { mutableIntStateOf(0) }
     val current = candidates.getOrNull(candidateIndex)
     val placeholder = painterResource(R.drawable.artwork_placeholder)
-    var artworkInViewport by remember(item) { mutableStateOf(false) }
-    val bounds = modifier.fillMaxWidth().aspectRatio(if (item.type == ContentType.LIVE) 16f / 9 else 2f / 3)
+    var artworkInViewport by remember(candidates) { mutableStateOf(false) }
+    val bounds = modifier.fillMaxWidth().aspectRatio(ratio)
         .onGloballyPositioned { coordinates ->
             val clipped = coordinates.boundsInWindow()
             artworkInViewport = clipped.width > 0f && clipped.height > 0f
@@ -44,9 +56,9 @@ internal fun CatalogArtwork(item: CatalogItem, allowHttp: Boolean, modifier: Mod
         return
     }
     val request = remember(current, context) { ImageRequest.Builder(context).data(current).crossfade(true).build() }
-    AsyncImage(model = request, imageLoader = application.artworkLoaderFor(allowHttp), contentDescription = null,
+    AsyncImage(model = request, imageLoader = application.artworkLoader, contentDescription = null,
         placeholder = placeholder, error = placeholder, fallback = placeholder,
         modifier = bounds,
-        contentScale = if (item.type == ContentType.LIVE) ContentScale.Fit else ContentScale.Crop,
+        contentScale = if (fit) ContentScale.Fit else ContentScale.Crop,
         onError = { if (candidateIndex < candidates.lastIndex && current == candidates[candidateIndex]) candidateIndex++ })
 }

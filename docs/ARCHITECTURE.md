@@ -4,10 +4,10 @@
 
 - Phones and tablets first; Android TV after the mobile release criteria are met.
 - Native Kotlin, Jetpack Compose, lifecycle-aware ViewModels, coroutines and Flow.
-- Xtream-compatible provider login: HTTPS base URL, username and password.
+- Xtream-compatible provider login: HTTP or HTTPS base URL, username and password.
 - No separate application account or backend in the initial release.
 - One active provider connection and one player at a time.
-- Account APIs require HTTPS; unencrypted video delivery has a separate, default-off, per-connection opt-in.
+- Account APIs, video and artwork accept HTTP and HTTPS automatically. HTTPS retains platform certificate verification; HTTP traffic is unencrypted.
 - Android 8.0 (API 26) minimum for the first baseline; compile and target API 36.
 - English by default with ten interface languages; see [localization](LOCALIZATION.md).
 
@@ -31,6 +31,12 @@ flowchart TD
 
 `core:model` has no Android or networking dependency. `core:provider` implements the repository contract and translates provider JSON into application models. The application creates dependencies once in `ReceiverApplication` and injects them explicitly into ViewModels. Composables never make HTTP requests.
 
+Optional `ContentMetadata` enriches catalog and detail models at the provider boundary. Browsing uses only metadata returned by the list request; details are fetched only when opened. Missing detail fields preserve listing metadata. Catalog sort and genre selection are saved with the navigation entry, along with the grid position. Details use a compact phone layout, expandable synopsis/credits, a reachable movie Play action and one selected season at a time. Extra artwork still loads only while visible. Provider metadata and external trailer URLs are not added to durable watch history.
+
+Home contains four icon-and-label destinations and a Settings action. Account details/logout, server information and the language picker live under Settings. Login retains a language icon before authentication; content screens keep the header focused on Back and the current title. Optional server timezone/clock values are settings-only sign-in snapshots, never used to rewrite the connection or playback address.
+
+Settings also contains a parental panel with memory-only authentication. `ParentalControls` persists a salted password verifier and immutable policy; its default policy blocks adult content even before setup. Reset constructs the default policy and removes the password and all account/category selections atomically. `ParentalCatalogRepository` wraps the provider contract to enforce category descendants, provider adult flags and adult labels consistently, including all-title searches and stream resolution. The panel alone uses the unfiltered repository after password verification to list categories. Policy revisions recreate catalog ViewModels and clear/refilter visible history. History identifiers are resolved against provider listings so legacy records cannot bypass category restrictions. Provider failures and unreadable settings fail closed. See [security](../SECURITY.md#parental-controls) for storage, reset behavior and classification limits.
+
 Keep feature screens in `app/ui` until separate ownership, independent build needs or TV reuse justify a Gradle module. Avoid an empty module for each screen. Shared player/storage modules can be extracted when TV work starts.
 
 ## Navigation
@@ -41,6 +47,9 @@ flowchart TD
     Home --> Live[Live TV categories]
     Home --> Movies[Movie categories]
     Home --> Series[Series categories]
+    Home --> Settings[Settings]
+    Settings --> Account[Account and logout]
+    Settings --> ServerInfo[Server information]
     Live --> Channels[Subcategories and channels]
     Movies --> Titles[Subcategories and movies]
     Series --> Shows[Subcategories and series]
@@ -64,7 +73,13 @@ The player is owned by the player destination. It pauses when the destination st
 
 ## Persistence plan
 
-Only optional encrypted connection storage is implemented today. Add Room for category/item metadata and watch progress, and DataStore for non-sensitive settings when those features are implemented. Scope every persisted record by provider account and content type. Store identifiers and progress instead of credential-bearing playback URLs. Add migration tests alongside the first schema change.
+Optional encrypted connection storage and durable watch history are implemented. Watch history uses a versioned binary file per provider account under `filesDir/watch-history`, with synchronized reads/writes and atomic replacement. Account filenames hash the normalized server address and username; connection names and password changes do not create a new history. Records contain content type, content/episode identifiers, display titles, stream extensions and the last playback-start timestamp. Artwork and playback URLs are never serialized. Schema version 1 is checked on read; unsupported versions fail visibly without overwriting existing data.
+
+History records only the first `isPlaying` event of each playback session. Rewatching replaces the same content/episode entry and sorts it first. Entries expire exactly 10 days after the last watch; reads, writes and daily maintenance prune expired entries. The history screen refreshes on resume and at the next expiration while visible. Cache cleanup only targets cache directories, so it preserves unexpired history. Signing out hides account history but leaves it available for the next login to that account.
+
+Catalog grids save their position with Compose state scoped to the Navigation entry. Changing the search query or All movies mode creates a new grid state; returning from details or playback restores the existing state without a scroll-to-top effect. This covers in-session navigation and configuration changes; complete catalog/detail restoration after process death remains planned.
+
+Add Room for category/item metadata and watch progress, and DataStore for non-sensitive settings when those features are implemented. Scope every persisted record by provider account and content type. Store identifiers and progress instead of credential-bearing playback URLs. Add migration tests alongside schema changes.
 
 ## References
 

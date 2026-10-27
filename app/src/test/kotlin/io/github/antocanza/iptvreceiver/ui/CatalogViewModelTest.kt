@@ -69,7 +69,7 @@ class CatalogViewModelTest {
         val repository = FakeRepository()
         val model = CatalogViewModel(repository, connection, ContentType.MOVIE, null, dispatcher)
         advanceUntilIdle()
-        assertTrue(model.state.value.canBrowseAllMovies)
+        assertTrue(model.state.value.canBrowseAll)
         assertFalse(repository.itemsRequested)
 
         model.setQuery("Other")
@@ -78,12 +78,12 @@ class CatalogViewModelTest {
         assertEquals(listOf<String?>(null), repository.requestedCategories)
         model.setQuery("Sample")
         model.setQuery("")
-        model.showAllMovies(true)
+        model.showAll(true)
         advanceUntilIdle()
-        assertTrue(model.state.value.showAllMovies)
+        assertTrue(model.state.value.showAll)
         assertEquals(1, repository.requestedCategories.size)
-        model.showAllMovies(false)
-        assertFalse(model.state.value.showAllMovies)
+        model.showAll(false)
+        assertFalse(model.state.value.showAll)
         assertEquals(listOf("1", "3"), model.state.value.categories.map { it.id })
     }
 
@@ -91,7 +91,7 @@ class CatalogViewModelTest {
         val repository = FakeRepository().apply { categoryList = emptyList() }
         val model = CatalogViewModel(repository, connection, ContentType.MOVIE, null, dispatcher)
         advanceUntilIdle()
-        model.showAllMovies(true)
+        model.showAll(true)
         advanceUntilIdle()
         assertEquals(2, model.state.value.items.size)
         assertEquals(listOf<String?>(null), repository.requestedCategories)
@@ -111,7 +111,7 @@ class CatalogViewModelTest {
         advanceUntilIdle()
         assertEquals("", model.state.value.query)
         assertFalse(model.state.value.itemsBusy)
-        assertFalse(model.state.value.showAllMovies)
+        assertFalse(model.state.value.showAll)
         assertEquals(1, repository.requestedCategories.size)
     }
 
@@ -126,7 +126,7 @@ class CatalogViewModelTest {
         assertFalse(model.state.value.itemsBusy)
         assertEquals(2, model.state.value.categories.size)
         repository.failItems = false
-        model.loadAllMovies()
+        model.loadAllItems()
         advanceUntilIdle()
         assertNull(model.state.value.itemsError)
         assertEquals(2, model.state.value.items.size)
@@ -137,10 +137,10 @@ class CatalogViewModelTest {
         val model = CatalogViewModel(repository, connection, ContentType.MOVIE, "1", dispatcher)
         advanceUntilIdle()
         model.setQuery("Sample")
-        model.showAllMovies(true)
+        model.showAll(true)
         advanceUntilIdle()
-        assertFalse(model.state.value.canBrowseAllMovies)
-        assertFalse(model.state.value.showAllMovies)
+        assertFalse(model.state.value.canBrowseAll)
+        assertFalse(model.state.value.showAll)
         assertEquals(listOf("1"), repository.requestedCategories)
         assertEquals(listOf("11"), model.state.value.items.map { it.id })
     }
@@ -162,6 +162,58 @@ class CatalogViewModelTest {
         gate.complete(Unit)
         advanceUntilIdle()
         assertEquals(2, repository.requestedCategories.size)
+    }
+
+    @Test fun `series root searches every category and reuses the complete series catalog`() = runTest(dispatcher) {
+        val repository = FakeRepository()
+        val model = CatalogViewModel(repository, connection, ContentType.SERIES, null, dispatcher)
+        advanceUntilIdle()
+        assertTrue(model.state.value.canBrowseAll)
+        assertFalse(repository.itemsRequested)
+        model.setQuery("Star Wars")
+        advanceUntilIdle()
+        assertEquals(listOf<String?>(null), repository.requestedCategories)
+        assertTrue(model.state.value.items.all { it.type == ContentType.SERIES })
+        model.setQuery("Other")
+        model.showAll(true)
+        advanceUntilIdle()
+        assertEquals(1, repository.requestedCategories.size)
+        assertTrue(model.state.value.showAll)
+        model.showAll(false)
+        assertEquals("", model.state.value.query)
+        assertFalse(model.state.value.showAll)
+    }
+
+    @Test fun `failed all series searches retry without discarding the query or categories`() = runTest(dispatcher) {
+        val repository = FakeRepository().apply { failItems = true }
+        val model = CatalogViewModel(repository, connection, ContentType.SERIES, null, dispatcher)
+        advanceUntilIdle()
+        model.setQuery("Star Wars")
+        advanceUntilIdle()
+        assertEquals(FailureReason.UNAVAILABLE, model.state.value.itemsError)
+        assertEquals("Star Wars", model.state.value.query)
+        assertFalse(model.state.value.categories.isEmpty())
+        repository.failItems = false
+        model.loadAllItems()
+        advanceUntilIdle()
+        assertNull(model.state.value.itemsError)
+        assertEquals("Star Wars", model.state.value.query)
+        assertEquals(2, model.state.value.items.size)
+    }
+
+    @Test fun `series categories and live root do not accidentally request an unfiltered catalog`() = runTest(dispatcher) {
+        val repository = FakeRepository()
+        val category = CatalogViewModel(repository, connection, ContentType.SERIES, "1", dispatcher)
+        val live = CatalogViewModel(repository, connection, ContentType.LIVE, null, dispatcher)
+        advanceUntilIdle()
+        category.setQuery("Star Wars")
+        category.showAll(true)
+        live.setQuery("News")
+        live.showAll(true)
+        advanceUntilIdle()
+        assertFalse(category.state.value.canBrowseAll)
+        assertFalse(live.state.value.canBrowseAll)
+        assertEquals(listOf("1"), repository.requestedCategories)
     }
 }
 

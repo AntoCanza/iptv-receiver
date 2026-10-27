@@ -19,19 +19,31 @@ internal object StorePreview {
 }
 
 private class DemoCatalog : CatalogRepository {
-    override suspend fun authenticate(connection: ProviderConnection) = Account("Active", null, listOf("ts"))
+    override suspend fun authenticate(connection: ProviderConnection) = Account("Active",
+        System.currentTimeMillis() / 1000 + 30 * 24 * 60 * 60, listOf("m3u8", "ts"), activeConnections = 0, maxConnections = 2,
+        serverInfo = ServerInfo("Europe/Rome", System.currentTimeMillis() / 1000))
     override suspend fun categories(connection: ProviderConnection, type: ContentType) = listOf(
         Category("featured", when (type) { ContentType.LIVE -> "Discover"; ContentType.MOVIE -> "Featured movies"; ContentType.SERIES -> "Featured series" }, null),
         Category("nature", "Nature & discovery", null), Category("space", "Space & science", null))
     override suspend fun items(connection: ProviderConnection, type: ContentType, categoryId: String?): List<CatalogItem> {
         val names = listOf("Ocean Lines", "Quiet Orbit", "Forest Light", "Golden Hour", "Beyond the Ridge", "Night Signals")
         return names.mapIndexed { index, title -> CatalogItem("demo-$index", title, type,
-            "file:///android_asset/demo/poster-$index.svg", "mp4") }
+            "file:///android_asset/demo/poster-$index.svg", "mp4",
+            metadata = if (type == ContentType.LIVE) ContentMetadata() else ContentMetadata(
+                year = 2025 - index % 3, rating = 8.4 - index * 0.3,
+                genres = listOf(if (index % 2 == 0) "Documentary" else "Adventure"),
+                cast = "Alex Rivers, Morgan Vale", director = "Jamie Lake", country = "Italy",
+                durationSeconds = 6420, backdropUrls = listOf("file:///android_asset/demo/poster-$index.svg")),
+            addedAtSeconds = 1700000000L + index * 86400) }
     }
     override suspend fun movie(connection: ProviderConnection, item: CatalogItem) =
-        MovieDetails(item, "An original illustrative title from the offline demo catalog. Your provider supplies the titles, artwork and descriptions in your own library.")
+        MovieDetails(item, "Follow a small research crew as they explore an unfamiliar landscape, discover its hidden rhythms, and learn to see their surroundings in a new way. Their journey brings unexpected encounters and quiet moments of discovery. This original illustrative title belongs to the offline demo catalog. Your provider supplies the titles, artwork and descriptions in your own library.")
     override suspend fun series(connection: ProviderConnection, item: CatalogItem) = SeriesDetails(item.title,
-        "An illustrative series from the offline demo catalog.", (1..4).map { Episode("demo-$it", "Chapter $it", 1, it, "mp4") })
+        "An illustrative series from the offline demo catalog.", (1..8).map { Episode("demo-$it", "Chapter ${(it - 1) % 4 + 1}",
+            (it - 1) / 4 + 1, (it - 1) % 4 + 1, "mp4", description = "The crew follows a new clue into an unexpected landscape.",
+            imageUrls = listOf("file:///android_asset/demo/poster-${(it - 1) % 6}.svg"), durationSeconds = 2820) },
+        metadata = item.metadata.copy(durationSeconds = 2820), imageUrls = item.artworkUrls,
+        seasons = listOf(Season(1, "Season 1", "The journey begins."), Season(2, "Season 2", "New horizons.")))
     override fun stream(connection: ProviderConnection, item: CatalogItem, liveFormat: String): PlaybackSource =
         throw ProviderException(FailureReason.UNAVAILABLE)
     override fun episodeStream(connection: ProviderConnection, episode: Episode): PlaybackSource =

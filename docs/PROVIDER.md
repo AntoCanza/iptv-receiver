@@ -15,10 +15,22 @@ Authenticated catalog requests use `/player_api.php` with URL-encoded `username`
 | Movies | `get_vod_streams` | `category_id` for a category; omitted for all movies |
 | Movie details | `get_vod_info` | `vod_id` |
 | Series categories | `get_series_categories` | none |
-| Series list | `get_series` | `category_id` |
+| Series list | `get_series` | `category_id` for a category; omitted for all series |
 | Series details and episodes | `get_series_info` | `series_id` |
 
 Login requires an authenticated, active account. A nonzero expiration timestamp is checked when present. String and numeric IDs are normalized to strings. Unknown fields are ignored; missing artwork remains optional.
+
+## Metadata used by the interface
+
+Catalog records retain optional year/release-date year, rating, genres, cast/director, added timestamp (or series last-modified timestamp), artwork and content details. Year/rating/genre/date values support compact title cards, local search, genre filters and sorting without per-title detail requests. Cast/director values enrich credits when opening a title; they do not add unrelated titles to default searches. Unknown ratings/dates remain absent and sort after known values; the default order remains the provider's order. Five-point ratings are converted to a ten-point scale when a usable ten-point rating is absent.
+
+Movie and series details enrich available listing metadata rather than clearing fields missing from the detail response. Optional runtimes, countries, cast/director, backdrop images and web trailer links are used by the detail screen. Series detail artwork, separate season names/overviews, and episode descriptions/images/runtimes are supported. Runtime fields accept positive seconds, `HH:MM:SS`, or explicit runtime minutes. Null/sentinel/malformed metadata is omitted. Artwork arrays retain the same URL checks, transport rules and viewport gating as catalog posters. Trailer links reject local schemes and embedded credentials, and open externally only after a user tap.
+
+Account responses optionally supply `active_cons`, `max_connections` and `is_trial`. Account settings labels the active connection count as a sign-in snapshot; it is not a live monitor. Server settings uses the configured base address/connection type plus optional validated `server_info.timezone` and `timestamp_now`. The server clock is a sign-in snapshot, shown in the reported zone, behind More details alongside supported live formats. Other raw server fields are discarded. Missing expiry/limits are not presented as unlimited. Rich metadata remains in memory; the existing history file format still stores only playback identifiers/titles/extensions and watch timestamps.
+
+A full programme guide and catch-up playback still need separate provider requests and behavior. This metadata work does not add EPG requests or change stream resolution.
+
+Authentication failures reported as `auth: 0` or HTTP 401/403 display a username/password rejection. Inactive and expired accounts retain their specific errors. Unexplained login/network/response failures use a neutral sign-in message that asks the user to check the server address, credentials and internet connection; these failures do not establish that the provider is offline or that the password is wrong. Catalog access errors remain separate from authentication rejection.
 
 ## Stream resolution
 
@@ -36,20 +48,20 @@ The baseline constructs common Xtream paths. Provider-specific direct URLs, cust
 
 ## Transport behavior
 
-- HTTPS is required for account and catalog requests.
+- HTTP and HTTPS base addresses are accepted for account and catalog requests, preserving the supplied scheme, port and base path. Base addresses containing credentials, query parameters or fragments are rejected.
 - TLS certificate verification uses the platform defaults.
 - Authenticated API redirects are rejected to avoid forwarding credentials to another origin.
 - No HTTP logging interceptor is installed.
 - Connection/read/call timeouts are bounded; coroutine cancellation cancels the call.
-- Ordinary JSON and category-scoped catalog responses are limited to 20 MiB. Complete item catalogs are streamed one record at a time with a 128 MiB transfer limit; only mapped item metadata is retained, rather than the full raw JSON tree. The Movies screen fetches this catalog on the first search or All movies selection and reuses it for that screen's lifetime. Closing the screen cancels outstanding requests. Providers exceeding the bound still need paging or incremental import work.
+- Ordinary JSON and category-scoped catalog responses are limited to 20 MiB. Complete item catalogs are streamed one record at a time with a 128 MiB transfer limit; only mapped item metadata is retained, rather than the full raw JSON tree. Movies and Series fetch their complete catalogs on the first root search or All movies/All series selection and reuse them for that screen's lifetime. Closing the screen cancels outstanding requests. Providers exceeding the bound still need paging or incremental import work.
 - JSON/parser/network errors are translated into safe messages without the response body, URL or exception cause.
-- The player rejects HTTPS-to-HTTP redirects and HTTP manifest/segment URLs by default. The per-connection **Allow HTTP streams** option permits HTTP video delivery when explicitly enabled; catalog/login requests remain HTTPS-only.
+- The player accepts HTTP and HTTPS manifests/segments and cross-protocol delivery redirects automatically. Artwork also accepts both schemes, trying HTTPS before an HTTP fallback. No per-connection HTTP checkbox or saved option is required. HTTP traffic, including credentials on HTTP login requests, is unencrypted.
 
 ## Private compatibility check
 
 A supplied test connection was checked privately on 2026-10-25. HTTPS account authentication succeeded. Category responses contained 48 Live TV categories, 346 movie categories and 19 series categories; no non-root category parents were reported. The account advertised HLS (`m3u8`) and MPEG-TS (`ts`).
 
-On-device testing on a Pixel 9 Pro XL confirmed login, category browsing, live broadcast playback, movie playback and series episode playback. Both live formats redirected to HTTP delivery hosts that did not accept HTTPS; this motivated the per-connection playback compatibility option. UI language switching was checked for all ten supported languages. See [verification](VERIFICATION.md).
+On-device testing on a Pixel 9 Pro XL confirmed login, category browsing, live broadcast playback, movie playback and series episode playback. Both live formats redirected to HTTP delivery hosts that did not accept HTTPS; the current app supports these redirects automatically. UI language switching was checked for all ten supported languages. See [verification](VERIFICATION.md) for the versions covered by device checks.
 
 These are observations of one service at one time, not public fixtures or a guarantee of playback. No account values, server hostname, raw responses, titles or stream URLs are stored in this repository.
 

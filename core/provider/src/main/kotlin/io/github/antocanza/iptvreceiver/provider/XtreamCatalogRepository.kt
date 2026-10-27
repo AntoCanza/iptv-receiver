@@ -12,6 +12,8 @@ import io.github.antocanza.iptvreceiver.model.PlaybackSource
 import io.github.antocanza.iptvreceiver.model.ProviderConnection
 import io.github.antocanza.iptvreceiver.model.ProviderException
 import io.github.antocanza.iptvreceiver.model.SeriesDetails
+import io.github.antocanza.iptvreceiver.model.Season
+import io.github.antocanza.iptvreceiver.model.ServerInfo
 import io.github.antocanza.iptvreceiver.model.artworkUrls
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.serialization.ExperimentalSerializationApi
@@ -47,7 +49,10 @@ class XtreamCatalogRepository internal constructor(private val transport: JsonTr
     constructor() : this(HttpJsonTransport())
 
     override suspend fun authenticate(connection: ProviderConnection): Account {
-        val result = request(connection).asObject()
+        val result = try { request(connection).asObject() } catch (error: ProviderException) {
+            if (error.reason == FailureReason.ACCESS_DENIED) throw ProviderException(FailureReason.AUTHENTICATION_FAILED)
+            throw error
+        }
         val user = result["user_info"].asObject()
         if (user.text("auth") != "1") throw ProviderException(FailureReason.AUTHENTICATION_FAILED)
         val status = user.text("status")
@@ -60,7 +65,15 @@ class XtreamCatalogRepository internal constructor(private val transport: JsonTr
         }
         val formats = (user["allowed_output_formats"] as? JsonArray).orEmpty()
             .mapNotNull { it.scalar().takeIf { value -> value in setOf("m3u8", "ts") } }
-        return Account(status, expiry, formats)
+        val server = (result["server_info"] as? JsonObject).orEmpty()
+        return Account(status, expiry, formats,
+            activeConnections = user.text("active_cons").toIntOrNull()?.takeIf { it >= 0 },
+            maxConnections = user.text("max_connections").toIntOrNull()?.takeIf { it > 0 },
+            isTrial = when (user.text("is_trial")) { "1" -> true; "0" -> false; else -> null },
+            serverInfo = ServerInfo(
+                timezone = server.metadataText("timezone")?.let { runCatching { java.time.ZoneId.of(it).id }.getOrNull() },
+                timeAtSignInSeconds = server.text("timestamp_now").toLongOrNull()?.takeIf { it > 0 },
+            ))
     }
 
     override suspend fun categories(connection: ProviderConnection, type: ContentType): List<Category> =
@@ -68,7 +81,8 @@ class XtreamCatalogRepository internal constructor(private val transport: JsonTr
             val item = element.asObject()
             val id = item.text("category_id").takeIf(String::isNotBlank) ?: return@mapNotNull null
             Category(id, item.text("category_name"),
-                item.text("parent_id").takeUnless { it.isBlank() || it == "0" || it == id })
+                item.text("parent_id").takeUnless { it.isBlank() || it == "0" || it == id },
+                isAdult = item.text("is_adult") in setOf("1", "true"))
         }.distinctBy(Category::id)
 
     override suspend fun items(
@@ -90,6 +104,10 @@ class XtreamCatalogRepository internal constructor(private val transport: JsonTr
                 imageUrl = artwork.firstOrNull(),
                 extension = item.text("container_extension").takeIf(String::isNotBlank),
                 imageFallbackUrls = artwork.drop(1),
+                metadata = contentMetadata(item, connection),
+                addedAtSeconds = item.metadataText("added", "last_modified")?.toLongOrNull()?.takeIf { it > 0 },
+                categoryId = item.text("category_id").takeIf(String::isNotBlank) ?: categoryId,
+                isAdult = item.text("is_adult") in setOf("1", "true"),
             )
         }
     }
@@ -100,8 +118,10 @@ class XtreamCatalogRepository internal constructor(private val transport: JsonTr
         val movie = (result["movie_data"] as? JsonObject).orEmpty()
         val artwork = (item.artworkUrls + artworkUrls(info, connection) + artworkUrls(movie, connection)).distinct()
         return MovieDetails(
-            item.copy(extension = movie.text("container_extension").ifBlank { item.extension.orEmpty() },
-                imageUrl = artwork.firstOrNull(), imageFallbackUrls = artwork.drop(1)),
+            item.copy(title = info.metadataText("name", "title") ?: item.title,
+                extension = movie.text("container_extension").ifBlank { item.extension.orEmpty() },
+                imageUrl = artwork.firstOrNull(), imageFallbackUrls = artwork.drop(1),
+                metadata = contentMetadata(info, connection, item.metadata)),
             info.text("plot").ifBlank { info.text("description") },
         )
     }
@@ -119,16 +139,27 @@ class XtreamCatalogRepository internal constructor(private val transport: JsonTr
             (group as? JsonArray).orEmpty().mapNotNull { element ->
                 val episode = element.asObject()
                 val id = episode.text("id").takeIf { it.matches(Regex("[0-9]+")) } ?: return@mapNotNull null
+                val episodeInfo = (episode["info"] as? JsonObject).orEmpty()
                 Episode(
                     id,
                     episode.text("title"),
                     episode.text("season").toIntOrNull() ?: seasonKey.toIntOrNull() ?: 0,
                     episode.text("episode_num").toIntOrNull() ?: 0,
                     episode.text("container_extension"),
+                    description = episodeInfo.metadataText("plot", "description") ?: "",
+                    imageUrls = artworkUrls(episodeInfo, connection),
+                    durationSeconds = durationSeconds(episodeInfo),
                 )
             }
         }.distinctBy(Episode::id).sortedWith(compareBy(Episode::season, Episode::number))
-        return SeriesDetails(info.text("name").ifBlank { item.title }, info.text("plot"), episodes)
+        val seasons = (result["seasons"] as? JsonArray).orEmpty().mapNotNull { element ->
+            val season = (element as? JsonObject) ?: return@mapNotNull null
+            val number = season.text("season_number").toIntOrNull()?.takeIf { it >= 0 } ?: return@mapNotNull null
+            Season(number, season.metadataText("name") ?: "", season.metadataText("overview", "plot") ?: "")
+        }.distinctBy(Season::number)
+        return SeriesDetails(info.metadataText("name") ?: item.title, info.metadataText("plot", "description") ?: "", episodes,
+            metadata = contentMetadata(info, connection, item.metadata),
+            imageUrls = (artworkUrls(info, connection) + item.artworkUrls).distinct(), seasons = seasons)
     }
 
     override fun stream(connection: ProviderConnection, item: CatalogItem, liveFormat: String): PlaybackSource {
@@ -156,7 +187,7 @@ class XtreamCatalogRepository internal constructor(private val transport: JsonTr
             .addPathSegment(connection.password)
             .addPathSegment("$id.$extension")
             .build()
-        return PlaybackSource(url.toString(), title, type == ContentType.LIVE, connection.allowHttpStreams)
+        return PlaybackSource(url.toString(), title, type == ContentType.LIVE)
     }
 
     private suspend fun request(
@@ -183,8 +214,8 @@ class XtreamCatalogRepository internal constructor(private val transport: JsonTr
 private fun baseUrl(connection: ProviderConnection): HttpUrl {
     val url = connection.serverUrl.trim().trimEnd('/').toHttpUrlOrNull()
         ?: throw ProviderException(FailureReason.INVALID_SERVER)
-    if (!url.isHttps || url.username.isNotEmpty() || url.password.isNotEmpty() || url.query != null || url.fragment != null) {
-        throw ProviderException(FailureReason.HTTPS_REQUIRED)
+    if (url.username.isNotEmpty() || url.password.isNotEmpty() || url.query != null || url.fragment != null) {
+        throw ProviderException(FailureReason.INVALID_SERVER)
     }
     if (connection.username.isBlank() || connection.password.isBlank()) {
         throw ProviderException(FailureReason.CREDENTIALS_REQUIRED)

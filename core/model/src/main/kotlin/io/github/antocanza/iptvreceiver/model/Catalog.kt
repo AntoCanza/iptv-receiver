@@ -6,7 +6,6 @@ class ProviderConnection(
     val serverUrl: String,
     val username: String,
     val password: String,
-    val allowHttpStreams: Boolean = false,
 ) {
     override fun toString(): String = "ProviderConnection([redacted])"
 }
@@ -17,9 +16,32 @@ enum class ContentType(val apiType: String, val streamPath: String) {
     SERIES("series", "series"),
 }
 
-data class Account(val status: String, val expiresAtSeconds: Long?, val liveFormats: List<String>)
+data class Account(
+    val status: String,
+    val expiresAtSeconds: Long?,
+    val liveFormats: List<String>,
+    val activeConnections: Int? = null,
+    val maxConnections: Int? = null,
+    val isTrial: Boolean? = null,
+    val serverInfo: ServerInfo = ServerInfo(),
+)
 
-data class Category(val id: String, val name: String, val parentId: String?)
+data class ServerInfo(val timezone: String? = null, val timeAtSignInSeconds: Long? = null)
+
+data class Category(val id: String, val name: String, val parentId: String?, val isAdult: Boolean = false)
+
+/** Optional provider metadata; absent values must not become invented badges or filters. */
+data class ContentMetadata(
+    val year: Int? = null,
+    val rating: Double? = null,
+    val genres: List<String> = emptyList(),
+    val cast: String? = null,
+    val director: String? = null,
+    val country: String? = null,
+    val durationSeconds: Long? = null,
+    val trailerUrl: String? = null,
+    val backdropUrls: List<String> = emptyList(),
+)
 
 data class CatalogItem(
     val id: String,
@@ -28,6 +50,10 @@ data class CatalogItem(
     val imageUrl: String? = null,
     val extension: String? = null,
     val imageFallbackUrls: List<String> = emptyList(),
+    val metadata: ContentMetadata = ContentMetadata(),
+    val addedAtSeconds: Long? = null,
+    val categoryId: String? = null,
+    val isAdult: Boolean = false,
 )
 
 val CatalogItem.artworkUrls: List<String> get() = (listOfNotNull(imageUrl) + imageFallbackUrls).distinct()
@@ -40,12 +66,28 @@ data class Episode(
     val season: Int,
     val number: Int,
     val extension: String,
+    val description: String = "",
+    val imageUrls: List<String> = emptyList(),
+    val durationSeconds: Long? = null,
 )
 
-data class SeriesDetails(val title: String, val description: String, val episodes: List<Episode>)
+data class Season(
+    val number: Int,
+    val name: String = "",
+    val description: String = "",
+)
+
+data class SeriesDetails(
+    val title: String,
+    val description: String,
+    val episodes: List<Episode>,
+    val metadata: ContentMetadata = ContentMetadata(),
+    val imageUrls: List<String> = emptyList(),
+    val seasons: List<Season> = emptyList(),
+)
 
 /** Contains a credential-bearing URL; never log, serialize, or use as a navigation argument. */
-class PlaybackSource(val url: String, val title: String, val isLive: Boolean, val allowHttpStreams: Boolean = false) {
+class PlaybackSource(val url: String, val title: String, val isLive: Boolean) {
     override fun toString(): String = "PlaybackSource([redacted])"
 }
 
@@ -62,21 +104,20 @@ interface CatalogRepository {
 }
 
 enum class FailureReason {
-    INVALID_SERVER, HTTPS_REQUIRED, CREDENTIALS_REQUIRED, AUTHENTICATION_FAILED,
+    INVALID_SERVER, CREDENTIALS_REQUIRED, AUTHENTICATION_FAILED, LOGIN_FAILED,
     INACTIVE_ACCOUNT, EXPIRED_ACCOUNT, SELECT_EPISODE, INVALID_STREAM,
     UNREACHABLE, REDIRECTED, ACCESS_DENIED, UNAVAILABLE, EMPTY_RESPONSE,
     UNSUPPORTED_RESPONSE, TOO_LARGE, RESPONSE_UNREADABLE, SAVE_FAILED,
-    REMOVE_FAILED, INSECURE_STREAM, UNKNOWN,
+    REMOVE_FAILED, PARENTAL_BLOCKED, UNKNOWN,
 }
 
 /** Stable error codes are localized by the UI and contain no raw provider values. */
 class ProviderException(val reason: FailureReason) : Exception(reason.name)
 
 /** Applied before every manifest/segment request, not just the initial stream URL. */
-fun requireAllowedStreamScheme(scheme: String?, allowHttp: Boolean) {
+fun requireAllowedStreamScheme(scheme: String?) {
     when (scheme?.lowercase()) {
-        "https" -> Unit
-        "http" -> if (!allowHttp) throw ProviderException(FailureReason.INSECURE_STREAM)
+        "https", "http" -> Unit
         else -> throw ProviderException(FailureReason.INVALID_STREAM)
     }
 }
