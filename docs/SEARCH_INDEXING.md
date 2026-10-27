@@ -9,6 +9,7 @@ The GitHub repository remains the source of code and technical documentation. It
 - Descriptive English title, description, one main heading and crawlable HTML links.
 - An HTTPS canonical URL, matching Open Graph URL and absolute image URLs.
 - WebSite, WebPage and SoftwareApplication JSON-LD describing the actual Android development status, current source version and real rolling GitHub APK download. There are no invented ratings, prices or Google Play listings.
+- An open-source reuse FAQ, a footer link to the MIT License and a `license` property on the SoftwareApplication node, all referring to the repository's [canonical license text](../LICENSE).
 - A UTF-8 [sitemap](sitemap.xml) containing the public canonical page. Dates are omitted instead of reporting a new modification date on every deployment.
 - A custom 404 page with `noindex`; GitHub Pages returns HTTP 404 for missing paths.
 - Responsive styling, explicit image dimensions and locally hosted images. The screenshot is an offline fictional catalog already approved for the store preparation package.
@@ -29,6 +30,8 @@ A `robots.txt` at `/iptv-receiver/robots.txt` would not control crawling. Crawle
 Google decides whether and when to index eligible pages. Neither a sitemap nor this implementation guarantees indexing or ranking. Rich-result eligibility is separate from general indexing; the app has no public offer or ratings yet.
 
 ## Maintenance
+
+Keep the open-source FAQ, footer license link and JSON-LD `license` property aligned with [LICENSE](../LICENSE) and the [README license notes](../README.md#license). MIT covers original project materials; third-party licenses and provider content rights remain separate.
 
 Keep the page, [README](../README.md) and [user guide](USER_GUIDE.md) aligned with implemented features. Check the visible version and JSON-LD `softwareVersion` against `app/build.gradle.kts`; keep the APK link on the stable rolling-release URL. Update feature descriptions, FAQs and social descriptions together. Keep Android TV/desktop/native-TV plans distinct from the implemented Android client and retain the device-verification limits.
 

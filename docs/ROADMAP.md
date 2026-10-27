@@ -10,7 +10,7 @@ Baseline: Android 0.1.14 (versionCode 15), October 27, 2026. Checked items descr
 - [x] Synthetic tests for request construction, response handling and credential redaction.
 - [x] CI definition for unit tests, Android lint and debug/release builds.
 - [x] Ten UI languages, device-language default with English fallback, language picker and translation-parity tests.
-- [ ] Owner selects a source-code license before external redistribution/contribution policy is finalized.
+- [x] Adopt the [MIT License](../LICENSE) for original code, documentation and artwork, with matching contributor guidance and third-party license boundaries.
 
 ## Milestone 1 — Prove the three playback paths
 
@@ -69,7 +69,7 @@ Live TV, Movies and Series roots support full-catalog search and all-content bro
 - [x] Signed rolling GitHub APK from verified `main`, certificate pinning, checksum and old-download cleanup; see [release policy](CI_RELEASES.md).
 - [ ] Google Play upload signing, final privacy/contact declarations, store review and publication.
 - [ ] Review the API 36 target against the latest Android behavior and distribution requirements before publishing a release.
-- [ ] Review dependency updates, license selection and repository protections.
+- [ ] Review dependency updates, third-party license compliance and repository protections.
 
 ## Milestone 5 — Android TV
 

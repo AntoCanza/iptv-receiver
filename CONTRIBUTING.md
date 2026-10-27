@@ -1,6 +1,8 @@
 # Contributing
 
-The repository publishes a signed Android development baseline; its source license has not been selected. Coordinate with the owner before contributing code intended for redistribution.
+The repository publishes a signed Android development baseline under the [MIT License](LICENSE). Original contributions, including code, documentation and artwork, are accepted under the same license. By submitting a contribution, you agree to these terms and confirm that you have the necessary rights to contribute it.
+
+Preserve copyright and license notices when redistributing the project. Record the origin and applicable license of any third-party material you add, and retain its notices; third-party dependencies keep their own licenses.
 
 Use short-lived feature branches and pull requests. Keep each change focused on one user-visible behavior or one architectural improvement. Include the relevant validation and any device-testing limitations.
 

@@ -11,7 +11,7 @@ Status: preparation only. Do not submit the current development package.
 - [ ] Provide a dedicated, licensed reviewer account privately in Play Console using APP_ACCESS.md. Never put it in Git or marketing files.
 - [ ] Complete ads (currently none), target audience, content rating, app access and all applicable App content declarations. Select an appropriate video-player category and accurate tags. Do not claim Android TV support yet.
 - [ ] Review applicable content rights and provider terms. The app includes no channels, subscriptions or media. Confirm rights for every marketing asset and reviewer stream.
-- [ ] Choose a source-code license before redistribution/external contributions. Public GitHub visibility alone is not a license.
+- [x] Adopt the [MIT License](../LICENSE) for original project materials and document the contribution terms. Preserve third-party licenses and notices in distributions.
 
 ## Build and quality
 

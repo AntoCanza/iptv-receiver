@@ -16,6 +16,8 @@ Generate the unsigned release Android App Bundle with `gradlew.bat :app:bundleRe
 
 ## Reproduce visuals
 
+The original artwork, fictional-catalog previews, listing text and export scripts in this package are covered by the project's [MIT License](../LICENSE). Keep the copyright and license notice when reusing them. Third-party tool dependencies retain their own licenses; this permission does not cover real provider content or third-party branding.
+
 Use Node.js LTS satisfying `store/tools/package.json` (Node 22 or later). From the repository root, run `npm ci --prefix store/tools`, then `node store/tools/export-assets.cjs`; the lockfile pins Sharp 0.35.5. This exports the editable SVG sources, PNGs, native launcher resources and debug-only poster fixtures. Run `node store/tools/export-screenshots.cjs <private-capture-directory>` after capturing the listed screens. Never commit captures from a real account.
 
 For screenshot capture only, start the debug build with `adb shell am start --activity-single-top -n io.github.antocanza.iptvreceiver/.MainActivity --ez store_preview true`. Navigate normally. The fixture is fully offline and stores its fake connection in memory. This capture mode supplies no playable media; the separate progress-device runner can attach a synthetic loopback audio fixture. Start with `--ez store_preview false` afterward. Release builds ignore this option and exclude the catalog and poster assets. Preserve/restore real viewing data and preferences if using a device that also holds a personal account.

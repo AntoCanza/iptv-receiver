@@ -1,5 +1,7 @@
 # IPTV Receiver — Native Android IPTV Client
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+
 Native Android IPTV client for phones and tablets. Android TV, Windows, LG webOS and Samsung Tizen clients are planned.
 
 Connect to an Xtream-compatible provider, browse Live TV, Movies and Series, and play content using Android Media3. The application does not include an IPTV subscription or bundled content.
@@ -110,6 +112,7 @@ Read [architecture](docs/ARCHITECTURE.md), [provider integration](docs/PROVIDER.
 | [Playback metadata](docs/PLAYBACK_METADATA.md) / [usability audit](docs/UX_AUDIT_2026-10-27.md) | Current playback capabilities and dated investigation/fix evidence |
 | [CI and releases](docs/CI_RELEASES.md) | Signed rolling APK, checksum, permissions and retention |
 | [Dependency policy](docs/DEPENDENCY_POLICY.md) / [audit](docs/DEPENDENCY_AUDIT.md) | Version rules and the dated dependency inventory |
+| [MIT License](LICENSE) | Reuse, modification and commercial redistribution of original project materials with copyright and license notices retained |
 
 The public project website is static HTML served by GitHub Pages from `main:/docs`, with a canonical URL, social previews, structured data and a sitemap. See [search indexing](docs/SEARCH_INDEXING.md) for maintenance and Google Search Console setup.
 
@@ -119,4 +122,6 @@ The [Google Play preparation package](store/README.md) includes original icon/fe
 
 ## License
 
-No open-source license has been selected yet. Public visibility alone does not grant a general license to redistribute this code. The repository owner should choose a license before accepting external contributions intended for redistribution.
+IPTV Receiver is open source under the [MIT License](LICENSE), SPDX identifier `MIT`. This covers the project's original code, tools, documentation and artwork. You may use, modify and redistribute these materials, including commercially, provided that you retain the copyright and license notice. Derived versions may use different terms and do not have to publish their source code. The project is provided without warranty.
+
+Third-party dependencies and bundled third-party materials retain their own licenses and notices; the project's MIT license does not replace them. It grants no rights to provider subscriptions, streams, catalogs, logos or artwork supplied by a provider. Use only content you are authorized to access and redistribute.
