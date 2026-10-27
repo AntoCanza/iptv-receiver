@@ -13,6 +13,7 @@ import io.github.antocanza.iptvreceiver.model.ProviderConnection
 import io.github.antocanza.iptvreceiver.model.ProviderException
 import io.github.antocanza.iptvreceiver.model.SeriesDetails
 import io.github.antocanza.iptvreceiver.model.Season
+import io.github.antocanza.iptvreceiver.model.Programme
 import io.github.antocanza.iptvreceiver.model.ServerInfo
 import io.github.antocanza.iptvreceiver.model.artworkUrls
 import kotlinx.coroutines.suspendCancellableCoroutine
@@ -108,6 +109,8 @@ class XtreamCatalogRepository internal constructor(private val transport: JsonTr
                 addedAtSeconds = item.metadataText("added", "last_modified")?.toLongOrNull()?.takeIf { it > 0 },
                 categoryId = item.text("category_id").takeIf(String::isNotBlank) ?: categoryId,
                 isAdult = item.text("is_adult") in setOf("1", "true"),
+                catchupDays = if (type == ContentType.LIVE && item.text("tv_archive") in setOf("1", "true"))
+                    item.text("tv_archive_duration").toIntOrNull()?.takeIf { it in 1..365 } ?: 0 else 0,
             )
         }
     }
@@ -170,6 +173,26 @@ class XtreamCatalogRepository internal constructor(private val transport: JsonTr
 
     override fun episodeStream(connection: ProviderConnection, episode: Episode): PlaybackSource =
         source(connection, ContentType.SERIES, episode.id, episode.extension, episode.title)
+
+    override suspend fun guide(connection: ProviderConnection, item: CatalogItem): List<Programme> {
+        if (item.type != ContentType.LIVE || !item.id.matches(Regex("[0-9]+"))) throw ProviderException(FailureReason.INVALID_STREAM)
+        val result = request(connection, "get_simple_data_table", "stream_id" to item.id).asObject()
+        return (result["epg_listings"] as? JsonArray).orEmpty().mapNotNull { programme(it as? JsonObject) }
+            .distinctBy { it.startsAtSeconds to it.endsAtSeconds }.sortedBy(Programme::startsAtSeconds)
+    }
+
+    override fun catchupStream(connection: ProviderConnection, item: CatalogItem, programme: Programme): PlaybackSource {
+        if (!programme.canReplay(item, System.currentTimeMillis() / 1000) || !item.id.matches(Regex("[0-9]+"))) {
+            throw ProviderException(FailureReason.UNAVAILABLE)
+        }
+        val start = archiveStart(programme.providerStartLocal) ?: throw ProviderException(FailureReason.INVALID_STREAM)
+        val seconds = programme.endsAtSeconds - programme.startsAtSeconds
+        val url = baseUrl(connection).newBuilder().addPathSegment("timeshift")
+            .addPathSegment(connection.username).addPathSegment(connection.password)
+            .addPathSegment(((seconds + 59) / 60).toString()).addPathSegment(start)
+            .addPathSegment("${item.id}.ts").build()
+        return PlaybackSource(url.toString(), programme.title, false, seconds * 1000)
+    }
 
     private fun source(
         connection: ProviderConnection,

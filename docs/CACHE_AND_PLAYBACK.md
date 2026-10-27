@@ -2,11 +2,41 @@
 
 ## Rotation and fullscreen
 
-Each player navigation entry owns one PlaybackViewModel and ExoPlayer, built with the application context. Preparing the stream happens once when that ViewModel is created. Activity recreation detaches and reattaches PlayerView without preparing or releasing the player, preserving position and play/pause state. Leaving the player releases it; backgrounding pauses it. This is session continuity, not durable resume after process death.
+Each player navigation entry owns one PlaybackViewModel and ExoPlayer, built with the application context. Preparing the stream happens once when that ViewModel is created. Activity recreation detaches and reattaches PlayerView without preparing or releasing the player, preserving position and play/pause state. Leaving the player releases it; backgrounding pauses it. Movie/episode checkpoints also support durable resume after process death, as described below.
 
 Landscape automatically hides the header and system bars. The player fullscreen button can request landscape; exit/Back releases that request and returns to the device's orientation policy. Synchronizing Media3's icon temporarily disconnects its listener, because Media3 also emits the fullscreen callback for programmatic state changes.
 
-## Live TV recovery
+## Durable movie and episode progress
+
+After playback actually starts, movie and episode positions are checkpointed every five seconds and on seek, pause, backgrounding and player removal. Final writes use an application-owned I/O scope so leaving a navigation entry does not cancel them. A forced process kill can lose the last few seconds since the latest completed checkpoint. Live TV and catch-up never receive movie/episode bookmarks.
+
+Positions are isolated by normalized provider/account, content type, title ID and episode ID. Versioned, atomically replaced files under `files/playback-progress` store only those identifiers, elapsed milliseconds, optional duration and completion state; no titles, credentials or URLs. They survive logout and cache cleanup. Recent watch history keeps its existing version-1 format and rolling ten-day retention, enriched from the separate progress store when displayed. Resume positions have no ten-day expiry, so reopening an older title from the catalog still offers resume. Clearing app data or uninstalling removes these local records; there is no cloud/device synchronization.
+
+Selecting a partially watched title from details, an episode list or history offers Resume and Start over. The saved seek is applied before preparation, without resetting on rotation. Start over resets the durable bookmark as well as playback. A title becomes resumable after five seconds. Playback ending marks it completed; with a known duration the final minimum of 30 seconds or one percent (at least one second) is also treated as completed. A completed title starts from the beginning. Unknown durations still permit resume when the stream supports seeking. Out-of-order asynchronous callbacks cannot overwrite a newer seek or restart. Previous viewing positions cannot be reconstructed before this version begins collecting them.
+
+## Subscription expiry reminders
+
+The foreground browsing UI checks the provider's sign-in expiry snapshot on entry/resume and once per minute while visible. The first reminder becomes eligible when the local expiry date is at most two calendar months away. An unknown/invalid expiry produces no reminder. Renewed expiry values have independent acknowledgements; the provider date is refreshed by authentication on app reopening, not inferred from playback or a device notification schedule.
+
+| Local days to expiry | Minimum time after the last acknowledgement |
+| --- | --- |
+| More than 30, within the two-month window | 14 days |
+| 15–30 | 7 days |
+| 8–14 | 3 days |
+| 4–7 | 1 day |
+| 3 or fewer, including expired active sessions | 12 hours |
+
+OK, Android Back or outside dismissal closes the popup and records acknowledgement for that account and exact expiry value. Acknowledgements survive app restarts in app-private files outside caches. The current urgency band determines when a repeat becomes due, so entering a closer band can bring the next reminder forward. The player and resume-choice dialog defer expiry popups until browsing. These are in-app prompts while the app is open; no background/system notifications are scheduled.
+
+## Display and track controls
+
+The player exposes icon controls for display settings, available subtitles, stream information and a live channel's guide. Multiple audio tracks add an audio-language control. Subtitle selection includes a true disabled-text option, including forced tracks; the CC icon appears from prepared text tracks and reflects actual selection. Native track menus use Media3 translations. An advertised caption track does not establish that cues are transmitted continuously.
+
+Fit, Zoom and Stretch are independent of automatic/16:9/4:3/21:9 aspect overrides. The retained PlaybackViewModel holds these choices during the session. The custom PlayerView applies overrides on subsequent video-size events and applies layout settings only when they change. The view reattaches its player when Compose reuses it with a different playback session; it retains Media3's SurfaceView and enables the library's Android 14 Compose synchronization workaround. Changing the display does not reload the source. Stream information reads actual video/audio input formats, tracks and timeline on the main thread while its dialog is open; missing fields remain unknown and declared bitrates are not throughput measurements.
+
+Opening the guide from playback removes the player destination, releasing its resources before an archive or live stream is started. Catch-up uses finite playback and a programme-length clip; watch history continues to record the channel using the existing schema. It does not persist programme URLs or act as an archive bookmark.
+
+## Live stream buffering and recovery
 
 Live channels use the provider's `PlaybackSource.isLive` flag to enable recovery. When advertised by the provider, live playback prefers HLS (`m3u8`) over a progressive TS connection; TS remains the fallback. Format names are normalized before preference selection. HLS provides a rolling segmented stream rather than a sequence of ended TS media items.
 

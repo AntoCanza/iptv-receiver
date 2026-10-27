@@ -67,7 +67,7 @@ Navigation arguments contain only content types and IDs. Credentials and playbac
 
 ## State and lifecycle
 
-Each screen ViewModel exposes immutable state with loading, data and error values. The UI collects it with `collectAsStateWithLifecycle`. Retry cancels an earlier load. Cancellation propagates to OkHttp. Password fields use memory-only Compose state.
+Each screen ViewModel exposes immutable state with loading, data and error values. The UI collects it with `collectAsStateWithLifecycle`. Retry cancels an earlier load. Cancellation propagates to OkHttp. The unfinished login form uses an activity ViewModel across configuration changes and is cleared after authentication; credentials do not use SavedStateHandle. Parental password fields use memory-only Compose state.
 
 The player is owned by the player destination. It pauses when the destination stops and releases its resources when removed. Background playback and a `MediaSessionService` are future product decisions. It uses device decoders; a supported container does not guarantee support for every embedded codec.
 
@@ -77,9 +77,13 @@ Optional encrypted connection storage and durable watch history are implemented.
 
 History records only the first `isPlaying` event of each playback session. Rewatching replaces the same content/episode entry and sorts it first. Entries expire exactly 10 days after the last watch; reads, writes and daily maintenance prune expired entries. The history screen refreshes on resume and at the next expiration while visible. Cache cleanup only targets cache directories, so it preserves unexpired history. Signing out hides account history but leaves it available for the next login to that account.
 
-Catalog grids save their position with Compose state scoped to the Navigation entry. Changing the search query or All movies mode creates a new grid state; returning from details or playback restores the existing state without a scroll-to-top effect. This covers in-session navigation and configuration changes; complete catalog/detail restoration after process death remains planned.
+Catalog search, refinements and results share one lazy scroll container, with compact rows for large fonts or short windows. All three content roots can load a protected full catalog on demand; search defaults to relevance while preserving explicit sort choices. Catalog grids save their position with Compose state scoped to the Navigation entry. Changing the search query or All movies mode creates a new grid state; returning from details or playback restores the existing state without a scroll-to-top effect. This covers in-session navigation and configuration changes; complete catalog/detail restoration after process death remains planned.
 
-Add Room for category/item metadata and watch progress, and DataStore for non-sensitive settings when those features are implemented. Scope every persisted record by provider account and content type. Store identifiers and progress instead of credential-bearing playback URLs. Add migration tests alongside schema changes.
+Movie/episode checkpoints use a separate version-1 atomic store under `filesDir/playback-progress`, keyed by provider/account and title/episode identifiers. History's existing schema remains unchanged and receives progress at read time. Checkpoints survive recent-history expiry, logout and cache cleanup; neither stream addresses nor credentials are stored. PlaybackViewModel emits checkpoints only after playback starts, and an application-owned I/O scope completes final saves after navigation removes the player. Saved seeks run before preparation; near-end/ended titles are completed. See [playback lifecycle](CACHE_AND_PLAYBACK.md#durable-movie-and-episode-progress) for thresholds and process-kill limits.
+
+`SubscriptionReminders` evaluates the provider's authentication expiry using local calendar dates and stores account/expiry-specific acknowledgement times under `filesDir/subscription-reminders`. ReceiverViewModel exposes notices; the foreground navigation host checks on resume and every minute while browsing, suppressing popups during playback and resume choices. No background notification job is created.
+
+Add Room for category/item metadata and DataStore for further non-sensitive settings when those features are implemented. Scope every persisted record by provider account and content type. Add migration tests alongside schema changes.
 
 ## References
 

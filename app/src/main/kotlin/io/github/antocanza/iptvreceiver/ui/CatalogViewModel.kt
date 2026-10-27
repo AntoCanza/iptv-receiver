@@ -39,7 +39,7 @@ class CatalogViewModel(
     private val categoryId: String?,
     private val catalogDispatcher: CoroutineDispatcher = Dispatchers.Default,
 ) : ViewModel() {
-    private val canBrowseAll = type != ContentType.LIVE && categoryId == null
+    private val canBrowseAll = categoryId == null
     private val mutableState = MutableStateFlow(CatalogState(canBrowseAll = canBrowseAll))
     val state = mutableState.asStateFlow()
     private var job: Job? = null

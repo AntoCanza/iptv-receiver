@@ -17,6 +17,7 @@ Authenticated catalog requests use `/player_api.php` with URL-encoded `username`
 | Series categories | `get_series_categories` | none |
 | Series list | `get_series` | `category_id` for a category; omitted for all series |
 | Series details and episodes | `get_series_info` | `series_id` |
+| Channel programme guide | `get_simple_data_table` | `stream_id` |
 
 Login requires an authenticated, active account. A nonzero expiration timestamp is checked when present. String and numeric IDs are normalized to strings. Unknown fields are ignored; missing artwork remains optional.
 
@@ -28,7 +29,11 @@ Movie and series details enrich available listing metadata rather than clearing 
 
 Account responses optionally supply `active_cons`, `max_connections` and `is_trial`. Account settings labels the active connection count as a sign-in snapshot; it is not a live monitor. Server settings uses the configured base address/connection type plus optional validated `server_info.timezone` and `timestamp_now`. The server clock is a sign-in snapshot, shown in the reported zone, behind More details alongside supported live formats. Other raw server fields are discarded. Missing expiry/limits are not presented as unlimited. Rich metadata remains in memory; the existing history file format still stores only playback identifiers/titles/extensions and watch timestamps.
 
-A full programme guide and catch-up playback still need separate provider requests and behavior. This metadata work does not add EPG requests or change stream resolution.
+The channel guide maps `epg_listings` into programmes with validated start/stop epoch timestamps, decoded UTF-8 titles/descriptions and an optional strictly parsed provider-local start clock. It accepts plain text as well as Base64 text, omits invalid entries, sorts by start time and removes duplicate time ranges. The interface displays times in the device's zone and selected interface language.
+
+Live listings map `tv_archive` and a positive, bounded `tv_archive_duration` into archive retention days. Replay requires an ended programme with `has_archive`, a valid provider-local start and a start within the advertised retention window. Missing fields never enable replay. Archive resolution uses `/timeshift/{username}/{password}/{duration_minutes}/{yyyy-MM-dd:HH-mm}/{stream_id}.ts`, with credentials encoded as separate path segments and duration rounded up to minutes. The original provider-local clock avoids shifting the requested broadcast when device and provider zones differ. Archive media is finite playback, clipped to the scheduled programme duration because provider TS timelines can report incorrect total lengths. Provider rejection or decoder errors retain the normal retry/error interface.
+
+Guide loading and archive resolution pass through the parental repository. It authorizes the channel and verifies replay against a programme actually returned for that account/channel, rechecking policy at playback time. Historical channel records do not retain archive capabilities; the guide refreshes channel metadata before offering replay. Guide text, archive URLs and technical stream information remain outside durable history.
 
 Authentication failures reported as `auth: 0` or HTTP 401/403 display a username/password rejection. Inactive and expired accounts retain their specific errors. Unexplained login/network/response failures use a neutral sign-in message that asks the user to check the server address, credentials and internet connection; these failures do not establish that the provider is offline or that the password is wrong. Catalog access errors remain separate from authentication rejection.
 

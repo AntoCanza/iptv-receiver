@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
   <string name="app_name" translatable="false">IPTV Receiver</string>
-  <string name="connection_name">Connection name</string>
   <string name="server_address">Server address (HTTP/HTTPS)</string>
   <string name="username">Username</string>
   <string name="password">Password</string>
@@ -119,4 +118,56 @@
   <string name="parental_reset_warning">Reset the password and all protected options? Adult blocking will be enabled and manual category blocks for every account will be removed. You will need to create a new password.</string>
   <string name="parental_detection_help">Automatic blocking uses provider adult flags and recognizable adult labels. If content is mislabeled, block its category manually.</string>
   <string name="parental_blocked">This content is blocked by parental controls.</string>
+  <string name="player_display">Display</string>
+  <string name="player_subtitles">Subtitles</string>
+  <string name="player_info">Stream info</string>
+  <string name="tv_guide">TV guide</string>
+  <string name="player_scale">Picture scaling</string>
+  <string name="player_fit">Fit whole picture</string>
+  <string name="player_zoom">Zoom and crop</string>
+  <string name="player_stretch">Stretch to fill</string>
+  <string name="player_aspect">Aspect ratio</string>
+  <string name="player_auto">Automatic from stream</string>
+  <string name="player_unknown">Unknown</string>
+  <string name="player_video">Video</string>
+  <string name="player_codec">Codec</string>
+  <string name="player_resolution">Resolution</string>
+  <string name="player_fps">Frame rate</string>
+  <string name="player_bitrate">Declared bitrate</string>
+  <string name="player_audio">Audio</string>
+  <string name="player_channels">Source audio channels</string>
+  <string name="player_sample_rate">Sample rate</string>
+  <string name="player_duration">Duration or live window</string>
+  <string name="player_seekable">Seeking available</string>
+  <string name="player_yes">Yes</string>
+  <string name="player_no">No</string>
+  <string name="player_on_demand">On demand</string>
+  <string name="guide_watch_live">Watch live</string>
+  <string name="guide_refresh">Refresh</string>
+  <string name="guide_show_past">Past programmes</string>
+  <string name="guide_search">Search programmes</string>
+  <string name="guide_empty">No programmes are available for this selection.</string>
+  <string name="guide_now">On now</string>
+  <string name="guide_replay">Watch catch-up</string>
+  <string name="player_color">Color and bit depth</string>
+  <string name="resume_title">Resume watching?</string>
+  <string name="resume_message">Watched %1$s of %2$s.</string>
+  <string name="resume_message_unknown">Watched up to %1$s.</string>
+  <string name="resume_action">Resume</string>
+  <string name="restart_action">Start over</string>
+  <string name="history_progress">%1$s / %2$s</string>
+  <string name="history_completed">Completed</string>
+  <string name="subscription_reminder_title">Subscription expiry</string>
+  <string name="subscription_expires">Your subscription expires on %1$s.</string>
+  <string name="subscription_expired">Your subscription expired on %1$s.</string>
+  <string name="subscription_days">Days remaining: %1$d</string>
+  <string name="acknowledge" translatable="false">OK</string>
+  <string name="connection_name_optional">Connection name (optional)</string>
+  <string name="all_channels">All channels</string>
+  <string name="search_all_channels">Search all channels</string>
+  <string name="catalog_sort_relevance">Relevance</string>
+  <string name="action_for_title">%1$s: %2$s</string>
+  <string name="player_track_number">Track %1$d · %2$s</string>
+  <string name="player_speed">Playback speed</string>
+  <string name="guide_schedule_conflict">The provider lists overlapping programmes. Times are shown as received; the current programme cannot be confirmed during an overlap.</string>
 </resources>

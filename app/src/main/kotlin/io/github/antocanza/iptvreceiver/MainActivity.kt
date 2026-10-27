@@ -8,6 +8,8 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
+import androidx.compose.runtime.LaunchedEffect
+import io.github.antocanza.iptvreceiver.ui.LoginDraftViewModel
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
@@ -52,10 +54,14 @@ class MainActivity : AppCompatActivity() {
                     val repository = preview?.first ?: container.repository
                     val store = preview?.second ?: container.connectionStore
                     val model: ReceiverViewModel = viewModel(key = if (preview != null) "store-preview" else "receiver",
-                        factory = viewModelFactory { initializer { ReceiverViewModel(repository, store, container.watchHistoryStore) } })
+                        factory = viewModelFactory { initializer { ReceiverViewModel(repository, store, container.watchHistoryStore,
+                            progressStore = container.playbackProgressStore, reminders = if (preview == null) container.subscriptionReminders else null,
+                            persistenceScope = container.persistenceScope) } })
+                    val draft: LoginDraftViewModel = viewModel(key = if (preview != null) "preview-login-draft" else "login-draft")
                     val state by model.state.collectAsStateWithLifecycle()
+                    LaunchedEffect(state.session != null) { if (state.session != null) draft.clear() }
                     val session = state.session
-                    if (session == null) LoginScreen(state, model::connect)
+                    if (session == null) LoginScreen(state, model::connect, draft)
                     else ReceiverNavigation(repository, session, model)
                 }
             }

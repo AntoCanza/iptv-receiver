@@ -1,5 +1,8 @@
 package io.github.antocanza.iptvreceiver.ui
 
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -78,12 +81,8 @@ internal fun ParentalControlScreen(model: ParentalControlViewModel, session: Ses
                 Text(stringResource(if (creating) R.string.parental_create else if (changing) R.string.parental_change_password else R.string.parental_unlock),
                     style = MaterialTheme.typography.titleMedium)
                 if (creating || changing) Text(stringResource(R.string.parental_remember_password))
-                OutlinedTextField(password, { password = it.take(128) }, Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(R.string.password)) }, singleLine = true, enabled = !state.busy,
-                    visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
-                if (creating || changing) OutlinedTextField(confirmation, { confirmation = it.take(128) }, Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(R.string.parental_confirm_password)) }, singleLine = true, enabled = !state.busy,
-                    visualTransformation = PasswordVisualTransformation(), keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password))
+                SecretField(password, { password = it.take(128) }, stringResource(R.string.password), !state.busy)
+                if (creating || changing) SecretField(confirmation, { confirmation = it.take(128) }, stringResource(R.string.parental_confirm_password), !state.busy)
                 Button(onClick = { model.submit(password, confirmation, changing) }, enabled = !state.busy && password.isNotEmpty()) {
                     Text(stringResource(if (creating) R.string.parental_create else if (changing) R.string.parental_save else R.string.parental_unlock))
                 }
@@ -94,9 +93,9 @@ internal fun ParentalControlScreen(model: ParentalControlViewModel, session: Ses
         if (state.busy) item { CircularProgressIndicator() }
         if (state.unlocked && !changing) {
             item {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).toggleable(state.policy.blockAdult, enabled = !state.busy, role = Role.Switch, onValueChange = model::setAdultBlock), verticalAlignment = Alignment.CenterVertically) {
                     Text(stringResource(R.string.parental_block_adult), Modifier.weight(1f))
-                    Switch(state.policy.blockAdult, model::setAdultBlock, enabled = !state.busy)
+                    Switch(state.policy.blockAdult, null, enabled = !state.busy)
                 }
             }
             item { TextButton(onClick = { changing = true }) { Text(stringResource(R.string.parental_change_password)) } }
@@ -117,8 +116,8 @@ internal fun ParentalControlScreen(model: ParentalControlViewModel, session: Ses
             items(categories.filter { it.name.contains(query, ignoreCase = true) }, key = { it.id }) { category ->
                 val manual = categoryKey(session.connection, type, category.id) in state.policy.blockedCategories
                 val inherited = category.id in blockedIds && !manual
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(manual || inherited, { model.setCategory(type, category.id, it) }, enabled = !state.busy && !inherited)
+                Row(Modifier.fillMaxWidth().heightIn(min = 48.dp).toggleable(manual || inherited, enabled = !state.busy && !inherited, role = Role.Checkbox, onValueChange = { model.setCategory(type, category.id, it) }), verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(manual || inherited, null, enabled = !state.busy && !inherited)
                     Text(category.name.ifBlank { stringResource(R.string.unnamed_category) }, Modifier.weight(1f))
                 }
             }

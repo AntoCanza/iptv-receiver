@@ -8,6 +8,8 @@ import io.github.antocanza.iptvreceiver.model.Episode
 import io.github.antocanza.iptvreceiver.model.FailureReason
 import io.github.antocanza.iptvreceiver.model.ProviderConnection
 import io.github.antocanza.iptvreceiver.model.ProviderException
+import io.github.antocanza.iptvreceiver.model.Programme
+import io.github.antocanza.iptvreceiver.model.PlaybackSource
 import java.util.concurrent.ConcurrentHashMap
 import java.util.Collections
 import java.util.WeakHashMap
@@ -21,6 +23,7 @@ class ParentalCatalogRepository(
     private val categories = ConcurrentHashMap<String, List<Category>>()
     private val items = ConcurrentHashMap<String, CatalogItem>()
     private val episodeParents = ConcurrentHashMap<String, CatalogItem>()
+    private val programmes = ConcurrentHashMap<String, List<Programme>>()
     private val completeCatalogs = ConcurrentHashMap.newKeySet<String>()
     private val identities = Collections.synchronizedMap(WeakHashMap<ProviderConnection, String>())
     private val blockedCache = ConcurrentHashMap<String, Pair<Long, Set<String>>>()
@@ -32,6 +35,7 @@ class ParentalCatalogRepository(
         categories.clear()
         items.clear()
         episodeParents.clear()
+        programmes.clear()
         completeCatalogs.clear()
         blockedCache.clear()
     }
@@ -109,6 +113,16 @@ class ParentalCatalogRepository(
             requireAllowed(connection, parent)
             delegate.episodeStream(connection, episode)
         }
+
+    override suspend fun guide(connection: ProviderConnection, item: CatalogItem): List<Programme> =
+        delegate.guide(connection, authorize(connection, item)).also { programmes[itemKey(connection, item)] = it }
+
+    override fun catchupStream(connection: ProviderConnection, item: CatalogItem, programme: Programme): PlaybackSource {
+        val channel = requireAllowed(connection, item)
+        val canonical = programmes[itemKey(connection, channel)]?.firstOrNull { it == programme }
+            ?: throw ProviderException(FailureReason.PARENTAL_BLOCKED)
+        return delegate.catchupStream(connection, channel, canonical)
+    }
 
     suspend fun authorizeEpisode(connection: ProviderConnection, target: WatchTarget) {
         val item = authorize(connection, target.item)

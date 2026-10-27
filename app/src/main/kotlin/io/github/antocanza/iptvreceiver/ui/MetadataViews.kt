@@ -28,6 +28,7 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import io.github.antocanza.iptvreceiver.R
@@ -80,29 +81,22 @@ internal fun CatalogRefinements(
     var filtering by remember { mutableStateOf(false) }
     val sortDescription = stringResource(R.string.catalog_sort, sort.label())
     val genreDescription = stringResource(R.string.catalog_genre_filter, genre ?: stringResource(R.string.catalog_all_genres))
-    Row(Modifier.fillMaxWidth().padding(horizontal = 8.dp)) {
-        Box(Modifier.weight(1f)) {
-            TextButton(onClick = { sorting = true }, modifier = Modifier.semantics { contentDescription = sortDescription }) {
-                Icon(painterResource(R.drawable.ic_sort), contentDescription = null, modifier = Modifier.size(20.dp))
-                Text(sort.label(), Modifier.weight(1f).padding(horizontal = 4.dp))
-                Icon(painterResource(R.drawable.ic_expand_more), contentDescription = null)
-            }
+    Row {
+        Box {
+            ActionIcon(R.drawable.ic_sort, sortDescription) { sorting = true }
             DropdownMenu(expanded = sorting, onDismissRequest = { sorting = false }) {
                 sorts.forEach { option -> DropdownMenuItem(text = { Text(option.label()) },
-                    onClick = { sorting = false; onSort(option) }, trailingIcon = { RadioButton(selected = sort == option, onClick = null) }) }
+                    onClick = { sorting = false; onSort(option) }, trailingIcon = { RadioButton(selected = sort == option, onClick = null) },
+                    modifier = Modifier.semantics { selected = sort == option }) }
             }
         }
-        if (genres.isNotEmpty()) Box(Modifier.weight(1f)) {
-            TextButton(onClick = { filtering = true }, modifier = Modifier.semantics { contentDescription = genreDescription }) {
-                Icon(painterResource(R.drawable.ic_filter), contentDescription = null, modifier = Modifier.size(20.dp))
-                Text(genre ?: stringResource(R.string.catalog_all_genres), Modifier.weight(1f).padding(horizontal = 4.dp))
-                Icon(painterResource(R.drawable.ic_expand_more), contentDescription = null)
-            }
+        if (genres.isNotEmpty()) Box {
+            ActionIcon(R.drawable.ic_filter, genreDescription, selected = genre != null) { filtering = true }
             DropdownMenu(expanded = filtering, onDismissRequest = { filtering = false }, modifier = Modifier.heightIn(max = 320.dp)) {
-                DropdownMenuItem(text = { Text(stringResource(R.string.catalog_all_genres)) },
-                    onClick = { filtering = false; onGenre(null) }, trailingIcon = { RadioButton(selected = genre == null, onClick = null) })
-                genres.forEach { option -> DropdownMenuItem(text = { Text(option) },
-                    onClick = { filtering = false; onGenre(option) }, trailingIcon = { RadioButton(selected = genre == option, onClick = null) }) }
+                DropdownMenuItem(text = { Text(stringResource(R.string.catalog_all_genres)) }, onClick = { filtering = false; onGenre(null) },
+                    trailingIcon = { RadioButton(selected = genre == null, onClick = null) })
+                genres.forEach { option -> DropdownMenuItem(text = { Text(option) }, onClick = { filtering = false; onGenre(option) },
+                    trailingIcon = { RadioButton(selected = genre == option, onClick = null) }) }
             }
         }
     }
@@ -110,6 +104,7 @@ internal fun CatalogRefinements(
 
 @Composable
 private fun CatalogSort.label(): String = stringResource(when (this) {
+    CatalogSort.RELEVANCE -> R.string.catalog_sort_relevance
     CatalogSort.PROVIDER -> R.string.catalog_sort_provider
     CatalogSort.TITLE -> R.string.catalog_sort_title
     CatalogSort.NEWEST -> R.string.catalog_sort_newest

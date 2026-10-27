@@ -12,6 +12,11 @@ import io.github.antocanza.iptvreceiver.data.artworkHttpClient
 import io.github.antocanza.iptvreceiver.data.scheduleCacheCleanup
 import io.github.antocanza.iptvreceiver.data.ConnectionStore
 import io.github.antocanza.iptvreceiver.data.FileWatchHistoryStore
+import io.github.antocanza.iptvreceiver.data.FilePlaybackProgressStore
+import io.github.antocanza.iptvreceiver.data.SubscriptionReminders
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import io.github.antocanza.iptvreceiver.data.ParentalControls
 import io.github.antocanza.iptvreceiver.data.ParentalCatalogRepository
 import io.github.antocanza.iptvreceiver.model.CatalogRepository
@@ -24,6 +29,10 @@ class ReceiverApplication : Application() {
     val repository: CatalogRepository by lazy { ParentalCatalogRepository(unfilteredRepository, parentalControls) }
     val connectionStore by lazy { ConnectionStore(this) }
     val watchHistoryStore by lazy { FileWatchHistoryStore(filesDir.resolve("watch-history")) }
+    val playbackProgressStore by lazy { FilePlaybackProgressStore(filesDir.resolve("playback-progress")) }
+    val subscriptionReminders by lazy { SubscriptionReminders(filesDir.resolve("subscription-reminders")) }
+    // Final checkpoints must survive a navigation entry or Activity being destroyed.
+    val persistenceScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
     val artworkLoader by lazy { createArtworkLoader() }
 
     fun clearArtworkDiskCaches() {

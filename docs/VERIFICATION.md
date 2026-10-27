@@ -1,6 +1,125 @@
 # Verification record
 
-Date: October 27, 2026. Latest development version 0.1.10, versionCode 11. Package: `io.github.antocanza.iptvreceiver`.
+Date: October 27, 2026. Latest development version 0.1.13, versionCode 14. Package: `io.github.antocanza.iptvreceiver`.
+
+## Usability fixes — version 0.1.13
+
+Applied the ten findings in [the usability audit](UX_AUDIT_2026-10-27.md), with explicit handling of the provider schedule conflict. Catalog search/refinements/results share one scroll container; large-font/short-window layouts use compact rows. Utility actions have named 48 dp icons and long-press tooltips. Live root search spans channels, search defaults to relevance while honoring explicit choices, and the keyboard no longer autocorrects search terms. Series headings omit ambiguous aggregate runtimes.
+
+The optional connection name is labeled. An activity ViewModel retains unfinished credentials across configuration changes without a SavedStateHandle; successful authentication clears it. Remember and parental options associate their labels with the full toggle row. Password fields have reveal actions. Player tools use dedicated icons, numbered track names and subtitle state, replace the native settings action while retaining speed, and follow controller visibility. The visibility listener is refreshed in AndroidView.update so the normal navigation transition cannot retain an obsolete callback.
+
+The complete README verification command passed on the working checkout: dependency policy, 148 JVM tests (102 app, 6 model, 40 provider), debug/release lint, debug APK, minified unsigned release APK and unsigned release AAB. Both lint variants: zero errors, zero warnings, one existing target-SDK informational hint. The manual device-check APK builds. All ten resource sets pass key/format parity; no new dependency was introduced.
+
+### Physical device and real service
+
+Pixel 9 Pro XL, Android 17; data-preserving installation of 0.1.13/versionCode 14. These device checks use the saved real account, with no demo provider or synthetic stream. The runner requires real=true; ordinary JVM/CI fixtures remain synthetic.
+
+| Check | Observed result |
+| --- | --- |
+| Login | Tapping the Remember label toggles the named checkbox; real server/username/password survive landscape and portrait recreation; password stays hidden; tapping Connect with an empty optional name authenticates and clears the draft |
+| Live navigation | Normal home → Live → global Rai search → channel renders video; toolbar hides with automatic timeout and reappears; guide action opens the real schedule |
+| Episode/player | Friends S2x01 renders frames; two audio tracks have unique numbered labels; 1.25× works; explicit hide/show and automatic timeout synchronize the toolbar; native settings action is absent; all 12 scale/aspect combinations and stream information pass |
+| Global search/ranking | Rai produces 40 channels; Friends is first among five matching series |
+| Large fonts | At font scale 2.0/density 600, portrait catalog rows are readable and landscape search/filter/results scroll together. Full result rows remain reachable. History actions use play/info icons and title-specific accessible names; long-press help is readable |
+| Guide | Real overlapping entries produce an explicit conflict message and no ambiguous current badge. With font scale 2.0/density 600 and keyboard open, scrolling reaches Storie italiane and its replay action; tapping starts video |
+| Series details | The ambiguous 5270-minute heading is omitted; individual episodes still show 22 minutes |
+| Movie/fullscreen | Interstellar starts from history and renders video; fullscreen opens in landscape, shows the combined controls on tap, and hides them automatically |
+
+The three manual runner phases pass eight groups (login 3, player 4, live 1):
+
+~~~text
+adb shell am instrument -w -e real true -e uxPhase login io.github.antocanza.iptvreceiver.test/io.github.antocanza.iptvreceiver.PlaybackDeviceChecks
+adb shell am instrument -w -e real true -e uxPhase player io.github.antocanza.iptvreceiver.test/io.github.antocanza.iptvreceiver.PlaybackDeviceChecks
+adb shell am instrument -w -e real true -e uxPhase live io.github.antocanza.iptvreceiver.test/io.github.antocanza.iptvreceiver.PlaybackDeviceChecks
+~~~
+
+Provider limitation: the archive selected as Storie italiane starts video displaying Unomattina branding. Successful playback does not verify programme identity or schedule accuracy. The app flags overlapping schedule data and preserves both provider timestamps and the archive-local clock; it does not guess an hour correction or delete repeated shows.
+
+Coverage remains limited to this phone/account and selected streams. TalkBack listening, Switch Access/keyboard journeys, other devices/API 26/tablets, visual RTL, network fault injection, actual subtitle cues and the minified build on hardware remain unverified. Parental creation/unlock/reset was not exercised on the personal account. Screenshots, credentials, provider payloads and playback URLs stay outside Git.
+
+Original watch-history/progress (three files) and preferences (three files) were restored with matching SHA-256 hashes. Density, font scale, automatic rotation and screen-power behavior were restored; the updated app opens on the real home screen.
+
+Development APK SHA-256: 3d16500a03cb4a2017ea6ce5e95e3d243badc337a2241605ea7f951b02f4ab5f.
+
+## Movie/episode resume and subscription reminders — version 0.1.12
+
+- Movies and individual episodes checkpoint actual playback every five seconds and on seek/pause/background/exit. History shows position/duration or completion, with a Resume action when eligible. Selecting an unfinished title from history, movie details or an episode list offers Resume and Start over. Completed titles start over; live TV and catch-up do not acquire movie bookmarks.
+- Progress is isolated by normalized provider/account, content type, title and episode IDs. Its separate version-1 atomic store survives process restart, logout and recent-history expiry without changing the existing history schema. It contains no credentials, titles, artwork or playback addresses. Final writes survive navigation disposal; older asynchronous snapshots cannot overwrite a newer seek/restart. Resume starts collecting positions in this version and cannot recover earlier viewing.
+- Foreground subscription prompts start two local calendar months before the provider's sign-in expiry date. Repeat intervals tighten from 14 days to 7 days, 3 days, 1 day and 12 hours. OK/Back/outside dismissal is retained per account and expiry value. Playback and the resume choice defer prompts until browsing. No background/system notification is scheduled. Unknown dates are ignored; renewed dates are evaluated after authentication refreshes the account snapshot. See [the exact policy](CACHE_AND_PLAYBACK.md#subscription-expiry-reminders).
+- All **145 JVM tests pass**: 6 model, 40 provider and 99 app tests. The 18 additional cases cover process reload, fifteen minutes of a 110-minute movie, retention independent of recent history, movie/show/episode/account isolation, changed passwords, excluded private values, completion/unknown durations, stale writes and sessions/players, corrupt/future schemas, pre-prepare seeking, periodic/pause/background/final saves, calendar-month boundaries/DST, urgency intervals, persisted acknowledgement, renewal, invalid/expired dates, clock rollback and storage failures.
+- The complete README verification command passes: dependency policy, JVM suites, debug/release lint, debug APK, minified unsigned release APK and unsigned release AAB. Both lint variants report zero errors and zero warnings, with the existing informational target-SDK hint. The manual device-check APK also builds. All ten languages pass resource/format parity. Verification uses an isolated source copy; no new library dependency was added.
+
+### Physical Pixel 9 Pro XL checks
+
+| Check | Observed result |
+| --- | --- |
+| Real movie and real series episode | Each rendered video, sought beyond 15 minutes and persisted periodic/pause/exit checkpoints with known duration |
+| Complete process shutdown/reopen | Saved connection/language and both independent positions survived an explicit force-stop between device phases |
+| Actual history UI | Both titles displayed progress, opened the Resume/Start over dialog and resumed at the saved 15-minute point |
+| Moving video after resume | New video-frame callbacks were observed for both real streams after the saved seek |
+| Start over | Actual button returned each title to its beginning and reset its durable position below ten seconds |
+| Expiry dialog | A controlled account/clock displayed date and days remaining; actual OK tap closed it; recreating the model retained acknowledgement |
+| Next reminder and playback gate | Advancing the fixture clock made the next interval due; the playback visibility gate suppressed it until browsing, then OK closed it |
+| Installation | Data-preserving update to 0.1.12/versionCode 13; real account and Italian interface retained |
+
+The device runner reported eight passing groups: two real-playback checkpoint checks, four normal-navigation resume/restart checks and two controlled expiry-UI checks. The actual subscription expiry was not changed. Calendar and urgency intervals use controlled clocks rather than a multi-week hardware soak. These checks cover selected streams on this phone/provider with the development APK; API 26/tablets, other providers, non-seekable VOD and the minified build on hardware remain unverified. A forced process kill can lose a few seconds since the last completed checkpoint; records are local to this installation.
+
+The existing manual runner accepts these additional phases after installing both debug APKs. Run `seed`, explicitly force-stop the main package, then run `verify`; real phases require a saved account and are never public CI:
+
+```text
+adb shell am instrument -w -e real true -e progressPhase seed io.github.antocanza.iptvreceiver.test/io.github.antocanza.iptvreceiver.PlaybackDeviceChecks
+adb shell am force-stop io.github.antocanza.iptvreceiver
+adb shell am instrument -w -e real true -e progressPhase verify io.github.antocanza.iptvreceiver.test/io.github.antocanza.iptvreceiver.PlaybackDeviceChecks
+adb shell am instrument -w -e progressPhase reminder io.github.antocanza.iptvreceiver.test/io.github.antocanza.iptvreceiver.PlaybackDeviceChecks
+```
+
+Development APK SHA-256: `e0aff8f5e5e508f321b6a47ae8604cbba373fa09e77392f9407f6140a393551a`.
+
+No store publication was performed.
+
+## Player icons and programme guide version 0.1.11
+
+- The player uses icons with translated accessibility labels: a gear for display settings, CC for available subtitles, information for actual stream formats, a guide for live channels and audio selection when multiple audio tracks exist. Display choices cover Fit/Zoom/Stretch and automatic/16:9/4:3/21:9 ratios. The selected ratio also applies when the input video size changes. CC follows prepared text tracks and the selector can disable all text, including forced subtitles.
+- Home includes a channel-based TV guide. It loads the provider's schedule, decodes descriptions/titles, displays local programme times, supports search and current/upcoming/past views, and offers replay only for eligible advertised archives. Past programmes are ordered newest first. Past/search choices survive leaving for playback and returning. This is a channel schedule browser; a simultaneous multi-channel grid remains future work.
+- Archive resolution uses the provider-local programme clock and a bounded duration. The physical archive probe exposed an incorrect TS duration of approximately 26 hours for a one-hour programme. The production engine therefore clips archive playback to the scheduled programme duration. Guide loading and archive selection recheck parental category policy and programme ownership; no history schema change or credential-bearing persistence was added.
+- Fixed video reattachment when Compose reuses a player view with a different playback session. Earlier device checks exposed a stale picture while audio from the new player continued. The update now assigns the current player in the view update as well as its factory, and avoids redundant display-layout updates. Subsequent stream-switch and frame checks passed, and the user independently confirmed moving video with audio. The player retains SurfaceView and enables Media3's Android 14 Compose workaround.
+- All **127 JVM tests pass**: 6 model, 40 provider and 81 app tests. New coverage includes guide parsing/Base64/plain text, malformed timestamps/local clocks, archive flags/retention and encoded URLs, finite archive duration, policy/ownership enforcement, guide cancellation/retry and refreshing historical channel capabilities, and display-state retention without rewinding media. All ten languages pass string/placeholder parity checks.
+- The complete README verification command passed: dependency policy, JVM tests, debug/release lint, debug APK, minified unsigned release APK and unsigned release AAB. Lint reports zero errors and zero warnings, with the existing informational target-SDK hint. The device-check APK also builds. Checks used an isolated copy of the source; machine paths and device artifacts remain outside the repository.
+
+### Physical Pixel 9 Pro XL checks
+
+| Check | Observed result |
+| --- | --- |
+| All 12 scale and aspect combinations | Actual controls tapped; requested geometry and continued video-frame callbacks verified after every change |
+| Stream information | Opened from its icon during real live playback; video/codec fields were present |
+| Two real live channels | Each observed for 60 seconds after initial video; 1,701 and 1,490 frame callbacks across the checks; pause held position and resume produced new frames |
+| Two real movies | Each rendered video, paused/resumed and sought to approximately 60 seconds |
+| Two real episodes | Each rendered video, paused/resumed and sought to approximately 60 seconds |
+| Catch-up | Real archived video rendered, the programme-duration upper bound held, and seeking to approximately 15 seconds resumed video |
+| Subtitle languages and Off | Controlled English and Italian WebVTT cues actually rendered after selection; Off cleared the cues and disabled text tracks, including a forced-caption track |
+| Subtitle availability changes | CC was absent without text tracks, appeared when two tracks arrived and disappeared when they were removed |
+| Normal guide navigation | Home → guide category → channel → past programmes → search → catch-up Play succeeded through the actual navigation and repository guard |
+| Fullscreen and rotation | The normal app entered/exited landscape while paused, retaining the same player, position within 600 ms and a selected 4:3 ratio; resume delivered new video frames |
+| Return to guide | The guide icon returned to the saved past-programme filter and search; the player view was released |
+| Installed application | Data-preserving update to 0.1.11/versionCode 12; saved connection and interface language retained |
+
+The comprehensive device runner reported 11 passing check groups; the normal-navigation runner reported another three. One additional episode stayed buffering without video beyond the 50-second startup bound and is not counted as successful playback. Earlier failures while establishing the runner included accessibility-selection handling and the stale view/player connection described above; those are not evidence that the provider rejected those channels.
+
+These physical results cover selected streams on this phone/provider and the development APK. They do not establish compatibility for every catalog item, extended sessions, genuine anamorphic/4:3 sources, HDR, surround sound, multiple real audio languages, tablets, API 26 or the minified build on hardware. Caption track advertisement alone does not establish that a live channel is transmitting cues; the two-language cue checks used controlled data.
+
+The manual runner is under `app/src/androidTest`. After building/installing both debug APKs, its default mode uses a local synthetic audio/subtitle fixture. Real-provider mode is explicit and uses only the saved connection on the phone:
+
+```text
+adb shell am instrument -w io.github.antocanza.iptvreceiver.test/io.github.antocanza.iptvreceiver.PlaybackDeviceChecks
+adb shell am instrument -w -e real true io.github.antocanza.iptvreceiver.test/io.github.antocanza.iptvreceiver.PlaybackDeviceChecks
+adb shell am instrument -w -e real true -e normalUi true io.github.antocanza.iptvreceiver.test/io.github.antocanza.iptvreceiver.PlaybackDeviceChecks
+```
+
+Real mode must remain a private, explicitly requested device check, never public CI. It opens one player at a time and emits sanitized outcomes. Any failure capture stays in app-owned device storage; private captures, raw responses, accounts and media addresses are excluded from the repository. Temporary diagnostic packages were removed after testing and the original USB screen-awake setting was restored.
+
+Development APK SHA-256: `94fac5c3cb5c2a48dfd063c69429895987fbf147b45e7e4c659b90d294021cb8`.
+
+No store publication was performed.
 
 ## Parental controls — October 27, 2026
 
@@ -152,4 +271,4 @@ The APK uses development signing. The AAB is unsigned and cannot be submitted un
 
 ### Remaining release validation
 
-Test the signed/minified build on hardware, tablets, API 26, long sessions, network recovery, large catalogs, subtitles/audio tracks, and mixed-direction metadata. Daily/weekly cache maintenance is scheduled and temp pruning is unit-tested; a multi-day background soak is still needed. Artwork viewport gating was exercised in actual grids but has no automated network-count instrumentation test yet. Upstream missing artwork still displays a placeholder. Durable watch progress after process death, next-episode playback, a full TV guide and Android TV remain roadmap work.
+Test the signed/minified build on hardware, tablets, API 26, long sessions, network recovery, large catalogs, subtitles/audio tracks, and mixed-direction metadata. Daily/weekly cache maintenance is scheduled and temp pruning is unit-tested; a multi-day background soak is still needed. Artwork viewport gating was exercised in actual grids but has no automated network-count instrumentation test yet. Upstream missing artwork still displays a placeholder. Next-episode playback, a simultaneous multi-channel guide and Android TV remain roadmap work; the latest version above implements durable movie/episode progress and a channel guide.

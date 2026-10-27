@@ -23,7 +23,8 @@ data class WatchTarget(val item: CatalogItem, val episode: Episode? = null) {
     val key: List<String> get() = listOf(item.type.name, item.id, episode?.id.orEmpty())
 }
 
-data class WatchHistoryEntry(val target: WatchTarget, val watchedAtMillis: Long)
+/** Progress is enriched from its own durable store; the existing history file remains version 1. */
+data class WatchHistoryEntry(val target: WatchTarget, val watchedAtMillis: Long, val progress: PlaybackProgress? = null)
 
 interface WatchHistoryStore {
     fun load(connection: ProviderConnection): List<WatchHistoryEntry>

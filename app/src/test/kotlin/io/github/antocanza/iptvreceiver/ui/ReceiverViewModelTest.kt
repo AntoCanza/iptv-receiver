@@ -3,6 +3,10 @@ package io.github.antocanza.iptvreceiver.ui
 import io.github.antocanza.iptvreceiver.data.SavedConnectionStore
 import io.github.antocanza.iptvreceiver.data.FileWatchHistoryStore
 import io.github.antocanza.iptvreceiver.data.WatchTarget
+import io.github.antocanza.iptvreceiver.data.FilePlaybackProgressStore
+import io.github.antocanza.iptvreceiver.data.PlaybackProgress
+import io.github.antocanza.iptvreceiver.data.SubscriptionReminders
+import io.github.antocanza.iptvreceiver.model.PlaybackSource
 import io.github.antocanza.iptvreceiver.model.CatalogItem
 import io.github.antocanza.iptvreceiver.model.ContentType
 import io.github.antocanza.iptvreceiver.model.FailureReason
@@ -166,6 +170,58 @@ class ReceiverViewModelTest {
         assertEquals(1, model.history.value.entries.size)
     }
 
+    @Test fun `history shows durable progress and ignores old session and replaced player callbacks`() = runTest(dispatcher) {
+        val progress = FilePlaybackProgressStore(folder.root.resolve("progress"))
+        val model = ReceiverViewModel(FakeRepository(), FakeStore(), historyStore, dispatcher, progress)
+        advanceUntilIdle(); model.connect(connection, false); advanceUntilIdle()
+        val session = checkNotNull(model.state.value.session)
+        val target = WatchTarget(CatalogItem("movie", "Movie", ContentType.MOVIE))
+        val first = PlaybackSource("https://fixture.example.test/first.mp4", "Movie", false)
+        val replacement = PlaybackSource("https://fixture.example.test/replacement.mp4", "Movie", false)
+        model.preparePlayback(first, target)
+        model.recordWatch(target, session); advanceUntilIdle()
+        val point = PlaybackProgress(900_000, 6_600_000)
+        model.recordProgress(target, session, point, first); advanceUntilIdle()
+        assertEquals(point, model.history.value.entries.single().progress)
+        assertEquals(point, model.resumeProgress(target, session))
+        model.preparePlayback(replacement, target, 900_000)
+        model.recordProgress(target, session, point.copy(positionMs = 0), first); advanceUntilIdle()
+        assertEquals(point, model.resumeProgress(target, session))
+        model.signOut(); advanceUntilIdle()
+        model.connect(connection.with(username = "other"), false); advanceUntilIdle()
+        model.recordProgress(target, session, point.copy(positionMs = 0)); advanceUntilIdle()
+        assertNull(model.resumeProgress(target, checkNotNull(model.state.value.session)))
+        model.connect(connection, false); advanceUntilIdle()
+        assertEquals(point, model.history.value.entries.single().progress)
+        assertEquals(point, FilePlaybackProgressStore(folder.root.resolve("progress")).load(connection)[target.key])
+    }
+
+    @Test fun `expiry popup OK persists and signout hides it`() = runTest(dispatcher) {
+        val now = java.time.Instant.parse("2026-10-27T12:00:00Z")
+        val expiry = now.plusSeconds(20 * 86400).epochSecond
+        val repository = object : CatalogRepository by FakeRepository() {
+            override suspend fun authenticate(connection: ProviderConnection) = Account("Active", expiry, listOf("ts"))
+        }
+        val reminderDirectory = folder.root.resolve("reminders")
+        fun create() = ReceiverViewModel(repository, FakeStore(), historyStore, dispatcher,
+            reminders = SubscriptionReminders(reminderDirectory, { now }))
+        val model = create(); advanceUntilIdle(); model.connect(connection, false); advanceUntilIdle()
+        model.checkExpiryReminder(); advanceUntilIdle()
+        assertNotNull(model.expiryNotice.value)
+        model.acknowledgeExpiryReminder()
+        assertNull(model.expiryNotice.value)
+        advanceUntilIdle(); model.checkExpiryReminder(); advanceUntilIdle()
+        assertNull(model.expiryNotice.value)
+        val reopened = create(); advanceUntilIdle(); reopened.connect(connection, false); advanceUntilIdle()
+        reopened.checkExpiryReminder(); advanceUntilIdle()
+        assertNull(reopened.expiryNotice.value)
+        reopened.connect(connection.with(username = "other"), false); advanceUntilIdle()
+        reopened.checkExpiryReminder(); advanceUntilIdle()
+        assertNotNull(reopened.expiryNotice.value)
+        reopened.signOut(); advanceUntilIdle()
+        assertNull(reopened.expiryNotice.value)
+    }
+
     private class FakeStore : SavedConnectionStore {
         var saved: ProviderConnection? = null
         var failSave = false
@@ -177,3 +233,5 @@ class ReceiverViewModelTest {
         override fun clear() { saved = null }
     }
 }
+
+private fun ProviderConnection.with(name: String = this.name, serverUrl: String = this.serverUrl, username: String = this.username, password: String = this.password) = ProviderConnection(name, serverUrl, username, password)

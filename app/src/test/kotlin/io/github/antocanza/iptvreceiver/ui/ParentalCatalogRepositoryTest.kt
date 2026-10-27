@@ -15,6 +15,27 @@ import org.junit.Test
 import org.junit.rules.TemporaryFolder
 
 class ParentalCatalogRepositoryTest {
+    @Test fun `guide and archive enforce category policy and reject fabricated programmes`() = runTest {
+        val controls = ParentalControls(folder.root.resolve("guide-policy.bin"))
+        val programme = Programme("p", "Fixture", "", 10, 20, true, "2026-10-26 10:00:00")
+        var guideCalls = 0
+        val provider = object : CatalogRepository by source() {
+            override suspend fun guide(connection: ProviderConnection, item: CatalogItem): List<Programme> { guideCalls++; return listOf(programme) }
+            override fun catchupStream(connection: ProviderConnection, item: CatalogItem, programme: Programme) = PlaybackSource("https://example.test/fixture.ts", programme.title, false)
+        }
+        val repository = ParentalCatalogRepository(provider, controls)
+        repository.items(connection, ContentType.LIVE, null)
+        assertTrue(runCatching { repository.guide(connection, adult) }.isFailure)
+        assertEquals(0, guideCalls)
+        assertEquals(listOf(programme), repository.guide(connection, normal))
+        assertNotNull(repository.catchupStream(connection, normal, programme))
+        assertTrue(runCatching { repository.catchupStream(connection, normal, programme.copy(id = "forged")) }.isFailure)
+        val access = controls.create("parent-password")
+        controls.update(access, category = categoryKey(connection, ContentType.LIVE, "safe"), blocked = true)
+        assertTrue(runCatching { repository.catchupStream(connection, normal, programme) }.isFailure)
+        assertTrue(runCatching { repository.guide(connection, normal) }.isFailure)
+        assertEquals(1, guideCalls)
+    }
     @get:Rule val folder = TemporaryFolder()
     private val connection = ProviderConnection("Test", "https://provider.example.test", "demo", "synthetic")
     private val categories = listOf(Category("safe", "News", null), Category("adult", "XXX", null), Category("child", "Other", "adult"))

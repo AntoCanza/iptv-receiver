@@ -7,6 +7,10 @@ import io.github.antocanza.iptvreceiver.data.WatchHistoryEntry
 import io.github.antocanza.iptvreceiver.data.WatchHistoryStore
 import io.github.antocanza.iptvreceiver.data.WatchTarget
 import io.github.antocanza.iptvreceiver.data.ParentalCatalogRepository
+import io.github.antocanza.iptvreceiver.data.PlaybackProgress
+import io.github.antocanza.iptvreceiver.data.PlaybackProgressStore
+import io.github.antocanza.iptvreceiver.data.SubscriptionNotice
+import io.github.antocanza.iptvreceiver.data.SubscriptionReminders
 import io.github.antocanza.iptvreceiver.model.Account
 import io.github.antocanza.iptvreceiver.model.CatalogItem
 import io.github.antocanza.iptvreceiver.model.CatalogRepository
@@ -16,6 +20,7 @@ import io.github.antocanza.iptvreceiver.model.ProviderConnection
 import io.github.antocanza.iptvreceiver.model.ProviderException
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -34,17 +39,26 @@ class ReceiverViewModel(
     private val store: SavedConnectionStore,
     private val historyStore: WatchHistoryStore,
     private val storageDispatcher: CoroutineDispatcher = Dispatchers.IO,
+    private val progressStore: PlaybackProgressStore? = null,
+    private val reminders: SubscriptionReminders? = null,
+    private val persistenceScope: CoroutineScope? = null,
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(LoginState())
     val state = mutableState.asStateFlow()
     private val mutableHistory = MutableStateFlow(HistoryState())
     val history = mutableHistory.asStateFlow()
+    private val mutableExpiryNotice = MutableStateFlow<SubscriptionNotice?>(null)
+    val expiryNotice = mutableExpiryNotice.asStateFlow()
+    private var reminderAcknowledgement: Job? = null
+    private var reminderRevision = 0L
     private val historyMutex = Mutex()
     var selectedItem: CatalogItem? = null
         private set
     var playbackSource: PlaybackSource? = null
         private set
     var watchTarget: WatchTarget? = null
+        private set
+    var playbackStartMs: Long = 0
         private set
     private var connectionJob: Job? = null
 
@@ -72,6 +86,7 @@ class ReceiverViewModel(
     }
 
     private suspend fun authenticate(connection: ProviderConnection, remember: Boolean) {
+        mutableExpiryNotice.value = null
         mutableState.value = LoginState(busy = true)
         try {
             val account = repository.authenticate(connection)
@@ -97,9 +112,53 @@ class ReceiverViewModel(
 
     fun select(item: CatalogItem) { selectedItem = item }
 
-    fun preparePlayback(source: PlaybackSource, target: WatchTarget) {
+    fun preparePlayback(source: PlaybackSource, target: WatchTarget, startPositionMs: Long = 0) {
         playbackSource = source
         watchTarget = target
+        playbackStartMs = startPositionMs
+    }
+
+    suspend fun resumeProgress(target: WatchTarget, session: Session): PlaybackProgress? = withContext(storageDispatcher) {
+        if (target.item.type == io.github.antocanza.iptvreceiver.model.ContentType.LIVE) null else progressStore?.load(session.connection)?.get(target.key)
+    }
+
+    fun recordProgress(target: WatchTarget, session: Session, progress: PlaybackProgress, source: PlaybackSource? = null): Job? {
+        val destination = progressStore ?: return null
+        if (mutableState.value.session !== session) return null
+        if (source != null && watchTarget?.key == target.key && playbackSource !== source) return null
+        val observed = System.nanoTime()
+        return (persistenceScope ?: viewModelScope).launch(storageDispatcher) {
+            historyMutex.withLock {
+                try {
+                    destination.save(session.connection, target, progress, observed)
+                    if (mutableState.value.session === session) {
+                        val current = destination.load(session.connection)[target.key]
+                        mutableHistory.value = mutableHistory.value.copy(entries = mutableHistory.value.entries.map {
+                            if (it.target.key == target.key) it.copy(progress = current) else it
+                        })
+                    }
+                } catch (error: CancellationException) { throw error }
+                catch (_: Exception) { if (mutableState.value.session === session) mutableHistory.value = mutableHistory.value.copy(failed = true) }
+            }
+        }
+    }
+
+    fun checkExpiryReminder(): Job = viewModelScope.launch {
+        if (reminderAcknowledgement?.isActive == true) return@launch
+        val session = mutableState.value.session ?: return@launch
+        val revision = reminderRevision
+        val notice = withContext(storageDispatcher) { reminders?.due(session.connection, session.account.expiresAtSeconds) }
+        if (mutableState.value.session === session && reminderRevision == revision) mutableExpiryNotice.value = notice
+    }
+
+    fun acknowledgeExpiryReminder() {
+        val session = mutableState.value.session ?: return
+        val notice = mutableExpiryNotice.value ?: return
+        reminderRevision++
+        mutableExpiryNotice.value = null
+        reminderAcknowledgement = (persistenceScope ?: viewModelScope).launch(storageDispatcher) {
+            reminders?.acknowledge(session.connection, notice)
+        }
     }
 
     fun refreshHistory(): Job = updateHistory { historyStore.load(it) }
@@ -118,7 +177,9 @@ class ReceiverViewModel(
             try {
                 val entries = withContext(storageDispatcher) {
                     val stored = update(session.connection)
-                    if (repository is ParentalCatalogRepository) repository.visibleHistory(session.connection, stored) else stored
+                    val visible = if (repository is ParentalCatalogRepository) repository.visibleHistory(session.connection, stored) else stored
+                    val progress = progressStore?.load(session.connection).orEmpty()
+                    visible.map { entry -> entry.copy(progress = progress[entry.target.key]) }
                 }
                 if (mutableState.value.session === session &&
                     revision == (repository as? ParentalCatalogRepository)?.policy?.value?.revision) {
@@ -137,6 +198,8 @@ class ReceiverViewModel(
         selectedItem = null
         playbackSource = null
         watchTarget = null
+        playbackStartMs = 0
+        mutableExpiryNotice.value = null
         mutableHistory.value = HistoryState()
         mutableState.value = LoginState(busy = true)
         connectionJob = viewModelScope.launch {

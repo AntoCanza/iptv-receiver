@@ -54,6 +54,7 @@ data class CatalogItem(
     val addedAtSeconds: Long? = null,
     val categoryId: String? = null,
     val isAdult: Boolean = false,
+    val catchupDays: Int = 0,
 )
 
 val CatalogItem.artworkUrls: List<String> get() = (listOfNotNull(imageUrl) + imageFallbackUrls).distinct()
@@ -87,7 +88,7 @@ data class SeriesDetails(
 )
 
 /** Contains a credential-bearing URL; never log, serialize, or use as a navigation argument. */
-class PlaybackSource(val url: String, val title: String, val isLive: Boolean) {
+class PlaybackSource @JvmOverloads constructor(val url: String, val title: String, val isLive: Boolean, val durationMs: Long? = null) {
     override fun toString(): String = "PlaybackSource([redacted])"
 }
 
@@ -101,6 +102,25 @@ interface CatalogRepository {
     suspend fun series(connection: ProviderConnection, item: CatalogItem): SeriesDetails
     fun stream(connection: ProviderConnection, item: CatalogItem, liveFormat: String = "m3u8"): PlaybackSource
     fun episodeStream(connection: ProviderConnection, episode: Episode): PlaybackSource
+    suspend fun guide(connection: ProviderConnection, item: CatalogItem): List<Programme> = emptyList()
+    fun catchupStream(connection: ProviderConnection, item: CatalogItem, programme: Programme): PlaybackSource =
+        throw ProviderException(FailureReason.UNAVAILABLE)
+}
+
+data class Programme(
+    val id: String,
+    val title: String,
+    val description: String,
+    val startsAtSeconds: Long,
+    val endsAtSeconds: Long,
+    val archiveAvailable: Boolean,
+    /** Provider-local clock used by the Xtream archive endpoint, without a timezone conversion. */
+    val providerStartLocal: String?,
+) {
+    fun canReplay(channel: CatalogItem, nowSeconds: Long): Boolean = channel.type == ContentType.LIVE &&
+        channel.catchupDays > 0 && archiveAvailable && providerStartLocal != null && endsAtSeconds <= nowSeconds &&
+        startsAtSeconds >= nowSeconds - channel.catchupDays * 86_400L && endsAtSeconds > startsAtSeconds &&
+        endsAtSeconds - startsAtSeconds <= 24 * 3600
 }
 
 enum class FailureReason {

@@ -21,7 +21,7 @@ The initial Portuguese translation uses European Portuguese. Chinese support her
 
 ## Scope
 
-App-owned navigation, login labels, search, empty states, playback feedback and errors have translated resources. Provider errors are stable `FailureReason` codes that the Android UI translates at display time; raw provider responses are never shown. Native Media3 controls use the dependency's own translations.
+App-owned navigation, login labels, search, empty states, playback feedback, resume/history progress, subscription reminders, display/stream information panels, programme-guide controls and errors have translated resources. Utility and player icons retain translated accessibility labels and long-press help. Numbered track fallbacks, optional connection-name labels, relevance sorting and schedule-conflict messages are localized in all ten languages. Provider errors are stable `FailureReason` codes that the Android UI translates at display time; raw provider responses are never shown. Native Media3 controls and track selectors use the dependency's own translations.
 
 Provider category names, channel names, movie titles, series names, descriptions and episode titles remain as delivered by the service. Translating the interface does not create translated metadata, dubbed audio or subtitles. Audio/subtitle availability depends on the stream.
 

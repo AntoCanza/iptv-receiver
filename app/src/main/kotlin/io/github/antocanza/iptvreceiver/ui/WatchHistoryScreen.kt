@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
@@ -76,17 +77,18 @@ internal fun WatchHistoryScreen(state: HistoryState, retry: () -> Unit, play: (W
                     }
                     Text(target.item.type.label() + " · " + dateFormat.format(Date(entry.watchedAtMillis)),
                         style = MaterialTheme.typography.bodySmall)
+                    entry.progress?.let { progress ->
+                        Text(if (progress.completed) stringResource(R.string.history_completed) else progress.durationMs?.let {
+                            stringResource(R.string.history_progress, formatWatchTime(progress.positionMs), formatWatchTime(it))
+                        } ?: stringResource(R.string.resume_message_unknown, formatWatchTime(progress.positionMs)))
+                        progress.durationMs?.let { duration -> LinearProgressIndicator(progress = { (progress.positionMs.toFloat() / duration).coerceIn(0f, 1f) }, modifier = Modifier.fillMaxWidth()) }
+                    }
                     Row {
-                        TextButton(onClick = { play(target) }) {
-                            Icon(painterResource(R.drawable.ic_play), contentDescription = null)
-                            Text(stringResource(R.string.play), Modifier.padding(start = 8.dp))
-                        }
-                        if (target.item.type != ContentType.LIVE) {
-                            TextButton(onClick = { details(target) }) {
-                                Icon(painterResource(R.drawable.ic_info), contentDescription = null)
-                                Text(stringResource(R.string.watch_history_details), Modifier.padding(start = 8.dp))
-                            }
-                        }
+                        val title = target.episode?.title ?: target.item.title
+                        val playLabel = stringResource(if (entry.progress?.canResume == true) R.string.resume_action else R.string.play)
+                        ActionIcon(R.drawable.ic_play, stringResource(R.string.action_for_title, playLabel, title)) { play(target) }
+                        if (target.item.type != ContentType.LIVE) ActionIcon(R.drawable.ic_info,
+                            stringResource(R.string.action_for_title, stringResource(R.string.watch_history_details), title)) { details(target) }
                     }
                 }
             }

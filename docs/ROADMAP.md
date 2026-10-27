@@ -38,14 +38,17 @@ Do this before expanding features. A successful login/catalog request alone does
 - [ ] Phone/tablet navigation UI tests, accessibility checks and screenshot review.
 - [ ] Native-speaker review and device checks for all ten languages, including Arabic RTL and Chinese/Japanese text.
 
-Movies and Series roots support full-catalog search and All movies/All series browsing through unfiltered provider requests. They stream large responses into mapped metadata and reuse each list while its screen exists. Individual categories and Live TV retain list-scoped search. Results cover the current connection; multiple separate IPTV accounts/servers are not combined. Durable indexing, full-catalog Live TV search, and catalogs beyond the bounded transfer size remain future work.
+Live TV, Movies and Series roots support full-catalog search and all-content browsing through unfiltered provider requests. They stream large responses into mapped metadata and reuse each list while its screen exists. Individual categories retain category-scoped search. Results cover the current connection; multiple separate IPTV accounts/servers are not combined. Durable indexing and catalogs beyond the bounded transfer size remain future work.
 
 ## Milestone 3 — Playback continuity
 
 - [x] Durable, account-scoped watch history for live channels, movies and episodes; newest first, rolling 10-day retention, preserved during cache cleanup.
-- [ ] Save progress by provider/content/episode ID; never persist stream URLs.
-- [ ] Resume/restart choice and sensible completion threshold.
+- [x] Save progress by provider/content/episode ID; never persist stream URLs.
+- [x] Resume/restart choice, visible history progress and completion threshold.
+- [x] In-app subscription reminders from two calendar months before expiry, increasingly frequent and dismissible with OK.
 - [ ] Remember audio and subtitle preferences when available.
+- [x] In-session aspect/scale selection, visible subtitle Off/language selection and current stream information.
+- [x] Channel programme guide with search, current/upcoming/past programmes and advertised catch-up playback.
 - [ ] Next-episode playback with correct numeric season/episode ordering.
 - [ ] Fullscreen/inset behavior and rotation without restarting the stream.
 - [ ] Categorize offline, access-denied, unavailable-stream and unsupported-codec failures.
@@ -70,4 +73,4 @@ Movies and Series roots support full-catalog search and All movies/All series br
 
 ## Later product choices
 
-Password-protected parental controls with default adult blocking and settings reset are implemented; device and provider classification coverage remains part of release hardening. Favorites, multiple accounts, a full EPG/XMLTV guide, catch-up, casting, downloads, M3U import, background playback and cloud sync remain later product choices.
+Password-protected parental controls with default adult blocking and settings reset are implemented; device and provider classification coverage remains part of release hardening. Favorites, multiple accounts, a simultaneous multi-channel EPG grid/XMLTV import, casting, downloads, M3U import, background playback and cloud sync remain later product choices. The existing channel guide and Xtream catch-up path still need broader provider and device coverage.

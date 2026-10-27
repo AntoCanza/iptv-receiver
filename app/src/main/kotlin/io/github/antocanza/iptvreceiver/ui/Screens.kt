@@ -1,5 +1,7 @@
 package io.github.antocanza.iptvreceiver.ui
 
+import androidx.compose.foundation.selection.toggleable
+import androidx.compose.ui.semantics.Role
 import android.net.Uri
 import android.content.pm.ActivityInfo
 import android.content.res.Configuration
@@ -69,10 +71,12 @@ import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.currentBackStackEntryAsState
 import io.github.antocanza.iptvreceiver.R
 import io.github.antocanza.iptvreceiver.ReceiverApplication
 import io.github.antocanza.iptvreceiver.data.ParentalCatalogRepository
 import io.github.antocanza.iptvreceiver.data.WatchTarget
+import io.github.antocanza.iptvreceiver.data.PlaybackProgress
 import io.github.antocanza.iptvreceiver.model.CatalogItem
 import io.github.antocanza.iptvreceiver.model.CatalogRepository
 import io.github.antocanza.iptvreceiver.model.ContentType
@@ -85,12 +89,12 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(state: LoginState, connect: (ProviderConnection, Boolean) -> Unit) {
+fun LoginScreen(state: LoginState, connect: (ProviderConnection, Boolean) -> Unit, draft: LoginDraftViewModel = viewModel()) {
     var name by rememberSaveable { mutableStateOf("") }
     // Credentials stay out of Android's saved-state bundles.
-    var server by remember { mutableStateOf("") }
-    var username by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    val server = draft.server
+    val username = draft.username
+    val password = draft.password
     var passwordVisible by remember { mutableStateOf(false) }
     var rememberConnection by rememberSaveable { mutableStateOf(false) }
     val defaultConnectionName = stringResource(R.string.default_connection_name)
@@ -100,26 +104,26 @@ fun LoginScreen(state: LoginState, connect: (ProviderConnection, Boolean) -> Uni
             Column(Modifier.widthIn(max = 480.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
                 Text(stringResource(R.string.connection_help))
                 OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(),
-                    label = { Text(stringResource(R.string.connection_name)) }, enabled = !state.busy, singleLine = true)
-                OutlinedTextField(server, { server = it }, Modifier.fillMaxWidth(),
+                    label = { Text(stringResource(R.string.connection_name_optional)) }, enabled = !state.busy, singleLine = true)
+                OutlinedTextField(server, { draft.server = it }, Modifier.fillMaxWidth(),
                     leadingIcon = { Icon(painterResource(R.drawable.ic_server), contentDescription = null) },
                     label = { Text(stringResource(R.string.server_address)) }, enabled = !state.busy,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Uri), singleLine = true)
-                OutlinedTextField(username, { username = it }, Modifier.fillMaxWidth(),
+                OutlinedTextField(username, { draft.username = it }, Modifier.fillMaxWidth(),
                     leadingIcon = { Icon(painterResource(R.drawable.ic_account), contentDescription = null) },
                     label = { Text(stringResource(R.string.username)) }, enabled = !state.busy, singleLine = true)
-                OutlinedTextField(password, { password = it }, Modifier.fillMaxWidth(),
+                OutlinedTextField(password, { draft.password = it }, Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.password)) }, enabled = !state.busy,
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
-                    leadingIcon = {
+                    trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }, enabled = !state.busy) {
                             Icon(painterResource(if (passwordVisible) R.drawable.ic_visibility_off else R.drawable.ic_visibility),
                                 contentDescription = stringResource(if (passwordVisible) R.string.hide_password else R.string.show_password))
                         }
                     },
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password), singleLine = true)
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(rememberConnection, { rememberConnection = it }, enabled = !state.busy)
+                Row(Modifier.fillMaxWidth().toggleable(value = rememberConnection, enabled = !state.busy, role = Role.Checkbox, onValueChange = { rememberConnection = it }), verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(rememberConnection, null, enabled = !state.busy)
                     Text(stringResource(R.string.remember_connection))
                 }
                 state.error?.let { Text(it.localized(), color = MaterialTheme.colorScheme.error) }
@@ -143,18 +147,46 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
     val scope = rememberCoroutineScope()
     var resolvingPlayback by remember { mutableStateOf(false) }
     var playbackError by remember { mutableStateOf<FailureReason?>(null) }
-    fun startPlayback(target: WatchTarget, resolve: () -> PlaybackSource) {
+    var resumeRequest by remember { mutableStateOf<ResumeRequest?>(null) }
+    val currentEntry by navigation.currentBackStackEntryAsState()
+    SubscriptionReminder(model, session, allowed = currentEntry?.destination?.route != "player" && resumeRequest == null && !resolvingPlayback)
+    suspend fun openPlayback(target: WatchTarget, resolve: () -> PlaybackSource, position: Long, restart: Boolean = false) {
+        if (repository is ParentalCatalogRepository) repository.authorizeEpisode(session.connection, target)
+        val source = resolve()
+        model.preparePlayback(source, target, position)
+        if (restart) model.recordProgress(target, session, PlaybackProgress(0, null))?.join()
+        navigation.navigate("player") { launchSingleTop = true }
+    }
+    fun launchPlayback(target: WatchTarget, resolve: () -> PlaybackSource, position: Long, restart: Boolean = false) {
         if (resolvingPlayback) return
         resolvingPlayback = true
         scope.launch {
             try {
-                if (repository is ParentalCatalogRepository) repository.authorizeEpisode(session.connection, target)
-                model.preparePlayback(resolve(), target)
-                navigation.navigate("player") { launchSingleTop = true }
+                openPlayback(target, resolve, position, restart)
             } catch (error: CancellationException) { throw error }
             catch (error: Exception) { playbackError = safeMessage(error) }
             finally { resolvingPlayback = false }
         }
+    }
+    fun startPlayback(target: WatchTarget, resolve: () -> PlaybackSource) {
+        if (resolvingPlayback || resumeRequest != null) return
+        playbackError = null
+        resolvingPlayback = true
+        scope.launch {
+            try {
+                if (repository is ParentalCatalogRepository) repository.authorizeEpisode(session.connection, target)
+                val progress = model.resumeProgress(target, session)
+                if (progress?.canResume == true) resumeRequest = ResumeRequest(target, progress, resolve)
+                else openPlayback(target, resolve, 0)
+            } catch (error: CancellationException) { throw error }
+            catch (error: Exception) { playbackError = safeMessage(error) }
+            finally { resolvingPlayback = false }
+        }
+    }
+    resumeRequest?.let { request ->
+        ResumeDialog(request.progress, cancel = { resumeRequest = null }, resume = {
+            resumeRequest = null; launchPlayback(request.target, request.resolve, request.progress.positionMs)
+        }, restart = { resumeRequest = null; launchPlayback(request.target, request.resolve, 0, restart = true) })
     }
     Column(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         if (resolvingPlayback) LinearProgressIndicator(Modifier.fillMaxWidth())
@@ -179,6 +211,7 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
                                 ContentType.SERIES -> R.drawable.ic_series
                             }, type.label(), onClick = { navigation.navigate("browse/${type.name}/root") })
                         }
+                        NavigationCard(R.drawable.ic_calendar, stringResource(R.string.tv_guide), onClick = { navigation.navigate("guide_browse/root") })
                         NavigationCard(R.drawable.ic_history, stringResource(R.string.watch_history), onClick = { navigation.navigate("history") })
                     }
                 }
@@ -244,6 +277,31 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
                         })
                 }
             }
+            composable("guide_browse/{category}") { entry ->
+                val category = entry.arguments?.getString("category")?.takeUnless { it == "root" }
+                val browser: CatalogViewModel = viewModel(key = "guide-catalog:${policy.revision}", factory = viewModelFactory {
+                    initializer { CatalogViewModel(repository, session.connection, ContentType.LIVE, category) }
+                })
+                val state by browser.state.collectAsStateWithLifecycle()
+                ScreenFrame(state.title.ifBlank { stringResource(R.string.tv_guide) }, back = { navigation.popBackStack() }) {
+                    CatalogScreen(state, ContentType.LIVE, browser::load, browser::setQuery, browser::showAll, browser::loadAllItems,
+                        openCategory = { navigation.navigate("guide_browse/${Uri.encode(it)}") },
+                        openItem = { model.select(it); navigation.navigate("guide/${it.id}") })
+                }
+            }
+            composable("guide/{id}") {
+                val item = model.selectedItem?.takeIf { it.type == ContentType.LIVE }
+                ScreenFrame(item?.title ?: stringResource(R.string.tv_guide), back = { navigation.popBackStack() }) {
+                    if (item != null) {
+                        val guide: GuideViewModel = viewModel(key = "guide:${policy.revision}", factory = viewModelFactory {
+                            initializer { GuideViewModel(repository, session.connection, item) }
+                        })
+                        ProgrammeGuideScreen(guide, item,
+                            watchLive = { startPlayback(WatchTarget(item)) { repository.stream(session.connection, item, liveFormat(session)) } },
+                            replay = { programme -> startPlayback(WatchTarget(item)) { repository.catchupStream(session.connection, item, programme) } })
+                    } else Text(stringResource(R.string.select_title), Modifier.padding(24.dp))
+                }
+            }
             composable("details/{type}/{id}") {
                 val item = model.selectedItem
                 if (item != null) {
@@ -271,7 +329,10 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
                     val playback: PlaybackViewModel = viewModel(factory = viewModelFactory {
                         initializer { PlaybackViewModel(ExoPlaybackEngine(context, source) {
                             if (target != null) model.recordWatch(target, session)
-                        }, landscape) }
+                        }, landscape, startPositionMs = model.playbackStartMs,
+                            onProgress = if (target != null && target.item.type != ContentType.LIVE) { progress ->
+                                model.recordProgress(target, session, progress, source)
+                            } else null) }
                     })
                     val fullscreen by playback.fullscreen.collectAsStateWithLifecycle()
                     LaunchedEffect(landscape) { playback.onOrientationChanged(landscape) }
@@ -283,7 +344,12 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
                     BackHandler(enabled = fullscreen) { changeFullscreen(false) }
                     ScreenFrame(source.title.ifBlank { stringResource(R.string.untitled) },
                         back = { navigation.popBackStack() }, showLanguage = false, fullscreen = fullscreen) {
-                        PlaybackScreen(playback, fullscreen, ::changeFullscreen)
+                        PlaybackScreen(playback, fullscreen, ::changeFullscreen, onGuide = target?.item
+                            ?.takeIf { it.type == ContentType.LIVE }?.let { channel -> {
+                                model.select(channel)
+                                if (navigation.previousBackStackEntry?.destination?.route == "guide/{id}") navigation.popBackStack()
+                                else navigation.navigate("guide/${channel.id}") { popUpTo("player") { inclusive = true } }
+                            } })
                     }
                 } else ScreenFrame(stringResource(R.string.app_name), back = { navigation.popBackStack() }) {
                     Text(stringResource(R.string.select_title_play), Modifier.padding(24.dp))
@@ -294,116 +360,6 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
 }
 
 private fun liveFormat(session: Session): String = session.account.preferredLiveFormat
-
-@Composable
-private fun CatalogScreen(
-    state: CatalogState,
-    type: ContentType,
-    retry: () -> Unit,
-    queryChanged: (String) -> Unit,
-    showAll: (Boolean) -> Unit,
-    retryItems: () -> Unit,
-    openCategory: (String) -> Unit,
-    openItem: (CatalogItem) -> Unit,
-) {
-    val query = state.query.trim()
-    val minimumCardWidth = if (LocalConfiguration.current.fontScale > 1.4f) 196.dp else 144.dp
-    val allItemsVisible = state.canBrowseAll && (state.showAll || query.isNotBlank())
-    var sortName by rememberSaveable { mutableStateOf(CatalogSort.PROVIDER.name) }
-    var genre by rememberSaveable { mutableStateOf<String?>(null) }
-    val sort = CatalogSort.valueOf(sortName)
-    // These inputs reset a new result set, while Navigation restores the saved position on Back.
-    val gridState = rememberSaveable(query, state.showAll, sortName, genre,
-        saver = androidx.compose.foundation.lazy.grid.LazyGridState.Saver) {
-        androidx.compose.foundation.lazy.grid.LazyGridState()
-    }
-    val visibleKeys by remember(gridState) { derivedStateOf {
-        gridState.layoutInfo.visibleItemsInfo.filter {
-            it.offset.y < gridState.layoutInfo.viewportEndOffset &&
-                it.offset.y + it.size.height > gridState.layoutInfo.viewportStartOffset
-        }.mapTo(mutableSetOf()) { it.key }
-    } }
-    if (state.busy) { Loading(); return }
-    state.error?.let { ErrorState(it, retry); return }
-    val categories = remember(state.categories, query, allItemsVisible) {
-        if (allItemsVisible) emptyList() else state.categories.filter { it.name.contains(query, ignoreCase = true) }
-    }
-    val sorted = remember(state.items, sort) { sortCatalog(state.items, sort) }
-    val genres = remember(state.items) { state.items.flatMap { it.metadata.genres }.distinctBy { it.lowercase(java.util.Locale.ROOT) }.sorted() }
-    val selectedGenre = genre?.takeIf { it in genres }
-    val titles = remember(sorted, query, selectedGenre, state.canBrowseAll, allItemsVisible) {
-        if (state.canBrowseAll && !allItemsVisible) emptyList()
-        else sorted.filter { it.matchesCatalog(query, selectedGenre) }
-    }
-    Column(Modifier.fillMaxSize().imePadding()) {
-        OutlinedTextField(state.query, queryChanged, Modifier.fillMaxWidth().padding(16.dp),
-            leadingIcon = { Icon(painterResource(R.drawable.ic_search), contentDescription = null) },
-            trailingIcon = { if (state.query.isNotEmpty()) IconButton(onClick = { queryChanged("") }) {
-                Icon(painterResource(R.drawable.ic_close), contentDescription = stringResource(R.string.clear_search))
-            } },
-            label = { Text(stringResource(when {
-                !state.canBrowseAll -> R.string.search
-                type == ContentType.SERIES -> R.string.search_all_series
-                else -> R.string.search_all_movies
-            })) }, singleLine = true)
-        if (state.canBrowseAll && allItemsVisible) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), verticalAlignment = Alignment.CenterVertically) {
-                TextButton(onClick = { showAll(false) }, modifier = Modifier.weight(1f)) {
-                    Text(stringResource(R.string.browse_categories))
-                }
-                if (!state.itemsBusy && state.itemsError == null) Text(stringResource(R.string.catalog_result_count, titles.size),
-                    style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            }
-        }
-        if (allItemsVisible && state.itemsBusy) {
-            Box(Modifier.weight(1f).fillMaxWidth(), contentAlignment = Alignment.Center) { Loading() }
-            return@Column
-        }
-        if (allItemsVisible && state.itemsError != null) {
-            ErrorState(state.itemsError, retryItems)
-            return@Column
-        }
-        if (state.items.any { it.type != ContentType.LIVE } && (!state.canBrowseAll || allItemsVisible)) {
-            val sorts = listOf(CatalogSort.PROVIDER, CatalogSort.TITLE) +
-                listOfNotNull(CatalogSort.NEWEST.takeIf { state.items.any { item -> item.addedAtSeconds != null } },
-                    CatalogSort.RATING.takeIf { state.items.any { item -> item.metadata.rating != null } })
-            CatalogRefinements(sort, sorts, selectedGenre, genres, onSort = { sortName = it.name }, onGenre = { genre = it })
-        }
-        LazyVerticalGrid(GridCells.Adaptive(minimumCardWidth), Modifier.weight(1f).padding(horizontal = 16.dp), state = gridState,
-            horizontalArrangement = Arrangement.spacedBy(12.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            if (state.canBrowseAll && !allItemsVisible) item(key = "all-items", span = { GridItemSpan(maxLineSpan) }) {
-                Card(onClick = { showAll(true) }, Modifier.fillMaxWidth()) {
-                    Row(Modifier.padding(20.dp), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                        Icon(painterResource(if (type == ContentType.SERIES) R.drawable.ic_series else R.drawable.ic_movie), contentDescription = null)
-                        Text(stringResource(if (type == ContentType.SERIES) R.string.all_series else R.string.all_movies),
-                            style = MaterialTheme.typography.titleMedium)
-                    }
-                }
-            }
-            items(categories, key = { "category:${it.id}" }) { category ->
-                Card(onClick = { openCategory(category.id) }, Modifier.fillMaxWidth()) {
-                    Row(Modifier.padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Icon(painterResource(R.drawable.ic_folder), contentDescription = null, modifier = Modifier.size(20.dp))
-                        Text(category.name.ifBlank { stringResource(R.string.unnamed_category) }, style = MaterialTheme.typography.titleMedium,
-                            maxLines = 3, overflow = TextOverflow.Ellipsis)
-                    }
-                }
-            }
-            items(titles, key = { "item:${it.id}" }) { item ->
-                Card(onClick = { openItem(item) }, Modifier.fillMaxWidth()) {
-                    CatalogArtwork(item, visible = "item:${item.id}" in visibleKeys)
-                    Text(item.title.ifBlank { stringResource(R.string.untitled) }, Modifier.padding(16.dp), style = MaterialTheme.typography.titleMedium,
-                        minLines = 2, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                    if (item.type != ContentType.LIVE) CatalogMetadata(item.metadata)
-                }
-            }
-            if (categories.isEmpty() && titles.isEmpty()) item(span = { GridItemSpan(maxLineSpan) }) {
-                Text(stringResource(if (query.isNotBlank() || selectedGenre != null) R.string.no_search_results else R.string.empty_category), Modifier.padding(24.dp))
-            }
-            item(span = { GridItemSpan(maxLineSpan) }) { Spacer(Modifier.height(24.dp)) }
-        }
-    }
-}
 
 @Composable
 private fun ScreenFrame(title: String, back: (() -> Unit)? = null, showLanguage: Boolean = false, fullscreen: Boolean = false,

@@ -15,6 +15,23 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PlaybackViewModelTest {
+    @Test fun `all display modes survive rotation retry and background without replacing media`() {
+        val engine = FakeEngine()
+        val model = PlaybackViewModel(engine, false)
+        engine.positionMs = 62_000
+        for (scale in VideoScale.entries) for (aspect in VideoAspect.entries) {
+            val display = VideoDisplay(scale, aspect)
+            model.setDisplay(display)
+            model.onOrientationChanged(true)
+            model.onOrientationChanged(false)
+            model.onHostStopped(changingConfigurations = true)
+            assertEquals(display, model.display.value)
+            assertEquals(62_000L, engine.positionMs)
+            assertEquals(1, engine.prepareCalls)
+        }
+        model.retry()
+        assertEquals(VideoDisplay(VideoScale.STRETCH, VideoAspect.CINEMA), model.display.value)
+    }
     @Test fun `recreated hosts retain one player at the existing position and release only when leaving`() {
         val store = ViewModelStore()
         val engine = FakeEngine()

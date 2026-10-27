@@ -29,6 +29,7 @@ class ExoPlaybackEngine(context: Context, source: PlaybackSource, onFirstPlaybac
     init {
         val mediaItem = MediaItem.Builder().setUri(source.url).apply {
             if (source.isLive) setLiveConfiguration(MediaItem.LiveConfiguration.Builder().setTargetOffsetMs(30_000).build())
+            source.durationMs?.let { setClippingConfiguration(MediaItem.ClippingConfiguration.Builder().setEndPositionMs(it).build()) }
         }.build()
         val http = DefaultHttpDataSource.Factory().setUserAgent("IPTVReceiver/0.1")
             .setAllowCrossProtocolRedirects(true)

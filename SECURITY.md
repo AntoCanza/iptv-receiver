@@ -7,8 +7,8 @@ Do not post credentials, playlist URLs, provider responses or stream URLs in pub
 - Users enter their provider connection at runtime. No subscription is bundled.
 - Remembering a connection is optional and off by default.
 - Saved connections are encrypted with AES-GCM using a random IV and a key in Android Keystore.
-- App backup is disabled. Passwords do not enter saved-state bundles.
-- Password entry is hidden initially. A leading eye button reveals/hides it in memory; visibility is not persisted across activity recreation.
+- App backup is disabled. Passwords do not enter saved-state bundles. The unfinished login form stays in an activity ViewModel across configuration changes and is cleared after successful sign-in; process death discards it.
+- Password entry is hidden initially. A trailing eye button reveals/hides it in memory; visibility is not persisted across activity recreation.
 - Sign out removes encrypted saved connection data and clears in-memory session selections.
 - Account-scoped watch history remains in app-private files for a rolling 10 days, including after sign out or cache cleanup. It stores content/episode identifiers, display metadata and last-watch timestamps, without playback/artwork URLs or account credentials. Android Clear storage removes it.
 - Model `toString` methods redact credential-bearing values.
@@ -20,6 +20,8 @@ Do not post credentials, playlist URLs, provider responses or stream URLs in pub
 - HTTP requests are unencrypted and can expose credentials, catalog queries, artwork and stream URLs to the network. Prefer HTTPS when available. HTTP support never relaxes TLS certificate verification.
 
 Runtime memory still contains credentials while a connection is active. Keystore protects the stored key; it cannot hide credentials from a fully compromised device. Avoid making stronger security claims.
+
+Movie/episode progress and expiry acknowledgements use separate versioned, atomically replaced app-private files outside cache directories. Account filenames are hashed from normalized server/account identifiers. Progress stores content/episode IDs, position, optional duration and completion only; acknowledgement stores the provider expiry and last dismissal time. Neither contains credentials or playback URLs. Logout hides these records without deleting them; app-data clearing/uninstallation removes them. Existing parental checks still run before offering or resolving resumed playback.
 
 ## Parental controls
 

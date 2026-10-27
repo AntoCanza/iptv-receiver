@@ -201,7 +201,7 @@ class CatalogViewModelTest {
         assertEquals(2, model.state.value.items.size)
     }
 
-    @Test fun `series categories and live root do not accidentally request an unfiltered catalog`() = runTest(dispatcher) {
+    @Test fun `subcategory search stays scoped while live root searches the full channel catalog`() = runTest(dispatcher) {
         val repository = FakeRepository()
         val category = CatalogViewModel(repository, connection, ContentType.SERIES, "1", dispatcher)
         val live = CatalogViewModel(repository, connection, ContentType.LIVE, null, dispatcher)
@@ -212,8 +212,10 @@ class CatalogViewModelTest {
         live.showAll(true)
         advanceUntilIdle()
         assertFalse(category.state.value.canBrowseAll)
-        assertFalse(live.state.value.canBrowseAll)
-        assertEquals(listOf("1"), repository.requestedCategories)
+        assertTrue(live.state.value.canBrowseAll)
+        assertEquals(listOf("1", null), repository.requestedCategories)
+        assertTrue(live.state.value.items.all { it.type == ContentType.LIVE })
+        assertTrue(live.state.value.showAll)
     }
 }
 

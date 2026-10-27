@@ -85,7 +85,7 @@ internal fun DetailsScreen(
                         visible = "heading" in visibleKeys, ratio = 2f / 3)
                     Column(Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(8.dp)) {
                         Text(title.ifBlank { stringResource(R.string.untitled) }, style = MaterialTheme.typography.titleLarge)
-                        MetadataSummary(metadata)
+                        MetadataSummary(metadata, compact = series != null)
                         if (metadata.genres.isNotEmpty()) Text(metadata.genres.joinToString(" · "),
                             style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }

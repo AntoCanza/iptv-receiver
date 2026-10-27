@@ -37,6 +37,16 @@ class CatalogPresentationTest {
         assertFalse(first.matchesCatalog("unrelated", null))
     }
 
+    @Test fun `search puts an exact title before prefixes and partial matches with stable ties`() {
+        val titles = listOf("My Friends", "Friends: Reunion", "Friends", "Best Friends", "FRIENDS")
+            .mapIndexed { index, title -> CatalogItem(index.toString(), title, ContentType.SERIES) }
+        assertEquals(listOf("Friends", "FRIENDS", "Friends: Reunion", "My Friends", "Best Friends"),
+            sortCatalog(titles, CatalogSort.RELEVANCE, " friends ").map { it.title })
+        assertEquals(titles, sortCatalog(titles, CatalogSort.PROVIDER, "Friends"))
+        assertEquals(titles.sortedBy { it.title.lowercase(java.util.Locale.ROOT) },
+            sortCatalog(titles, CatalogSort.TITLE, "Friends"))
+    }
+
     @Test fun `genre filters combine with search and reject titles with unknown genres`() {
         assertTrue(first.matchesCatalog("Zebra", "drama"))
         assertFalse(first.matchesCatalog("Zebra", "Adventure"))

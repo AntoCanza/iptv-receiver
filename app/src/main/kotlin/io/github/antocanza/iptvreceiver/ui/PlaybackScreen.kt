@@ -1,6 +1,7 @@
 package io.github.antocanza.iptvreceiver.ui
 
 import android.view.WindowManager
+import android.view.View
 import android.content.pm.ActivityInfo
 import androidx.activity.compose.LocalActivity
 import androidx.compose.foundation.layout.Box
@@ -40,12 +41,15 @@ import androidx.core.view.WindowInsetsControllerCompat
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
-fun PlaybackScreen(model: PlaybackViewModel, fullscreen: Boolean, onFullscreenChange: (Boolean) -> Unit) {
+fun PlaybackScreen(model: PlaybackViewModel, fullscreen: Boolean, onFullscreenChange: (Boolean) -> Unit,
+    onGuide: (() -> Unit)? = null) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val activity = LocalActivity.current
     val player = model.player
     val recoveryState by model.recoveryState.collectAsStateWithLifecycle()
     val reconnecting = recoveryState == PlaybackRecoveryState.RECONNECTING
+    val display by model.display.collectAsStateWithLifecycle()
+    var controlsVisible by remember(player) { mutableStateOf(true) }
     var failed by remember(player) { mutableStateOf(player.playerError != null) }
     var buffering by remember(player) { mutableStateOf(player.playbackState == Player.STATE_BUFFERING) }
     var invalidStreamScheme by remember(player) { mutableStateOf(false) }
@@ -93,19 +97,29 @@ fun PlaybackScreen(model: PlaybackViewModel, fullscreen: Boolean, onFullscreenCh
         onDispose { bars?.show(WindowInsetsCompat.Type.systemBars()) }
     }
     Box(Modifier.fillMaxSize()) {
-        AndroidView(factory = { PlayerView(it).apply {
+        AndroidView(factory = { DisplayPlayerView(it).apply {
             this.player = player
+            setEnableComposeSurfaceSyncWorkaround(true)
             useController = true
-            setShowSubtitleButton(true)
+            setShowSubtitleButton(false)
+            findViewById<View>(androidx.media3.ui.R.id.exo_settings)?.visibility = View.GONE
+            setVideoDisplay(display)
             setFullscreenButtonState(fullscreen)
             setFullscreenButtonClickListener(onFullscreenChange)
         } }, modifier = Modifier.fillMaxSize(), update = {
+            if (it.player !== player) it.player = player
+            val controllerView = it
+            it.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { controlsVisible = controllerView.isControllerFullyVisible })
+            controlsVisible = it.isControllerFullyVisible
+            it.findViewById<View>(androidx.media3.ui.R.id.exo_settings)?.visibility = View.GONE
+            it.setVideoDisplay(display)
             // Media3 reports programmatic state changes to its click listener too.
             // Suppress that callback so an automatic rotation never locks orientation.
             it.setFullscreenButtonClickListener(null)
             it.setFullscreenButtonState(fullscreen)
             it.setFullscreenButtonClickListener(onFullscreenChange)
-        }, onRelease = { it.setFullscreenButtonClickListener(null); it.player = null })
+        }, onRelease = { it.setControllerVisibilityListener(null as PlayerView.ControllerVisibilityListener?); it.setFullscreenButtonClickListener(null); it.player = null })
+        PlaybackTools(model, onGuide, controlsVisible)
         if (reconnecting || (buffering && !failed)) CircularProgressIndicator(Modifier.align(Alignment.Center))
         if (!reconnecting && (failed || recoveryState == PlaybackRecoveryState.FAILED)) Column(Modifier.align(Alignment.Center).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(when {
