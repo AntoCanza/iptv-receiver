@@ -1,6 +1,6 @@
 # Dependency audit and stable upgrades
 
-Checked October 25, 2026. All 14 directly managed library/plugin version families now match their latest stable upstream release. Gradle and all four GitHub Actions were also upgraded. Java 21 LTS remains the build runtime, with Java 17 bytecode and Android 8.0 minimum support.
+Checked October 25, 2026. At that audit, all 14 directly managed library/plugin version families matched their latest stable upstream release. Gradle and the four GitHub Actions then in use were also upgraded. Java 21 LTS remains the CI build runtime, with Java 17 bytecode and Android 8.0 minimum support. The tables record that dated metadata check, not a fresh upstream audit on every documentation update.
 
 ## Direct libraries and plugins
 
@@ -21,7 +21,7 @@ Checked October 25, 2026. All 14 directly managed library/plugin version familie
 | junit | 4.13.2 | 4.13.2 | 4.13.2 | [metadata](https://repo.maven.apache.org/maven2/junit/junit/maven-metadata.xml) |
 | work | 2.12.0 | 2.12.0 | 2.12.0 | [metadata](https://dl.google.com/dl/android/maven2/androidx/work/work-runtime/maven-metadata.xml) |
 
-Coil moved from the old io.coil-kt coordinates to io.coil-kt.coil3. The migration adds explicit OkHttp networking and a Cache-Control strategy while preserving separate HTTPS/HTTP policies and bounded caches. See the [official migration guide](https://coil-kt.github.io/coil/upgrading_to_coil3/). OkHttp 5's non-null response body API was applied to the provider and tests.
+Coil moved from the old io.coil-kt coordinates to io.coil-kt.coil3. The migration added explicit OkHttp networking, a Cache-Control strategy and bounded caches. Subsequent automatic HTTP/HTTPS support uses one loader/cache; see [current artwork behavior](CACHE_AND_PLAYBACK.md#artwork-requests). See the [official migration guide](https://coil-kt.github.io/coil/upgrading_to_coil3/) for the library migration. OkHttp 5's non-null response body API was applied to the provider and tests.
 
 ## Build and asset tools
 
@@ -35,6 +35,8 @@ Sharp 0.35.5 is the current stable asset-export dependency, pinned with an npm l
 | actions/setup-java | v6.1.0 | [release](https://github.com/actions/setup-java/releases/tag/v6.1.0) |
 | gradle/actions | v6.4.0 | [release](https://github.com/gradle/actions/releases/tag/v6.4.0) |
 | actions/upload-artifact | v7.0.2 | [release](https://github.com/actions/upload-artifact/releases/tag/v7.0.2) |
+
+The later rolling-APK workflow also pins `actions/download-artifact` v8.0.2 at `9000827ccba6bdab643e8b6fd33ac0654aef8333`. This records the [current workflow configuration](../.github/workflows/android.yml); it was not part of the October 25 upstream-version audit. Its release/signing boundary is described in [CI and releases](CI_RELEASES.md).
 
 ## Complete resolved inventory
 

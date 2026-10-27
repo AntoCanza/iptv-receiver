@@ -17,6 +17,7 @@ Status: preparation only. Do not submit the current development package.
 
 - [ ] Keep application ID `io.github.antocanza.iptvreceiver` only if the owner confirms it before the first release; it becomes a lasting store identity.
 - [ ] Create/store the upload key securely outside Git, enroll in Play App Signing, and build/sign the release AAB. Preserve recovery details and increase versionCode for each upload.
+- [ ] Distinguish the existing signed GitHub APK channel from the Play upload/app-signing setup; verify the intended certificate and update path before distributing the store build.
 - [ ] Run `verifyDependencyPolicy`, unit tests, debug/release lint, minified APK and AAB builds. Review [dependency policy](../docs/DEPENDENCY_POLICY.md) and current audit.
 - [ ] Current target API 36 meets the new-app requirement effective August 31, 2026; recheck the [target API policy](https://developer.android.com/google/play/requirements/target-sdk) at submission.
 - [ ] Verify 16 KB page-size compatibility of any packaged native libraries; inspect the final bundle and Play's checks.
@@ -29,6 +30,7 @@ Status: preparation only. Do not submit the current development package.
 
 - [ ] Review title (30-character limit), short description (80) and full description (4000), localization and claims.
 - [ ] Inspect the 512px icon, 1024×500 feature graphic and at least two compliant actual-UI screenshots. Included four 1080×1920 phone shots use an illustrative offline catalog. Replace them if the UI changes.
+- [ ] Refresh the older preview screenshots and review all ten listing drafts against 0.1.14: root catalog search, durable progress/watched status, channel guide/eligible replay and parental controls. Keep Android TV/Windows/webOS/Tizen and automatic next-episode playback described as planned.
 - [ ] Keep promotional video optional until an original/cleared video exists. No TV banner is required for this phone/tablet-only release.
 - [ ] Review the final Console changes and obtain explicit owner authorization before any store publication.
 

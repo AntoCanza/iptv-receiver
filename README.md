@@ -1,6 +1,6 @@
 # IPTV Receiver — Native Android IPTV Client
 
-Native Android IPTV client for phones and tablets, with an Android TV interface planned next.
+Native Android IPTV client for phones and tablets. Android TV, Windows, LG webOS and Samsung Tizen clients are planned.
 
 Connect to an Xtream-compatible provider, browse Live TV, Movies and Series, and play content using Android Media3. The application does not include an IPTV subscription or bundled content.
 
@@ -8,7 +8,7 @@ Connect to an Xtream-compatible provider, browse Live TV, Movies and Series, and
 
 ## Status
 
-This repository contains an initial implementation and an implementation plan. It is a development baseline, not a production release.
+The current Android development baseline is **0.1.14 (versionCode 15)**, as declared in [app/build.gradle.kts](app/build.gradle.kts). A signed APK is available from GitHub Releases. Google Play publication and broader device/provider validation remain pending.
 
 Implemented:
 
@@ -16,7 +16,7 @@ Implemented:
 - A password visibility eye button and sign-in errors that distinguish rejected credentials from unexplained login failures.
 - Optional encrypted, device-local connection storage using Android Keystore.
 - Live TV, movie and series categories, including parent categories when supplied.
-- Search across all movies from the Movies screen, an All movies browser, category-scoped search, responsive catalog grids, movie details, and series seasons/episodes.
+- Search across all channels, movies or series from each section root, all-content browsing, category-scoped search, responsive catalog grids, movie details, and series seasons/episodes.
 - Foreground Media3 playback with rotation continuity, immersive fullscreen, buffering feedback and retry. Live TV buffers ahead and reconnects automatically after temporary interruptions or an unexpected stream ending.
 - Icon controls for Fit/Zoom/Stretch and automatic, 16:9, 4:3 or 21:9 display ratios; subtitle selection with Off when tracks are present, audio selection when multiple tracks exist, and current stream information. Display choices survive rotation and reconnects within the player session.
 - A channel programme guide with current/upcoming schedules, search, recent programmes and provider-advertised catch-up playback. Guide and archive access follow parental category restrictions.
@@ -33,23 +33,25 @@ Implemented:
 - Settings keeps account expiry/connection limits, server information and language away from browsing. Familiar icons have accessible labels, and connection counts/server time are explicitly sign-in snapshots.
 - Adult content is blocked by default. Settings includes a password-protected parental panel with first-access password creation, optional category locks and password changes. A forgotten password cannot be recovered; resetting it restores every protected option to its defaults, including adult blocking enabled.
 - Logout asks for confirmation; cancelling or pressing Back keeps the account connected.
-- Device language by default, with English fallback and a manual picker for ten languages including Italian, Spanish, French, German, Portuguese, Arabic, Russian, Simplified Chinese and Japanese.
+- Device language by default, with English fallback and ten selectable interface languages: English, Italian, Spanish, French, German, Portuguese, Arabic, Russian, Simplified Chinese and Japanese.
 - Viewport-gated poster requests with alternate provider artwork, SVG support and bounded image caches.
 - Daily background maintenance of app-owned temporary files and approximately weekly artwork-cache clearing.
 - Provider contract tests with synthetic responses; no live account is required by automated checks.
 
 Live TV, movie and episode playback have been checked on a Pixel 9 Pro XL. See [verification](docs/VERIFICATION.md) for the latest build, test and device evidence and limits.
 
-Still planned: durable catalog caching, automatic next-episode playback, a simultaneous multi-channel guide grid, broader UI/device automation, and Android TV. See [the roadmap](docs/ROADMAP.md) for milestones and remaining device/release gates.
+Still planned: durable catalog caching, automatic next-episode playback, a simultaneous multi-channel guide grid, broader UI/device automation, and the additional platform clients. See [the roadmap](docs/ROADMAP.md) for milestones and remaining device/release gates.
 
 ## Download for Android
 
 The [latest APK](https://github.com/AntoCanza/iptv-receiver/releases/latest/download/iptv-receiver.apk) is built from the latest successfully verified `main` commit. GitHub Actions publishes one rolling release and removes previous APK downloads after the replacement is ready. The signed APK updates existing installations using the same certificate. See [CI and release policy](docs/CI_RELEASES.md) for signing, retention and manual builds.
 
+Download it on an Android 8.0+ device, allow installation from the browser or file manager when Android asks, and open the APK. Use the same application/signing identity to update while retaining local data. The [release page](https://github.com/AntoCanza/iptv-receiver/releases/latest) identifies the exact source commit and includes a SHA-256 checksum. Read the [user guide](docs/USER_GUIDE.md) for sign-in, playback, history, parental controls and troubleshooting.
+
 ## Run locally
 
-1. Install an Android Studio release compatible with AGP 9.4, Android SDK Platform 37.2 and Build Tools 36.0.0.
-2. Open this repository in Android Studio and use JDK 17 or 21 for Gradle.
+1. Install an Android Studio release compatible with AGP 9.4.1, Android SDK Platform 37.2 and Build Tools 36.0.0.
+2. Open this repository in Android Studio and use JDK 21 for Gradle, matching CI. Java/Kotlin bytecode targets Java 17.
 3. Let Gradle sync, then run the `app` configuration on an Android 8.0+ phone or tablet.
 4. Enter your own provider's **HTTP or HTTPS base server address**, username and password in the login screen. A connection name is optional.
 
@@ -58,21 +60,35 @@ No account, provider hostname or password belongs in source, build settings, exa
 For a command-line build, set `ANDROID_HOME` to your Android SDK or create an untracked `local.properties` containing `sdk.dir=/path/to/android-sdk`.
 
 ```sh
-./gradlew verifyDependencyPolicy :core:model:test :core:provider:test :app:testDebugUnitTest :app:lintDebug :app:lintRelease :app:assembleDebug :app:assembleRelease :app:bundleRelease
+./gradlew --no-daemon verifyDependencyPolicy :core:model:test :core:provider:test :app:testDebugUnitTest :app:lintDebug :app:lintRelease :app:assembleDebug :app:assembleRelease :app:bundleRelease
 ```
 
 On Windows use `gradlew.bat`. Debug APKs are produced under `app/build/outputs/apk/debug/`; unsigned AABs under `app/build/outputs/bundle/release/`. Production signing material must remain outside Git. Follow the [dependency support policy](docs/DEPENDENCY_POLICY.md): official LTS where offered, otherwise latest compatible stable. See the [current audit](docs/DEPENDENCY_AUDIT.md).
+
+| Build setting | Pinned value | Source |
+| --- | --- | --- |
+| Android Gradle Plugin | 9.4.1 | `gradle/libs.versions.toml` |
+| Gradle Wrapper | 9.8.2 | `gradle/wrapper/gradle-wrapper.properties` |
+| Kotlin / Compose compiler plugin | 2.4.21 | `gradle/libs.versions.toml` |
+| Media3 | 1.11.1 | `gradle/libs.versions.toml` |
+| Compile / target / minimum SDK | 37.2 / 36 / 26 | `app/build.gradle.kts` |
+| Build Tools / CI JDK | 36.0.0 / 21 | `app/build.gradle.kts`, `.github/workflows/android.yml` |
+
+For website changes, run `python tools/check_site.py`; it checks public HTML, links, metadata and the sitemap without an Android SDK. Release-workflow changes also require `python -m unittest discover -s tools/tests -v` and `actionlint .github/workflows/android.yml`.
 
 ## Project structure
 
 ```text
 app/                      Android application and composition root
-  src/main/.../data/      Android Keystore connection storage
+  src/main/.../data/      Encrypted connections, viewing database, parental policy, caches
+  src/main/.../playback/  Media3 engine, live recovery and manifest-session handling
   src/main/.../ui/        Login, catalog, details and playback screens/ViewModels
 core/
   model/                  Platform-independent models and repository contract
   provider/               Xtream HTTP, response mapping and stream URL resolution
-docs/                     Architecture, provider contract, security and build plan
+docs/                     GitHub Pages site, user/developer guides and verification records
+store/                    Draft Google Play listings, privacy worksheets and preview assets
+tools/                    Site/dependency checks, APK signing and rolling-release publisher
 .github/                  CI, dependency updates, ownership and PR template
 gradle/                   Version catalog and checksum-verified Gradle Wrapper
 ```
@@ -80,6 +96,20 @@ gradle/                   Version catalog and checksum-verified Gradle Wrapper
 The dependency direction is `app -> core:provider -> core:model`; the UI depends on `CatalogRepository`. These boundaries allow a later TV app to reuse provider behavior and content models. Features currently use packages within `app`; extract modules when there is an actual reuse or ownership need.
 
 Read [architecture](docs/ARCHITECTURE.md), [provider integration](docs/PROVIDER.md), [security](SECURITY.md), and [contributing](CONTRIBUTING.md) before making changes.
+
+## Documentation
+
+| Guide | Contents |
+| --- | --- |
+| [User guide](docs/USER_GUIDE.md) | Installation, provider sign-in, search, playback, progress, guide and settings |
+| [Architecture](docs/ARCHITECTURE.md) | Module boundaries, navigation, persistence and platform plans |
+| [Provider contract](docs/PROVIDER.md) | Xtream operations, metadata, live formats, guide and catch-up |
+| [Playback and caches](docs/CACHE_AND_PLAYBACK.md) | Player lifecycle, recovery, progress, reminders and cache limits |
+| [Security](SECURITY.md) / [localization](docs/LOCALIZATION.md) | Credentials, parental controls and interface languages |
+| [Verification](docs/VERIFICATION.md) / [roadmap](docs/ROADMAP.md) | Recorded test/device evidence and remaining work |
+| [Playback metadata](docs/PLAYBACK_METADATA.md) / [usability audit](docs/UX_AUDIT_2026-10-27.md) | Current playback capabilities and dated investigation/fix evidence |
+| [CI and releases](docs/CI_RELEASES.md) | Signed rolling APK, checksum, permissions and retention |
+| [Dependency policy](docs/DEPENDENCY_POLICY.md) / [audit](docs/DEPENDENCY_AUDIT.md) | Version rules and the dated dependency inventory |
 
 The public project website is static HTML served by GitHub Pages from `main:/docs`, with a canonical URL, social previews, structured data and a sitemap. See [search indexing](docs/SEARCH_INDEXING.md) for maintenance and Google Search Console setup.
 

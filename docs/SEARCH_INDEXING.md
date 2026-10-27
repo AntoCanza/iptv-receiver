@@ -8,7 +8,7 @@ The GitHub repository remains the source of code and technical documentation. It
 
 - Descriptive English title, description, one main heading and crawlable HTML links.
 - An HTTPS canonical URL, matching Open Graph URL and absolute image URLs.
-- WebSite, WebPage and SoftwareApplication JSON-LD describing the actual development status. There are no invented ratings, prices, store listings or download links.
+- WebSite, WebPage and SoftwareApplication JSON-LD describing the actual Android development status, current source version and real rolling GitHub APK download. There are no invented ratings, prices or Google Play listings.
 - A UTF-8 [sitemap](sitemap.xml) containing the public canonical page. Dates are omitted instead of reporting a new modification date on every deployment.
 - A custom 404 page with `noindex`; GitHub Pages returns HTTP 404 for missing paths.
 - Responsive styling, explicit image dimensions and locally hosted images. The screenshot is an offline fictional catalog already approved for the store preparation package.
@@ -30,6 +30,8 @@ Google decides whether and when to index eligible pages. Neither a sitemap nor t
 
 ## Maintenance
 
-Keep the page and README aligned with implemented features. Update the canonical URL, sitemap, JSON-LD, social URLs and repository homepage together if the public address changes. Add new canonical pages to the sitemap and link to them from existing pages. Never publish real provider credentials, private screenshots or the unfinished privacy-policy draft as the app's final policy.
+Keep the page, [README](../README.md) and [user guide](USER_GUIDE.md) aligned with implemented features. Check the visible version and JSON-LD `softwareVersion` against `app/build.gradle.kts`; keep the APK link on the stable rolling-release URL. Update feature descriptions, FAQs and social descriptions together. Keep Android TV/desktop/native-TV plans distinct from the implemented Android client and retain the device-verification limits.
+
+Update the canonical URL, sitemap, JSON-LD, social URLs and repository homepage together if the public address changes. Add new canonical HTML pages to the sitemap and link to them from existing pages; Markdown guides link to GitHub's rendered repository documentation. The 404 page and Google ownership file remain outside the sitemap. Preserve Google's existing ownership file unchanged. Never publish real provider credentials, private screenshots or the unfinished privacy-policy draft as the app's final policy.
 
 Sources: [Google's technical requirements](https://developers.google.com/search/docs/essentials/technical), [crawlable links](https://developers.google.com/search/docs/crawling-indexing/links-crawlable), [sitemaps](https://developers.google.com/search/docs/crawling-indexing/sitemaps/build-sitemap), [robots.txt location](https://developers.google.com/crawling/docs/robots-txt/create-robots-txt), and [GitHub Pages publishing sources](https://docs.github.com/en/pages/getting-started-with-github-pages/configuring-a-publishing-source-for-your-github-pages-site).

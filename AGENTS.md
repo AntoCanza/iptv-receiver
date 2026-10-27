@@ -4,9 +4,11 @@
 
 Client Android nativo per telefoni e tablet, scritto in Kotlin con Jetpack Compose
 e Media3. L'utente collega il proprio provider Xtream; non sono inclusi abbonamenti,
-cataloghi o un backend applicativo. Android TV è un obiettivo successivo.
+cataloghi o un backend applicativo. Android TV, Windows, LG webOS e Samsung Tizen
+restano obiettivi successivi; il client implementato è Android per telefoni e tablet.
 
-- Usare `README.md` per l'avvio e `CONTRIBUTING.md` per le convenzioni.
+- Usare `README.md` per l'avvio, `docs/USER_GUIDE.md` per i flussi dell'app e
+  `CONTRIBUTING.md` per le convenzioni.
 - Consultare `docs/ARCHITECTURE.md` per i confini dei componenti,
   `docs/PROVIDER.md` per il protocollo, `SECURITY.md` per credenziali e controlli
   parentali, `docs/LOCALIZATION.md` per le traduzioni e `docs/VERIFICATION.md`
@@ -17,8 +19,9 @@ cataloghi o un backend applicativo. Android TV è un obiettivo successivo.
 
 ## Configurazione e verifiche
 
-Aprire la radice in Android Studio. Seguire i prerequisiti del README: JDK 17 o 21,
-Android SDK Platform 37.2 e Build Tools 36.0.0. Configurare l'SDK tramite
+Aprire la radice in Android Studio. Seguire i prerequisiti del README: JDK 21,
+Android SDK Platform 37.2 e Build Tools 36.0.0. JDK 21 corrisponde alla CI;
+Java 17 è il target del bytecode. Configurare l'SDK tramite
 `ANDROID_HOME` o un `local.properties` escluso da Git; non inserire percorsi della
 macchina nei file condivisi. Usare il Wrapper incluso, senza Gradle globale.
 

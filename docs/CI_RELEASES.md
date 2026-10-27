@@ -6,6 +6,19 @@ The Android workflow in [android.yml](../.github/workflows/android.yml) verifies
 
 The APK supports Android 8.0 or later. It contains the application's development baseline; publication on GitHub does not constitute a Google Play release or broaden the device/provider verification in [VERIFICATION.md](VERIFICATION.md).
 
+## Install and identify a build
+
+Download `iptv-receiver.apk` and open it on an Android phone or tablet. Android may ask you to allow installation from the browser/file manager. An update signed with the same certificate preserves local app data; uninstalling first removes local records. See the [user guide](USER_GUIDE.md#install-or-update).
+
+The release notes identify the app version, versionCode and exact source commit. Because `latest` moves, use that commit to identify a build; the fixed download URL always serves the currently published APK. Download `iptv-receiver.apk.sha256` alongside it and compare the file's digest before installation:
+
+```powershell
+Get-FileHash .\iptv-receiver.apk -Algorithm SHA256
+Get-Content .\iptv-receiver.apk.sha256
+```
+
+On Linux/macOS, use `sha256sum -c iptv-receiver.apk.sha256` where that command is available. The checksum detects a mismatched/corrupt download; the APK certificate determines update compatibility.
+
 ## Build and publication
 
 1. The verification job runs dependency policy, model/provider/app unit tests, debug/release lint, debug/release builds and the release-policy tests.
@@ -18,6 +31,8 @@ The APK supports Android 8.0 or later. It contains the application's development
 A failed verification/signing/upload keeps the previous working download. Activation failures attempt to restore the previous filenames and tag. Main runs are serialized so publishing is not cancelled mid-replacement. A run whose commit has been superseded skips publication. The rolling release must remain mutable; repository release immutability is currently disabled.
 
 The first successful main run creates the release automatically. Subsequent runs replace it. Manual runs from other branches perform verification without publishing.
+
+Documentation-only pushes to `main` also run this workflow and can replace the rolling APK after verification. The separate website-check workflow validates HTML on documentation changes, while GitHub Pages publishes `main:/docs` through its branch source.
 
 ## Signing and permissions
 

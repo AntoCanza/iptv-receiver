@@ -2,6 +2,14 @@
 
 Date: October 27, 2026. Latest development version 0.1.14, versionCode 15. Package: `io.github.antocanza.iptvreceiver`.
 
+## Documentation synchronization — October 27, 2026
+
+Reviewed the public website, README, user/developer guides and all ten store listing drafts against source commit `6e85f89` (0.1.14/versionCode 15), the Gradle files and Android workflow. GitHub's API confirmed `main:/docs` as the Pages source and a published 0.1.14 rolling release with APK/checksum assets. Updated stale feature, SDK/dependency, live-format, cache, storage and draft-privacy descriptions; the Google ownership file and sitemap page set are unchanged.
+
+The static site checker passes for both public HTML pages and the canonical sitemap entry. Relative/repository Markdown links, listing JSON/length limits and the site's version metadata were checked. All nine synthetic release-policy tests pass. Chromium rendering was reviewed at 1440, 768, 390 and 320 pixels wide with no horizontal overflow, loaded artwork and working FAQ expansion.
+
+This is a documentation/site-only update. Android application code and dependencies are unchanged; the version-specific app build and physical-device evidence below comes from the recorded checks, not a new hardware regression in this update. Draft store/privacy materials remain unsubmitted, and older preview screenshots still need refreshing before store submission.
+
 ## Detail watch progress — version 0.1.14
 
 Distribution uses the repository's main-only [rolling APK workflow](CI_RELEASES.md). Its nine synthetic release-policy tests and workflow syntax checks pass locally. Signing the optimized APK was checked against the existing development installation's certificate. Hosted build/publication status is recorded in [Android CI](https://github.com/AntoCanza/iptv-receiver/actions/workflows/android.yml).

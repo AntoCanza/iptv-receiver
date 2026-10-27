@@ -13,10 +13,10 @@ those additional clients or their playback integrations have been implemented.
 - No separate application account or backend in the initial release.
 - One active provider connection and one player at a time.
 - Account APIs, video and artwork accept HTTP and HTTPS automatically. HTTPS retains platform certificate verification; HTTP traffic is unencrypted.
-- Android 8.0 (API 26) minimum for the first baseline; compile and target API 36.
-- English by default with ten interface languages; see [localization](LOCALIZATION.md).
+- Android 8.0 (API 26) minimum; compile SDK 37.2, target API 36 and Build Tools 36.0.0.
+- Device language by default, English fallback and ten selectable interface languages; see [localization](LOCALIZATION.md).
 
-The build pins AGP 9.1.0, Gradle 9.3.1 and Kotlin/Compose compiler 2.2.10. AGP provides built-in Kotlin for Android; do not also apply `org.jetbrains.kotlin.android`. Android dependencies are pinned in the version catalog. These are explicit baseline versions, not a claim that every dependency is the newest release.
+The current application is 0.1.14 (versionCode 15). The build pins AGP 9.4.1, Gradle 9.8.2, Kotlin/Compose compiler plugin 2.4.21 and Media3 1.11.1. CI uses JDK 21 and the application targets Java 17 bytecode. The version catalog, Wrapper properties and app Gradle file are authoritative; see the [build settings](../README.md#run-locally). AGP provides built-in Kotlin for Android; do not also apply `org.jetbrains.kotlin.android`.
 
 Lint treats correctness warnings as errors. Dependency-version and target-SDK migration notices remain informational. Dependencies are handled through Dependabot review; the deliberately pinned API 36 target must be reviewed against current platform/store requirements before release. This avoids an unrelated upstream release unexpectedly breaking a development build.
 
@@ -118,10 +118,10 @@ flowchart TD
     UI[Android Compose screens] --> VM[Screen ViewModels]
     VM --> Contract[CatalogRepository contract]
     Provider[XtreamCatalogRepository] -. implements .-> Contract
-    Provider --> HTTP[Bounded HTTPS JSON transport]
+    Provider --> HTTP[Bounded HTTP/HTTPS JSON transport]
     HTTP --> Service[User-supplied provider]
-    VM --> Storage[Encrypted local connection storage]
-    UI --> Player[Single Media3 player]
+    VM --> Storage[Encrypted connections and local viewing database]
+    VM --> Player[Single retained Media3 player]
     Player --> Stream[Provider stream]
 ```
 
@@ -129,7 +129,7 @@ flowchart TD
 
 Optional `ContentMetadata` enriches catalog and detail models at the provider boundary. Browsing uses only metadata returned by the list request; details are fetched only when opened. Missing detail fields preserve listing metadata. Catalog sort and genre selection are saved with the navigation entry, along with the grid position. Details use a compact phone layout, expandable synopsis/credits, a reachable movie Play action and one selected season at a time. Extra artwork still loads only while visible. Provider metadata and external trailer URLs are not added to durable watch history.
 
-Home contains four icon-and-label destinations and a Settings action. Account details/logout, server information and the language picker live under Settings. Login retains a language icon before authentication; content screens keep the header focused on Back and the current title. Optional server timezone/clock values are settings-only sign-in snapshots, never used to rewrite the connection or playback address.
+Home contains five icon-and-label destinations: Live TV, Movies, Series, TV guide and Watch history, plus a Settings action. Account details/logout, server information, language, parental controls and history/progress clearing live under Settings. Login retains a language icon before authentication; content screens keep the header focused on Back and the current title. Optional server timezone/clock values are settings-only sign-in snapshots, never used to rewrite the connection or playback address.
 
 Settings also contains a parental panel with memory-only authentication. `ParentalControls` persists a salted password verifier and immutable policy; its default policy blocks adult content even before setup. Reset constructs the default policy and removes the password and all account/category selections atomically. `ParentalCatalogRepository` wraps the provider contract to enforce category descendants, provider adult flags and adult labels consistently, including all-title searches and stream resolution. The panel alone uses the unfiltered repository after password verification to list categories. Policy revisions recreate catalog ViewModels and clear/refilter visible history. History identifiers are resolved against provider listings so legacy records cannot bypass category restrictions. Provider failures and unreadable settings fail closed. See [security](../SECURITY.md#parental-controls) for storage, reset behavior and classification limits.
 
@@ -143,9 +143,13 @@ flowchart TD
     Home --> Live[Live TV categories]
     Home --> Movies[Movie categories]
     Home --> Series[Series categories]
+    Home --> Guide[Channel programme guide]
+    Home --> History[Watch history and resume]
     Home --> Settings[Settings]
     Settings --> Account[Account and logout]
     Settings --> ServerInfo[Server information]
+    Settings --> Parental[Parental controls]
+    Settings --> Viewing[Clear account history and progress]
     Live --> Channels[Subcategories and channels]
     Movies --> Titles[Subcategories and movies]
     Series --> Shows[Subcategories and series]
@@ -155,6 +159,8 @@ flowchart TD
     Shows --> Seasons[Series details and seasons]
     Seasons --> Episodes[Episode]
     Episodes --> Player
+    History --> Player
+    Guide --> Player
 ```
 
 Nested category routes can repeat. Branch categories may also contain media, so the browser requests both child categories and media for the selected category. Root categories with absent/missing parents remain accessible. Cyclic provider hierarchies need an explicit fallback before broad provider support is claimed.
@@ -165,9 +171,9 @@ Navigation arguments contain only content types and IDs. Credentials and playbac
 
 Each screen ViewModel exposes immutable state with loading, data and error values. The UI collects it with `collectAsStateWithLifecycle`. Retry cancels an earlier load. Cancellation propagates to OkHttp. The unfinished login form uses an activity ViewModel across configuration changes and is cleared after authentication; credentials do not use SavedStateHandle. Parental password fields use memory-only Compose state.
 
-The player is owned by the player destination. It pauses when the destination stops and releases its resources when removed. Background playback and a `MediaSessionService` are future product decisions. It uses device decoders; a supported container does not guarantee support for every embedded codec.
+The player destination's retained `PlaybackViewModel` owns one engine/ExoPlayer. Activity recreation reattaches the view without preparing the source again. It pauses when the destination stops and releases its resources when removed. Background playback and a `MediaSessionService` are future product decisions. It uses device decoders; a supported container does not guarantee support for every embedded codec.
 
-## Persistence plan
+## Implemented persistence and remaining cache work
 
 Optional encrypted connection storage and durable watch history are implemented. `ViewingStore` owns a version-1 app-private SQLite database with indexed progress/history tables and transactional writes. Account keys hash normalized server/account identifiers; connection names and password changes do not create new history. History records contain content/episode identifiers, display titles, stream extensions and last playback-start timestamps. Artwork, provider responses, playback URLs and credentials are never serialized. Old atomic files import once per account in one transaction. Unsupported versions fail visibly without overwriting sources; import markers prevent old files from resurrecting subsequent edits or cleared data.
 

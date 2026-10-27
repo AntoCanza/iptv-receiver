@@ -10,7 +10,7 @@ Authenticated catalog requests use `/player_api.php` with URL-encoded `username`
 | --- | --- | --- |
 | Account validation | none | none |
 | Live categories | `get_live_categories` | none |
-| Live channels | `get_live_streams` | `category_id` |
+| Live channels | `get_live_streams` | `category_id` for a category; omitted for all channels |
 | Movie categories | `get_vod_categories` | none |
 | Movies | `get_vod_streams` | `category_id` for a category; omitted for all movies |
 | Movie details | `get_vod_info` | `vod_id` |
@@ -27,7 +27,7 @@ Catalog records retain optional year/release-date year, rating, genres, cast/dir
 
 Movie and series details enrich available listing metadata rather than clearing fields missing from the detail response. Optional runtimes, countries, cast/director, backdrop images and web trailer links are used by the detail screen. Series detail artwork, separate season names/overviews, and episode descriptions/images/runtimes are supported. Runtime fields accept positive seconds, `HH:MM:SS`, or explicit runtime minutes. Null/sentinel/malformed metadata is omitted. Artwork arrays retain the same URL checks, transport rules and viewport gating as catalog posters. Trailer links reject local schemes and embedded credentials, and open externally only after a user tap.
 
-Account responses optionally supply `active_cons`, `max_connections` and `is_trial`. Account settings labels the active connection count as a sign-in snapshot; it is not a live monitor. Server settings uses the configured base address/connection type plus optional validated `server_info.timezone` and `timestamp_now`. The server clock is a sign-in snapshot, shown in the reported zone, behind More details alongside supported live formats. Other raw server fields are discarded. Missing expiry/limits are not presented as unlimited. Rich metadata remains in memory; the existing history file format still stores only playback identifiers/titles/extensions and watch timestamps.
+Account responses optionally supply `active_cons`, `max_connections` and `is_trial`. Account settings labels the active connection count as a sign-in snapshot; it is not a live monitor. Server settings uses the configured base address/connection type plus optional validated `server_info.timezone` and `timestamp_now`. The server clock is a sign-in snapshot, shown in the reported zone, behind More details alongside supported live formats. Other raw server fields are discarded. Missing expiry/limits are not presented as unlimited. Rich metadata remains in memory; the account-scoped SQLite history stores only playback identifiers/titles/extensions and playback-start timestamps; separate progress rows store positions and watched state. See [storage behavior](CACHE_AND_PLAYBACK.md#durable-movie-and-episode-progress).
 
 The channel guide maps `epg_listings` into programmes with validated start/stop epoch timestamps, decoded UTF-8 titles/descriptions and an optional strictly parsed provider-local start clock. It accepts plain text as well as Base64 text, omits invalid entries, sorts by start time and removes duplicate time ranges. The interface displays times in the device's zone and selected interface language.
 
@@ -47,9 +47,9 @@ Common paths are:
 /series/{username}/{password}/{episode_id}.{container_extension}
 ```
 
-Credentials are encoded as separate path segments. Never use the series ID in place of the episode ID. Use provider-supplied container extensions for movies/episodes instead of assuming MP4. The first player prefers the provider's `ts` endpoint when advertised, otherwise the available HLS endpoint. Progressive playback can sniff the actual container when a provider returns a different container; a `.m3u8` endpoint that returns MP4 cannot be parsed as an HLS playlist.
+Credentials are encoded as separate path segments. Never use the series ID in place of the episode ID. Use provider-supplied container extensions for movies/episodes instead of assuming MP4. Live playback prefers advertised HLS (`m3u8`), then MPEG-TS (`ts`), then another advertised format; absent formats fall back to `ts`. Format names are trimmed and normalized before selection. Progressive playback can sniff the actual container when a provider returns a different container; a `.m3u8` endpoint that returns MP4 cannot be parsed as an HLS playlist.
 
-The baseline constructs common Xtream paths. Provider-specific direct URLs, custom stream headers, DRM licensing, catch-up paths, Stalker/MAG portals and M3U import are not implemented. Validate these needs before promising compatibility with another provider.
+The app constructs common Xtream paths, including the validated `/timeshift/` archive path described above. Provider-specific direct URLs, custom stream headers, DRM licensing, alternative catch-up protocols, Stalker/MAG portals and M3U import are not implemented. Validate these needs before promising compatibility with another provider.
 
 ## Transport behavior
 
@@ -58,7 +58,7 @@ The baseline constructs common Xtream paths. Provider-specific direct URLs, cust
 - Authenticated API redirects are rejected to avoid forwarding credentials to another origin.
 - No HTTP logging interceptor is installed.
 - Connection/read/call timeouts are bounded; coroutine cancellation cancels the call.
-- Ordinary JSON and category-scoped catalog responses are limited to 20 MiB. Complete item catalogs are streamed one record at a time with a 128 MiB transfer limit; only mapped item metadata is retained, rather than the full raw JSON tree. Movies and Series fetch their complete catalogs on the first root search or All movies/All series selection and reuse them for that screen's lifetime. Closing the screen cancels outstanding requests. Providers exceeding the bound still need paging or incremental import work.
+- Ordinary JSON and category-scoped catalog responses are limited to 20 MiB. Complete item catalogs are streamed one record at a time with a 128 MiB transfer limit; only mapped item metadata is retained, rather than the full raw JSON tree. Live TV, Movies and Series fetch their complete catalogs on the first root search or all-content selection and reuse them for that screen's lifetime. Closing the screen cancels outstanding requests. Providers exceeding the bound still need paging or incremental import work.
 - JSON/parser/network errors are translated into safe messages without the response body, URL or exception cause.
 - The player accepts HTTP and HTTPS manifests/segments and cross-protocol delivery redirects automatically. Artwork also accepts both schemes, trying HTTPS before an HTTP fallback. No per-connection HTTP checkbox or saved option is required. HTTP traffic, including credentials on HTTP login requests, is unencrypted.
 

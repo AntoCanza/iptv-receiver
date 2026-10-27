@@ -1,4 +1,14 @@
-# Video aspect ratios and playback metadata
+# Playback metadata and aspect ratios
+
+## Current implementation — Android 0.1.14
+
+The player implements Fit/Zoom/Stretch independently of Auto/16:9/4:3/21:9 aspect overrides. The retained ViewModel preserves choices through rotation and reconnects, and the custom PlayerView reapplies them on video-size changes. Subtitle controls include Off; audio selection appears for multiple tracks. Stream information displays actual prepared track/input-format and timeline values, with unknown fields left unknown. These features were introduced in 0.1.11 and refined in 0.1.13.
+
+The provider now maps channel archive flags and `get_simple_data_table` programmes. Home/player guide entry points support schedules, search and eligible `/timeshift/` replay. Provider-reported technical video/audio detail objects remain unmapped; actual playback formats are the information-panel source. A simultaneous multi-channel guide and adaptive quality picker are not implemented.
+
+Read [playback behavior](CACHE_AND_PLAYBACK.md), [provider integration](PROVIDER.md) and the [user guide](USER_GUIDE.md) for current behavior. [Verification](VERIFICATION.md) records the selected Pixel checks, including the display combinations and multiple audio tracks, and the remaining subtitle/format/device limits.
+
+## Initial investigation — Android 0.1.10
 
 Investigation date: October 27, 2026. Source baseline and installed development app: 0.1.10, versionCode 11. The repository pins Media3 1.11.1.
 
@@ -8,7 +18,7 @@ Version 0.1.11 subsequently implements display controls, subtitle/audio selectio
 
 ## Aspect ratio controls
 
-The current [playback screen](../app/src/main/kotlin/io/github/antocanza/iptvreceiver/ui/PlaybackScreen.kt) creates a standard `PlayerView` without changing its resize mode. Its default is Fit, confirmed on the phone. The player preserves the reported video proportions inside the available screen area. Fullscreen changes orientation and the available area; it does not force the video to 16:9.
+At the 0.1.10 investigation baseline, the playback screen created a standard `PlayerView` without changing its resize mode. Its default was Fit, confirmed on the phone. The player preserved the reported video proportions inside the available screen area. Fullscreen changed orientation and the available area; it did not force the video to 16:9. The [current playback screen](../app/src/main/kotlin/io/github/antocanza/iptvreceiver/ui/PlaybackScreen.kt) implements the controls summarized above.
 
 | Proposed control | Display behavior | Implementation direction |
 | --- | --- | --- |
@@ -33,7 +43,7 @@ Display resizing does not transcode the source, increase its detail, or change n
 
 ## Metadata sources
 
-| Source | Information it can describe | Current application behavior |
+| Source | Information it can describe | Behavior at the 0.1.10 baseline |
 | --- | --- | --- |
 | Provider catalog and title details | Titles, artwork, descriptions, year, rating, genres, credits, runtime, season and episode information | Mapped into catalog/detail models; the fields differ by response |
 | Provider technical detail objects | Optional video/audio codec, dimensions, aspect ratios, frame rate, bitrate, audio channel layout and language tags | Technical `video`, `audio` and `bitrate` fields are currently discarded |
@@ -71,13 +81,13 @@ Additional attempts included one live parsing error (3002), one episode decoding
 
 ## Live TV and on demand differences
 
-The sampled live listing contained channel identity/icon/category fields, `epg_channel_id`, `tv_archive` and `tv_archive_duration`, with no equivalent nested video/audio description. One channel advertised catch-up enabled and seven archive days. A separate `get_short_epg` request returned four programme entries containing title, description, language, start/end and timestamp fields. The current repository does not request this guide or map catch-up fields. Catch-up advertisement does not verify that archive playback works; that needs separate stream resolution and testing.
+The sampled live listing contained channel identity/icon/category fields, `epg_channel_id`, `tv_archive` and `tv_archive_duration`, with no equivalent nested video/audio description. One channel advertised catch-up enabled and seven archive days. A separate `get_short_epg` request returned four programme entries containing title, description, language, start/end and timestamp fields. Version 0.1.10 did not request a guide or map catch-up fields; the subsequent implementation uses `get_simple_data_table` as documented above. Catch-up advertisement alone does not verify archive playback.
 
 Both sampled movie detail responses had editorial metadata and a top-level `bitrate` field but no `video` or `audio` object. The playing MP4 nevertheless exposed detailed technical formats. A field's presence alone does not establish that its value is useful or current.
 
 Episode detail responses were less uniform. Three of four sampled series supplied nested video/audio objects for the selected episode, including FFprobe-style codec names, dimensions, sample/display aspect ratios, frame rate, audio sample rate, channels/layout and optional bitrate/color fields. Another episode supplied only artwork in its `info` object. These differences occur within the same provider, so parsing must allow both rich objects and missing fields. Provider values can be stale or disagree with the delivered stream; prepared track information should take precedence during playback.
 
-## Suggested implementation
+## Implementation proposals recorded at 0.1.10
 
 1. Add a player display-mode menu with Auto/Fit, Zoom, Stretch and an optional explicit aspect-ratio override. Keep the selection in the retained playback ViewModel so rotation and reconnects preserve it. Keep scale mode and forced ratio conceptually separate.
 2. Add a Stream information panel that observes `onTracksChanged` and `onVideoSizeChanged`, initializes from current player values, and displays video/audio/text formats separately. Use ExoPlayer input-format analytics for changes within an adaptive group. Show unknown values explicitly and distinguish source channels from the device's audio output. [Track inspection and selection](https://developer.android.com/media/media3/exoplayer/track-selection).
