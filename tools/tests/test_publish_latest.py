@@ -105,6 +105,9 @@ class FakeGitHub:
 
 class PublishLatestTest(unittest.TestCase):
     def setUp(self):
+        summary = patch.dict("os.environ", {"GITHUB_STEP_SUMMARY": ""})
+        summary.start()
+        self.addCleanup(summary.stop)
         self.folder = tempfile.TemporaryDirectory()
         self.addCleanup(self.folder.cleanup)
         self.apk = Path(self.folder.name) / publishing.APK_NAME
