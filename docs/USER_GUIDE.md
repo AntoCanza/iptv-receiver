@@ -1,6 +1,6 @@
 # IPTV Receiver user guide
 
-This guide describes Android **0.1.15 (versionCode 16)** for phones and tablets running Android 8.0 or later. Android TV, Windows, LG webOS and Samsung Tizen apps remain planned. The app requires your own Xtream-compatible provider account and supplies no channels, subscriptions or media.
+This guide describes Android **0.1.16 (versionCode 17)** for phones and tablets running Android 8.0 or later. Android TV, Windows, LG webOS and Samsung Tizen apps remain planned. The app requires your own Xtream-compatible provider account and supplies no channels, subscriptions or media.
 
 ## Install or update
 
@@ -31,7 +31,7 @@ Large-font or short-window layouts use compact rows and scrolling controls. Long
 
 ## Playback controls
 
-Tap the player to show its controls. Fullscreen uses landscape; Back exits fullscreen before leaving playback. Rotation retains the current playback session. Backgrounding pauses it, and leaving the player releases it.
+Tap the player to show its controls. Fullscreen uses landscape; Back exits fullscreen before leaving playback. Rotation retains the current playback session. A visible picture-in-picture window keeps playing; closing it or locking the phone pauses it, and leaving the player releases it.
 
 The screen stays awake while media plays. Pausing, stopping, finishing or a playback failure lets Android turn the display off after its normal inactivity timeout. Brief buffering and live reconnects keep it awake for up to one minute; exhausted retries release it sooner. Touching or operating the app resets Android's inactivity timer. No setting or extra permission is needed, and the app does not change your device's screen timeout.
 
@@ -41,9 +41,64 @@ The subtitle icon appears when text tracks are available and includes **Off**. A
 
 Live playback prefers provider-advertised HLS, buffers ahead and retries temporary interruptions. This can delay startup and place viewing behind the broadcast. Persistent errors expose Retry; rejected access, certificate errors and unsupported decoding require resolving the underlying issue. See [playback behavior](CACHE_AND_PLAYBACK.md) for exact recovery limits.
 
+## Picture-in-picture
+
+Picture-in-picture (PiP) keeps a small video window above other apps. It uses the current playback session for live TV, movies, episodes and completed downloads. A downloaded video continues reading its local file; PiP does not require a new provider login or network connection for that file.
+
+### Open the floating window
+
+- **While playing:** press Home, use the Home gesture or switch to another app. The video moves into PiP automatically. Buffering or a temporary live reconnect can also continue there while playback is still requested.
+- **With the player button:** tap the video to reveal the controls, then choose **Picture-in-picture**. This also works while paused and keeps the video paused until you press Play.
+
+Leaving a paused video with Home does not open a floating window or resume playback. Browsing the catalog without an active player does not open one either. Back keeps its usual behavior: exit fullscreen first, then leave the player.
+
+### Move, resize and control the video
+
+| Action | How it works |
+| --- | --- |
+| Move | Drag the window. Android snaps it to supported positions near the screen edges; placement follows the system's rules. |
+| Resize with two fingers | On Android 12+, place two fingers inside the window and spread or pinch them. Stop at the size you want within Android's minimum and maximum limits. |
+| Switch sizes quickly | On Android 12+, double-tap the video to switch between the sizes provided by the system. |
+| Show controls | Tap the window once. Android shows the available playback actions, expand and close controls. |
+| Pause or play | Use **Pause** or **Play** in that menu. Moving or resizing preserves the current play/pause state. |
+| Seek | **Back 10 seconds** and **Forward 10 seconds** appear for seekable non-live video. Seeking is bounded by the beginning and any known end time. |
+| Return to the full player | Use Android's expand control. Playback continues at its current position, or stays paused if you paused it. |
+| Close | Use Android's close control. Playback pauses and movie/episode progress is saved. |
+
+Android owns the window's size, position, animations and menu. Gesture details and available sizes can differ by Android version and device manufacturer. Resizing changes the size of the window, not the stream's resolution or the video's aspect ratio. To change **Fit/Zoom/Stretch** or the aspect setting, expand and use the app's Display controls. Selected subtitles remain visible in PiP; expand to change subtitles, audio tracks, speed or other options.
+
+### Home, closing and screen lock
+
+| What you do | What happens next |
+| --- | --- |
+| Go Home while video is playing | The floating video keeps playing when PiP is available. |
+| Go Home after pausing | Playback remains paused; no window opens automatically. |
+| Pause inside PiP, then expand | The full player remains paused at the same position. |
+| Close the floating window, then reopen the app | Playback does not restart automatically. Open the title and choose Play or Resume to continue if the player is no longer open. |
+| Lock the phone or turn its screen off | Playback pauses, including when PiP was visible. |
+| Wake or unlock the phone | Playback stays paused until you choose Play or Resume. The system may restore the window or require reopening the app. |
+
+Audio does not continue while the phone is locked or after the window is closed. For a movie or episode, the saved bookmark supports later Resume. A live channel has no equivalent durable bookmark: pausing does not record the broadcast, and resuming after its available stream window expires may reconnect nearer the live broadcast. Live channels therefore do not show the ten-second seek buttons.
+
+### Enable PiP and solve common problems
+
+PiP requires a supported Android 8.0+ device and Android's permission for this app. A common settings path is **Android Settings → Apps → Special app access → Picture-in-picture → IPTV Receiver → Allow picture-in-picture**. The names and location vary by device. The app uses this system PiP setting and does not request a separate overlay permission.
+
+| Problem | What to check |
+| --- | --- |
+| Home pauses the video instead of showing PiP | Check the app's PiP permission and that playback was not already paused, ended or failed. Try the player’s Picture-in-picture button. |
+| The PiP button is missing or reports unavailable | Tap the player to reveal its toolbar. Some devices do not support PiP; on supported devices, check Android's app settings. If PiP is unavailable, normal background pausing still applies. |
+| The window snaps away from where I release it | Android chooses the allowed edge positions. This is normal system behavior. |
+| I cannot resize, or it stops getting larger/smaller | Pinch/double-tap resizing requires Android 12+. Start both fingers inside the video and respect the system's size limits; behavior can vary by manufacturer. |
+| Seek buttons are missing | Live streams and non-seekable media do not offer these actions. Expand for the controls supported by that stream. |
+| Playback remains paused after unlocking or reopening | This is intentional. Choose Play or Resume when you are ready. |
+| Video buffers or fails in the small window | Expand to inspect the playback message and use Retry where offered. PiP uses the same connection, decoder and recovery behavior as the full player. |
+
+See [verification](VERIFICATION.md) for the physical devices and interactions actually checked. Support on one phone does not establish identical behavior on all Android versions, tablets or manufacturer interfaces.
+
 ## Progress, watched status and history
 
-Movie details and episode rows show progress, duration/remaining time when known, watched status, **Resume** and **Start over**. Resume becomes available after five seconds of actual playback. Positions save periodically and when seeking, pausing, backgrounding or leaving; a sudden process kill can lose the last few seconds.
+Movie details and episode rows show progress, duration/remaining time when known, watched status, **Resume** and **Start over**. Resume becomes available after five seconds of actual playback. Positions save periodically and when seeking, pausing, closing or leaving the player; a sudden process kill can lose the last few seconds.
 
 Playback ending or reaching 95% of a known duration marks a title watched. Rewatching keeps that flag while saving a new position. **Mark watched** and **Mark unwatched** allow manual corrections; marking unwatched clears the current position. Opening details or manually marking a title does not add a history entry.
 

@@ -7,6 +7,7 @@ enum class PlaybackRecoveryState { NONE, RECONNECTING, FAILED }
 
 /** The retained playback session owns resources; Android views only attach a video surface. */
 interface PlaybackEngine {
+    val isLive: Boolean get() = false
     val player: Player
     val recoveryState: StateFlow<PlaybackRecoveryState>
     val keepScreenOn: StateFlow<Boolean>

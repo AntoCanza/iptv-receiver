@@ -1,6 +1,6 @@
 # Full application and real-provider validation
 
-Prepared October 28, 2026. Run this after the offline-download change, using a data-preserving installation with the same signing certificate. Record actual results in [VERIFICATION.md](VERIFICATION.md); a checklist entry is not a passing result.
+Prepared October 28, 2026; extended for picture-in-picture in 0.1.16. Use a data-preserving installation with the same signing certificate. Record actual results in [VERIFICATION.md](VERIFICATION.md); a checklist entry is not a passing result.
 
 ## Order and evidence
 
@@ -19,6 +19,8 @@ Prepared October 28, 2026. Run this after the offline-download change, using a d
 | Movies and series | Details, expandable synopsis, all seasons/episodes, unknown runtime, continuation, Resume/Start over, manual watched/unwatched, process restart and account separation. |
 | Live playback | Provider HLS and TS where offered; actual frames and audio, startup delay, channel switching, pause/background/return, ended-stream recovery, temporary network loss, expired playlists, permanent access failures and bounded Retry. |
 | Finite playback | Movie and episode video/audio, seek forward/back, completion, resume/restart, unknown duration, fullscreen/Back/rotation, picture scaling/aspect, subtitle Off including forced tracks, available audio languages and playback speed. |
+| Picture-in-picture | Automatic Home entry while playing, manual entry while paused, no automatic entry for paused/ended/failed video, drag to different edges, double-tap and two-finger pinch while playing and paused, actual before/after window dimensions, native play/pause and supported ±10s seeks, repeated expand/close/reopen, landscape/display/subtitle retention. Lock/screen-off pauses; wake/unlock never resumes. Repeat for live, movies, episodes and local Downloads. |
+| PiP interruptions and permissions | Deny/re-enable PiP permission, audio focus/headphone changes, temporary live reconnect and Pause cancellation, open a Downloads notification over playing PiP, stale control intents, process death, unsupported devices and OEM size limits. No invisible player continues or second player overlaps. |
 | Guide and catch-up | Current/next/past programmes, provider time handling, unavailable archives, finite replay duration, guide opened from player, no overlapping player instances. |
 | Downloads | Movie/episode enqueue, deduplication, queued/downloading/paused/ready/failed/missing states, constrained connection, background/process restart, cancel/retry, validated range resume, server ignoring Range, expired credentials and rejected HLS/error documents. Incomplete files never show Ready. |
 | Offline playback | Complete a download, stop its server, remove saved login, cold launch, open Downloads, play/seek/resume/start over. No network fallback. Watch state remains after deleting media and is visible on subsequent account login. |
@@ -47,6 +49,8 @@ The existing instrumentation runner accepts `-e downloadPhase data` and `-e down
 After restoration, `-e downloadPhase real -e real true` checks a bounded real-provider transfer, pause/retry and removal using the saved authorized account. It removes the test media/request afterwards; it does not establish that a full provider movie has been downloaded or watched offline.
 
 Existing modes include `-e viewingPhase data`, `-e viewingPhase ui`, `-e screenSleep true`, and explicitly enabled real-provider modes documented in the runner and verification history. Pass `-e real true` only for the authorized saved test account. Do not treat older dated results as a fresh full regression.
+
+PiP modes are `-e pipPhase real-live`, `real-movie`, `real-series`, `lock`, `navigation` and `offline`, each with `-e real true` for the saved authorized account. `fixture` uses the shared player with generated local media and needs no real opt-in. The [PiP verification entry](VERIFICATION.md#native-picture-in-picture--version-0116) gives complete commands, snapshot/restore requirements, human-unlock steps and observed coverage. A resize pass must demonstrate changed system-window bounds and retained playback, rather than merely entering PiP. For live HLS pause, check stopped frames/player intent because the sliding window can change relative position even when paused.
 
 ## Dependency independence review
 

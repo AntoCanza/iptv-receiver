@@ -220,4 +220,9 @@
   <string name="download_storage_error">O armazenamento está cheio ou perdeu-se o acesso à pasta.</string>
   <string name="download_sign_in">Ligue-se ao fornecedor para renovar este pedido de transferência.</string>
   <string name="download_blocked">O controlo parental bloqueia esta transferência.</string>
+  <string name="player_pip">Imagem na imagem</string>
+  <string name="player_pip_unavailable">A imagem na imagem não está disponível neste dispositivo ou está desativada nas definições do Android.</string>
+  <string name="player_pip_back">Recuar 10 segundos</string>
+  <string name="player_pip_forward">Avançar 10 segundos</string>
+  <string name="player_pause">Pausa</string>
 </resources>

@@ -58,7 +58,8 @@ class DisplayPlayerView @JvmOverloads constructor(context: Context, attrs: Attri
 
 @androidx.annotation.OptIn(UnstableApi::class)
 @Composable
-internal fun PlaybackTools(model: PlaybackViewModel, onGuide: (() -> Unit)?, visible: Boolean = true) {
+internal fun PlaybackTools(model: PlaybackViewModel, onGuide: (() -> Unit)?, visible: Boolean = true,
+    onPictureInPicture: (() -> Unit)? = null) {
     val player = model.player
     val display by model.display.collectAsStateWithLifecycle()
     var tracks by remember(player) { mutableStateOf(player.currentTracks) }
@@ -75,6 +76,7 @@ internal fun PlaybackTools(model: PlaybackViewModel, onGuide: (() -> Unit)?, vis
     }
     if (visible) FlowRow(Modifier.zIndex(1f).fillMaxWidth().windowInsetsPadding(WindowInsets.displayCutout).padding(8.dp),
         horizontalArrangement = Arrangement.End) {
+        if (onPictureInPicture != null) ToolIcon(R.drawable.ic_picture_in_picture, stringResource(R.string.player_pip), onClick = onPictureInPicture)
         ToolIcon(R.drawable.ic_display, stringResource(R.string.player_display)) { dialog = "display" }
         if (tracks.groups.any { it.type == C.TRACK_TYPE_TEXT && it.length > 0 }) {
             ToolIcon(R.drawable.ic_subtitles, stringResource(R.string.player_subtitles), tracks.isTypeSelected(C.TRACK_TYPE_TEXT)) { dialog = "subtitles" }

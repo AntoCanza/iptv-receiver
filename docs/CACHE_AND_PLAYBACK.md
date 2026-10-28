@@ -2,21 +2,49 @@
 
 ## Rotation and fullscreen
 
-Each player navigation entry owns one PlaybackViewModel and ExoPlayer, built with the application context. Preparing the stream happens once when that ViewModel is created. Activity recreation detaches and reattaches PlayerView without preparing or releasing the player, preserving position and play/pause state. Leaving the player releases it; backgrounding pauses it. Movie/episode checkpoints also support durable resume after process death, as described below.
+Each player navigation entry owns one PlaybackViewModel and ExoPlayer, built with the application context. Preparing the stream happens once when that ViewModel is created. Activity recreation detaches and reattaches PlayerView without preparing or releasing the player, preserving position and play/pause state. Leaving the player releases it; stopping the visible player pauses it. A visible picture-in-picture window continues the same session. Movie/episode checkpoints also support durable resume after process death, as described below.
 
 Landscape automatically hides the header and system bars. The player fullscreen button can request landscape; exit/Back releases that request and returns to the device's orientation policy. Synchronizing Media3's icon temporarily disconnects its listener, because Media3 also emits the fullscreen callback for programmatic state changes.
+
+## Picture-in-picture
+
+`MainActivity` declares native PiP support and handles orientation, screen-size and layout configuration changes. `PlaybackPictureInPicture` binds the current `PlaybackViewModel` and video view; streaming and downloaded playback share this integration. Android owns window positioning, edge snapping, supported sizes and resizing gestures. The app supplies the video bounds for transitions and a bounded aspect ratio derived from video dimensions, pixel shape and the selected display override. Pinching changes window size, not the video aspect setting. Invalid or extreme stream dimensions are normalized before building the system parameters. PiP hides the header, normal controls and dialogs while retaining video and subtitles.
+
+On Android 12+, the controller updates auto-entry parameters while playback is intended, including buffering and live reconnects. Older supported versions enter from `onUserLeaveHint`. Auto-entry follows the active player's intent rather than `isPlaying` alone, so a temporary buffering interval does not cancel it. Paused playback, completed on-demand media, terminal failure and audio-focus suppression do not auto-enter. The player toolbar also allows manual entry while paused. Catalog navigation without a bound player clears the entry/actions state. Unsupported devices or denied PiP entry leave normal background pausing in place.
+
+Platform `RemoteAction` buttons provide play/pause and ten-second backward/forward seeking for seekable non-live media, bounded to the current timeline. Live classification comes from the playback engine, so a progressive live source does not acquire on-demand seek actions merely because of its container. Immutable, app-scoped pending intents carry only a session token and command; the non-exported receiver checks the active session, visible PiP state and unlocked screen before controlling the player. Detaching cancels its pending actions. No playback service, overlay permission, new dependency or persistent media URL is introduced.
+
+Visible PiP remains in the started activity lifecycle, so switching away from the full app does not pause it. Closing PiP or stopping the activity pauses and checkpoints playback. Screen-off handling also pauses immediately, and waking/unlocking only refreshes PiP availability. Expanding preserves the same player and its current play/pause state. Closing the window can end its activity; reopening must not implicitly prepare/play a replacement. Existing durable movie/episode bookmarks support an explicit later Resume. Full player-route restoration after process death is still outside the current guarantee.
+
+Detaching or replacing the bound playback model also pauses the previous model, independently of activity stop. This covers navigation delivered to the `singleTask` activity while it remains `STARTED`, such as an `open_downloads` notification opening Downloads over playing PiP. Clearing the binding cancels stale actions and prevents the hidden session from continuing playback or live recovery.
+
+The Downloads notification uses a launcher intent with explicit `NEW_TASK | RESET_TASK_IF_NEEDED` flags to expand an existing PiP task. `MainActivity` signals every new Downloads request to its navigation flow, which returns to the list even when an offline player was already open. The removed player pauses and its destination is popped rather than displaying a library screen inside PiP.
+
+| Transition | Required playback behavior |
+| --- | --- |
+| Playing/buffering/reconnecting → Home | Continue in PiP when supported and allowed. |
+| Paused → Home | Remain paused without automatic PiP entry. |
+| Paused → manual PiP → expand | Retain the paused position and same session. |
+| PiP → drag/resize/expand | Preserve player identity, selected display settings and play/pause state. |
+| PiP → close, or any player → screen off | Pause, save eligible progress and cancel pending live recovery. |
+| Bound player → detach or replace | Pause the previous model even if the activity remains started. |
+| Screen on/unlock/reopen | Refresh availability/UI without automatically resuming. |
+
+Audio-only playback with a locked screen or closed window is outside this feature. Live pausing remains limited by the stream's available buffer/window; PiP adds no recording or time-shift storage. Offline PiP retains the local file/content-only source and existing parental checks. Android/OEM window behavior remains system-owned, so minimum API support does not promise identical gestures or sizes on every device.
+
+See the [user guide](USER_GUIDE.md#picture-in-picture) for gestures, [Android's PiP guide](https://developer.android.com/develop/ui/views/picture-in-picture) for the platform contract, and [verification](VERIFICATION.md) for the device evidence and remaining coverage.
 
 ## Screen sleep
 
 The retained playback engine owns the screen-awake policy. Actual playback keeps the display on; pause, stop, end, suppressed playback and terminal failure release the activity's `FLAG_KEEP_SCREEN_ON`. Android then handles input and its normal screen timeout. The app does not draw a black overlay, change system display settings or request device-administrator permissions.
 
-Startup, buffering and automatic live recovery receive at most 60 seconds of screen-awake grace per continuous wait. Reconnect attempts share that deadline; rotation cannot renew it. Actual playback or an explicit Retry starts a fresh allowance. Exhausted recovery releases the hold immediately, and leaving the player removes listeners and cancels the timer. Releasing the hold does not itself cancel recovery; backgrounding still pauses playback and cancels recovery as before.
+Startup, buffering and automatic live recovery receive at most 60 seconds of screen-awake grace per continuous wait. Reconnect attempts share that deadline; rotation cannot renew it. Actual playback or an explicit Retry starts a fresh allowance. Exhausted recovery releases the hold immediately, and leaving the player removes listeners and cancels the timer. Releasing the hold does not itself cancel recovery; stopping the player or switching the screen off pauses playback and cancels recovery. Visible PiP retains the active session.
 
 The precise screen-off time follows device settings and Android policy; the grace period is not a forced-lock deadline. Follow [Android's screen-awake guidance](https://developer.android.com/develop/background-work/background-tasks/awake/screen-on). JVM policy tests cover state changes and deadlines; hardware checks are recorded in [verification](VERIFICATION.md).
 
 ## Durable movie and episode progress
 
-After playback actually starts, movie and episode positions are checkpointed every five seconds and on seek, pause, backgrounding and player removal. Final writes use an application-owned I/O scope so leaving a navigation entry does not cancel them. A forced process kill can lose the last few seconds since the latest completed checkpoint. Live TV and catch-up never receive movie/episode bookmarks.
+After playback actually starts, movie and episode positions are checkpointed every five seconds and on seek, pause, activity stop and player removal. Final writes use an application-owned I/O scope so leaving a navigation entry does not cancel them. A forced process kill can lose the last few seconds since the latest completed checkpoint. Live TV and catch-up never receive movie/episode bookmarks.
 
 Positions are isolated by normalized provider/account, content type, title ID and episode ID in the app-private version-1 `viewing.db` SQLite database. Each checkpoint updates one row with position, optional duration, current completion, a persistent watched flag and last actual playback timestamp. No titles, credentials or URLs enter progress rows. History keeps identifiers, display titles, stream extensions and playback-start timestamps; it is read in 50-entry increments and enriched with individual progress lookups. Movies/episodes remain in recent history for 180 days; live channels for ten days. Watched status and resume points do not expire and survive logout/cache cleanup. Settings clears the connected account’s history/progress after confirmation. App-data clearing/uninstallation removes all local records; there is no cloud/device synchronization.
 
@@ -64,7 +92,7 @@ If loader recovery fails, a normal end-of-stream on a live channel, an expired H
 
 Reconnect delays are 1, 2, 4, 8 and 8 seconds. Ten seconds of uninterrupted actual playback renews the retry budget, allowing recovery across recurring provider disconnects while bounding retries during a persistent outage. After five unsuccessful attempts, the existing Retry action is shown. Invalid URI schemes, TLS handshake/certificate failures, unsupported decoding and permanent HTTP failures such as 401/403 do not trigger automatic source reloads. Temporary HTTP responses (404/408/410/429 and 5xx) can be retried.
 
-The recovery controller belongs to the retained player and runs on its main thread. Rotation cannot duplicate it. Pause, backgrounding, audio-focus/noisy-output pauses and leaving the player cancel pending recovery; reconnects never force `playWhenReady` back on. Buffering/reconnects show a spinner, successful playback clears stale errors, and the first-playback listener still records each viewing session only once. No stream URLs or provider errors are logged by recovery.
+The recovery controller belongs to the retained player and runs on its main thread. Rotation cannot duplicate it. Pause, stopping the visible player, screen-off, audio-focus/noisy-output pauses and leaving the player cancel pending recovery; reconnects never force `playWhenReady` back on. A visible PiP session can continue reconnecting. Buffering/reconnects show a spinner, successful playback clears stale errors, and the first-playback listener still records each viewing session only once. No stream URLs or provider errors are logged by recovery.
 
 Media3 documents its [buffer controls](https://developer.android.com/reference/androidx/media3/exoplayer/DefaultLoadControl.Builder), [error-to-IDLE event order and prepare behavior](https://developer.android.com/media/media3/exoplayer/listening-to-player-events) and [default-position recovery for expired live windows](https://developer.android.com/media/media3/exoplayer/live-streaming).
 

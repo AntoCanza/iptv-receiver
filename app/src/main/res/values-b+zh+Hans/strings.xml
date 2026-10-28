@@ -220,4 +220,9 @@
   <string name="download_storage_error">存储已满或已失去文件夹访问权限。</string>
   <string name="download_sign_in">请连接到服务提供商以更新此下载请求。</string>
   <string name="download_blocked">家长控制已阻止此下载。</string>
+  <string name="player_pip">画中画</string>
+  <string name="player_pip_unavailable">此设备不支持画中画，或已在 Android 设置中停用。</string>
+  <string name="player_pip_back">后退 10 秒</string>
+  <string name="player_pip_forward">快进 10 秒</string>
+  <string name="player_pause">暂停</string>
 </resources>

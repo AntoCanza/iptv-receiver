@@ -15,6 +15,7 @@ Bring your own provider account. The app does not include channels, media or a s
 - **Watch offline.** Download supported movie/episode files, choose a local folder and manage saved media in Downloads. Completed downloads work without a provider login or internet connection.
 - **Check the TV guide.** Browse schedules and replay past programmes when your provider offers catch-up.
 - **Adjust playback.** Use fullscreen, picture sizing and the audio/subtitle tracks supplied by the stream. Live TV reconnects after temporary interruptions.
+- **Keep watching while using other apps.** Go Home while playing, or use the Picture-in-picture button, for a movable floating video with play/pause and supported seeking. Android 12+ also supports pinch resizing. Closing the window or locking the phone pauses playback. See the [floating-window guide](docs/USER_GUIDE.md#picture-in-picture) for gestures, permissions and troubleshooting.
 - **Let the screen rest.** Playback keeps it awake; pausing, finishing or stopping lets Android's normal inactivity timeout take over. Buffering and reconnects receive a bounded grace period.
 - **Make it yours.** Choose from ten interface languages, optionally remember an encrypted connection and manage password-protected parental controls. Adult content is blocked by default.
 

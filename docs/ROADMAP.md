@@ -1,6 +1,6 @@
 # Implementation and validation roadmap
 
-Baseline: Android 0.1.15 (versionCode 16), October 28, 2026. Checked items describe implemented behavior or the specific recorded verification, not compatibility with every device/provider. See the [user guide](USER_GUIDE.md) for current features and [verification](VERIFICATION.md) for evidence by version.
+Baseline: Android 0.1.16 (versionCode 17), October 28, 2026. Checked items describe implemented behavior or the specific recorded verification, not compatibility with every device/provider. See the [user guide](USER_GUIDE.md) for current features and [verification](VERIFICATION.md) for evidence by version.
 
 ## Milestone 0 — Public foundation
 
@@ -57,6 +57,10 @@ Live TV, Movies and Series roots support full-catalog search and all-content bro
 - [x] Channel programme guide with search, current/upcoming/past programmes and advertised catch-up playback.
 - [ ] Next-episode playback with correct numeric season/episode ordering.
 - [x] Retained player, immersive fullscreen and rotation continuity, with selected Pixel checks.
+- [x] Native picture-in-picture for streaming and offline playback, with system moving/resizing, play/pause, supported ten-second seeking and pause on close or screen lock.
+- [x] Selected Pixel 9 Pro XL/Android 17 checks for real live TV, movies and episodes, plus local Downloads: move, measured double-tap/pinch resize while playing, controls, expand, close/reopen and human-assisted lock/unlock. See [observed results](VERIFICATION.md#native-picture-in-picture--version-0116).
+- [ ] Complete the PiP device matrix for automatic/manual entry, paused Home/reopen, repeated expand/close, edge dragging, double-tap/pinch resizing and lock/unlock across API 26, current Android, phones, tablets and the minified build; record only observed outcomes in [verification](VERIFICATION.md).
+- [ ] Extend PiP checks to denied system permission, subtitle/audio combinations, more offline formats/storage providers, unavailable/expired live windows and manufacturer-specific window behavior.
 - [x] Let Android's normal inactivity timeout take over when playback is paused, stopped, ended or failed, with bounded buffering/reconnect grace.
 - [x] Direct-file movie/episode downloads, dedicated management section, configurable local folder, pause/retry, bulk deletion and credential-free offline playback with current parental rules.
 - [ ] Broader offline download/storage checks across API 26, tablets, SD/USB drives, revoked grants, low-space and Android background quotas.
@@ -112,4 +116,4 @@ the additional clients and their playback integrations remain unimplemented.
 
 ## Later product choices
 
-Password-protected parental controls with default adult blocking and settings reset are implemented; device and provider classification coverage remains part of release hardening. Direct-file downloads are implemented. Adaptive/offline-DRM downloads, live recording, favorites, multiple accounts, a simultaneous multi-channel EPG grid/XMLTV import, casting, M3U import, background playback and cloud sync remain later product choices. The existing channel guide and Xtream catch-up path still need broader provider and device coverage. Follow [the full validation plan](VALIDATION_PLAN.md) for the next real-service, accessibility and reliability pass.
+Password-protected parental controls with default adult blocking and settings reset are implemented; device and provider classification coverage remains part of release hardening. Direct-file downloads and visible picture-in-picture playback are implemented. Adaptive/offline-DRM downloads, live recording, favorites, multiple accounts, a simultaneous multi-channel EPG grid/XMLTV import, casting, M3U import, audio-only background playback and cloud sync remain later product choices. The existing channel guide and Xtream catch-up path still need broader provider and device coverage. Follow [the full validation plan](VALIDATION_PLAN.md) for the next real-service, accessibility and reliability pass.

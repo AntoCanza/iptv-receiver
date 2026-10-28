@@ -15,6 +15,18 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class PlaybackViewModelTest {
+    @Test fun `closing or locking pauses and a later orientation update never restarts playback`() {
+        val engine = FakeEngine()
+        val model = PlaybackViewModel(engine, false)
+        engine.positionMs = 42_000
+        model.pause()
+        model.onHostStopped(changingConfigurations = false)
+        model.onOrientationChanged(true)
+        model.onOrientationChanged(false)
+        assertFalse(engine.playing)
+        assertEquals(42_000L, engine.positionMs)
+        assertEquals(1, engine.prepareCalls)
+    }
     @Test fun `all display modes survive rotation retry and background without replacing media`() {
         val engine = FakeEngine()
         val model = PlaybackViewModel(engine, false)

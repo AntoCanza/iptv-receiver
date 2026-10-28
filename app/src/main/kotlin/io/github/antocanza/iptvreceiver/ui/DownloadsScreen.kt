@@ -91,8 +91,19 @@ internal fun DownloadAction(target: WatchTarget, downloaded: Set<List<String>>, 
 }
 
 @Composable
-internal fun DownloadsNavigation(container: ReceiverApplication, initial: String, session: Session?, back: () -> Unit) {
+internal fun DownloadsNavigation(container: ReceiverApplication, initial: String, session: Session?,
+    openListRequest: Int = 0, back: () -> Unit) {
     val navigation = rememberNavController()
+    var handledOpenRequest by remember { mutableStateOf(openListRequest) }
+    LaunchedEffect(openListRequest) {
+        if (handledOpenRequest != openListRequest) {
+            handledOpenRequest = openListRequest
+            navigation.navigate("downloads") {
+                popUpTo(navigation.graph.id)
+                launchSingleTop = true
+            }
+        }
+    }
     val model: DownloadsViewModel = viewModel(key = "downloads", factory = viewModelFactory { initializer { DownloadsViewModel(container.downloads) } })
     val state by model.state.collectAsStateWithLifecycle()
     val entries by container.downloads.store.entries.collectAsStateWithLifecycle()
@@ -157,7 +168,8 @@ internal fun DownloadsNavigation(container: ReceiverApplication, initial: String
                             })
                     } })
                     val fullscreen by playback.fullscreen.collectAsStateWithLifecycle()
-                    LaunchedEffect(landscape) { playback.onOrientationChanged(landscape) }
+                    val inPip = inPictureInPicture()
+                    LaunchedEffect(landscape, inPip) { if (!inPip) playback.onOrientationChanged(landscape) }
                     fun fullscreen(enabled: Boolean) {
                         playback.setFullscreen(enabled)
                         activity?.requestedOrientation = if (enabled) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE else ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
@@ -166,7 +178,7 @@ internal fun DownloadsNavigation(container: ReceiverApplication, initial: String
                     BackHandler(fullscreen) { fullscreen(false) }
                     ScreenFrame(download.title, back = { navigation.popBackStack() }, fullscreen = fullscreen) {
                         Column {
-                            if (persistenceFailed) Text(stringResource(R.string.watch_progress_error), Modifier.padding(16.dp), color = MaterialTheme.colorScheme.error)
+                            if (persistenceFailed && !inPip) Text(stringResource(R.string.watch_progress_error), Modifier.padding(16.dp), color = MaterialTheme.colorScheme.error)
                             PlaybackScreen(playback, fullscreen, ::fullscreen)
                         }
                     }

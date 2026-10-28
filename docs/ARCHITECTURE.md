@@ -16,7 +16,7 @@ those additional clients or their playback integrations have been implemented.
 - Android 8.0 (API 26) minimum; compile SDK 37.2, target API 36 and Build Tools 36.0.0.
 - Device language by default, English fallback and ten selectable interface languages; see [localization](LOCALIZATION.md).
 
-The current application is 0.1.15 (versionCode 16). The build pins AGP 9.4.1, Gradle 9.8.2, Kotlin/Compose compiler plugin 2.4.21 and Media3 1.11.1. CI uses JDK 21 and the application targets Java 17 bytecode. The version catalog, Wrapper properties and app Gradle file are authoritative; see the [build settings](../README.md#run-locally). AGP provides built-in Kotlin for Android; do not also apply `org.jetbrains.kotlin.android`.
+The current application is 0.1.16 (versionCode 17). The build pins AGP 9.4.1, Gradle 9.8.2, Kotlin/Compose compiler plugin 2.4.21 and Media3 1.11.1. CI uses JDK 21 and the application targets Java 17 bytecode. The version catalog, Wrapper properties and app Gradle file are authoritative; see the [build settings](../README.md#run-locally). AGP provides built-in Kotlin for Android; do not also apply `org.jetbrains.kotlin.android`.
 
 Lint treats correctness warnings as errors. Dependency-version and target-SDK migration notices remain informational. Dependencies are handled through Dependabot review; the deliberately pinned API 36 target must be reviewed against current platform/store requirements before release. This avoids an unrelated upstream release unexpectedly breaking a development build.
 
@@ -174,7 +174,18 @@ Navigation arguments contain only content types and IDs. Credentials and playbac
 
 Each screen ViewModel exposes immutable state with loading, data and error values. The UI collects it with `collectAsStateWithLifecycle`. Retry cancels an earlier load. Cancellation propagates to OkHttp. The unfinished login form uses an activity ViewModel across configuration changes and is cleared after authentication; credentials do not use SavedStateHandle. Parental password fields use memory-only Compose state.
 
-The player destination's retained `PlaybackViewModel` owns one engine/ExoPlayer. Activity recreation reattaches the view without preparing the source again. It pauses when the destination stops and releases its resources when removed. Background playback and a `MediaSessionService` are future product decisions. It uses device decoders; a supported container does not guarantee support for every embedded codec.
+The player destination's retained `PlaybackViewModel` owns one engine/ExoPlayer. Activity recreation reattaches the view without preparing the source again. Native picture-in-picture keeps that session visible when leaving the full app; closing the window, stopping the activity or switching the screen off pauses playback. Detaching or replacing the bound model explicitly pauses the previous model even if the activity stays `STARTED`, including an `open_downloads` notification navigating the `singleTask` activity to Downloads. Unlocking and reopening do not resume automatically. Removing the player destination releases its resources. It uses device decoders; a supported container does not guarantee support for every embedded codec.
+
+PiP keeps the responsibilities distinct:
+
+| Component | Responsibility |
+| --- | --- |
+| Android system | Floating window, edge positions, allowed sizes, resize gestures, expand/close menu and per-app PiP permission. |
+| Activity and `PlaybackPictureInPicture` | Entry policy, configuration/transition state, video bounds/aspect, current-player binding and app-scoped action routing. |
+| Playback UI | Hide the normal header, toolbar and dialogs in PiP; keep the video and selected subtitles visible; restore the controls when expanded. |
+| Retained playback engine/ViewModel | One player, source and decoder session; play/pause/seek, live recovery, progress and screen-awake policy. |
+
+Streaming and offline playback share this path. `RemoteAction` controls require no playback service, overlay permission or additional dependency; their intents expose no provider addresses or credentials. The controller does not own provider fetching or durable storage. Audio-only background playback remains a future product choice. See the [PiP lifecycle and transition contract](CACHE_AND_PLAYBACK.md#picture-in-picture), [user gestures and troubleshooting](USER_GUIDE.md#picture-in-picture), and [recorded device checks](VERIFICATION.md).
 
 The engine also retains the screen-awake policy and exposes its state through the ViewModel. Playback keeps the screen awake; idle states release it to Android's normal inactivity timeout. Buffering and reconnects share a bounded grace period across rotation; see [screen sleep](CACHE_AND_PLAYBACK.md#screen-sleep).
 

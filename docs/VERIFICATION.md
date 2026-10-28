@@ -1,6 +1,55 @@
 # Verification record
 
-Date: October 28, 2026. Latest development version 0.1.15, versionCode 16. Package: `io.github.antocanza.iptvreceiver`.
+Date: October 28, 2026. Latest development version 0.1.16, versionCode 17. Package: `io.github.antocanza.iptvreceiver`.
+
+## Native picture-in-picture — version 0.1.16
+
+PiP uses Android's floating window and the existing Media3 player for streaming and completed downloads. Home enters automatically while playback is intended; a player button also permits paused entry. Native actions expose play/pause and ten-second seeks for seekable non-live media. Closing, screen-off and removing/replacing the visible player pause playback; waking, unlocking and reopening do not restart it. Android handles dragging, edge positions and supported sizes. No playback service, overlay permission or library was added. See the [complete user guide](USER_GUIDE.md#picture-in-picture) and [lifecycle contract](CACHE_AND_PLAYBACK.md#picture-in-picture).
+
+The full README verification command and `:app:assembleDebugAndroidTest` pass with JDK 21: **198 JVM tests** (152 app, 6 model, 40 provider), dependency policy, debug/release lint, debug APK, minified unsigned release APK and release AAB. Each lint variant has zero errors and zero warnings, with two informational notices. Six added tests cover automatic entry intent, buffering/reconnects, suppressed/paused/ended/failed states, Pause during reconnect delay, bounded aspect ratios, and pause/position continuity. No dependency version changed.
+
+Physical device: **Pixel 9 Pro XL, Android 17**, 1344×2992 display. Testing uses a data-preserving update with the existing certificate and the saved authorized provider. Live, movie and episode checks enter through normal app navigation and use the production player. Tests inspect decoded frame callbacks, player identity/state and actual Android accessibility-window bounds, and inject real touch gestures into the system PiP window. Synthetic local media is identified separately below. Real screenshots, provider responses, account details and stream URLs remain private.
+
+| Interaction | Observed result |
+| --- | --- |
+| Movie paused → Home → app icon | No automatic PiP and no resume; the same player is retained. |
+| Movie playing → Home | Video continues in PiP with the regular app toolbar/header hidden. |
+| Native play/pause and seek | Paused position remains stable; ±10-second seeks and subsequent video frames pass. |
+| Drag and resize while playing | Real live and movie playback retain the same player. Double-tap changes **749×421 → 1248×702**; a two-finger pinch changes **1248×702 → 801×451**. These are observed system-window pixels, not promised sizes on other phones. |
+| Series episode with a different video shape | AVC 512×368/AAC passes the complete flow. Double-tap changes **729×524 → 1135×816** and pinch reduces it to **729×523**, retaining playback. |
+| Completed local video opened through Downloads | Generated silent AVC 160×96/10 fps passes eight groups: entry, pause/play/seek, drag, **783×470 → 1219×731 → 783×469** resizing, expand and close/reopen. The test entry/file is removed afterwards. This is local playback, not a newly completed real-provider download. |
+| Expand | Same player, position and play/pause state; full controls return. |
+| Paused landscape entry/expand | Paused position, 4:3 display selection and landscape fullscreen are retained. |
+| Repeated Home/expand | Three additional movie cycles retain exactly the same playing instance. |
+| Manual PiP button and system close | Entry succeeds; close pauses. Reopening does not restart playback. |
+| PiP screen-off → wake/unlock | Playback pauses immediately and position stays stable. The user unlocks normally; playback remains paused. |
+| Full-player screen-off → wake/unlock | Playback pauses and stays paused after a second human unlock. |
+| Downloads launch intent over PiP | Three navigation checks pass with a real AVC 3840×2160/AAC movie and a local download. The notification's MAIN/LAUNCHER intent expands the task; the old player pauses. A repeated request while the offline player is open pops that player and opens the full Downloads list. |
+
+The complete live phase passes eight groups (AVC 1280×720 with AAC reported), the movie phase ten, the series phase eight, the offline phase eight, the lock phase four and navigation three: **41 physical check groups**. Live pause is verified by frozen decoded-frame callbacks and paused player state: an HLS sliding window can change relative timeline position even while paused. Movie/episode pause uses a stable-position assertion. Frame checks establish video decoding and state transitions, not an independent listening assessment. Physical movement and both resize gestures are explicitly tested; a successful PiP entry alone is not counted as resize coverage.
+
+The navigation checks exposed and verified fixes for hidden playback after a model is detached, Downloads remaining inside PiP, and repeated Downloads requests retaining its offline-player route. The notification now carries explicit `NEW_TASK | RESET_TASK_IF_NEEDED` flags with its launcher action/category; each new Downloads request also resets that navigation stack to the list.
+
+After the phone phases, the original **15 app-data files** match their private snapshot byte-for-byte, with no extra files in the restored directories. The saved account and viewing records are retained. Original font scale (1.15), rotation settings and USB stay-awake setting (2) are unchanged. Private media/captures and provider details are excluded from Git.
+
+The site checker, relative Markdown links, whitespace checks and all nine release-policy tests pass. Chromium checks at 1440/768/390/320 px show no horizontal overflow or broken images. Expanded PiP gesture and lock FAQs were visually reviewed at phone and desktop widths. Documentation distinguishes system gesture support from the measured phone results and retains the broader compatibility limits below.
+
+### Reproducing the opt-in phone checks
+
+Build/install the app and test APK with the existing signing identity, and take a verified private, restorable app-data snapshot first. These phases update viewing history/progress and must not be run over personal data without restoration. Use the authorized saved test provider; stream selection is bounded to the runner's selected non-adult samples and normal parental checks stay active.
+
+```sh
+adb shell am instrument -w -e pipPhase real-live -e real true io.github.antocanza.iptvreceiver.test/io.github.antocanza.iptvreceiver.PlaybackDeviceChecks
+adb shell am instrument -w -e pipPhase real-movie -e real true io.github.antocanza.iptvreceiver.test/io.github.antocanza.iptvreceiver.PlaybackDeviceChecks
+adb shell am instrument -w -e pipPhase real-series -e real true io.github.antocanza.iptvreceiver.test/io.github.antocanza.iptvreceiver.PlaybackDeviceChecks
+adb shell am instrument -w -e pipPhase lock -e real true io.github.antocanza.iptvreceiver.test/io.github.antocanza.iptvreceiver.PlaybackDeviceChecks
+adb shell am instrument -w -e pipPhase navigation -e real true io.github.antocanza.iptvreceiver.test/io.github.antocanza.iptvreceiver.PlaybackDeviceChecks
+adb shell am instrument -w -e pipPhase offline -e real true io.github.antocanza.iptvreceiver.test/io.github.antocanza.iptvreceiver.PlaybackDeviceChecks
+```
+
+Run phases sequentially with the phone unlocked; `lock` waits up to three minutes for each human unlock. Avoid running another accessibility/UI-automation client during instrumentation. The runner waits for the system entry/snap animation before manipulating its actual floating bounds. `offline` seeds a generated AVC MP4 in the current account's private Downloads library, opens it through Downloads and removes its test entry/file afterwards; it does not download a provider movie. The separate `fixture` phase exercises the common playback screen with generated local video without the Downloads navigation path. Restore original app data and display settings after all phases, and keep private captures out of public artifacts.
+
+Remaining coverage includes API 26, tablets, other manufacturer interfaces, long sessions, denied PiP permission, audio-focus interruptions, subtitle/audio combinations in PiP, expired live windows/recovery while floating, and the full matrix on a minified build. Tests on this phone and selected streams do not establish all-device or all-provider compatibility.
 
 ## Offline downloads and real-service baseline — version 0.1.15
 

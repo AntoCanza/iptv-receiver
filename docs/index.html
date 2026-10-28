@@ -50,7 +50,7 @@
         "name": "IPTV Receiver",
         "url": "https://antocanza.github.io/iptv-receiver/",
         "description": "An Android client for your Xtream provider: live TV, movies, series, offline downloads, resume, a channel guide and parental controls. Bring your own account; no content or subscription is included. Development build.",
-        "softwareVersion": "0.1.15",
+        "softwareVersion": "0.1.16",
         "downloadUrl": "https://github.com/AntoCanza/iptv-receiver/releases/latest/download/iptv-receiver.apk",
         "applicationCategory": "MultimediaApplication",
         "license": "https://github.com/AntoCanza/iptv-receiver/blob/main/LICENSE",
@@ -88,7 +88,7 @@
         <article><span class="number">01</span><h3>Find your next watch</h3><p>Search channels, movies and series. Filter by genre and explore seasons, episodes and title details.</p></article>
         <article><span class="number">02</span><h3>Continue your story</h3><p>Resume a movie or episode, track what you have watched and continue a series. Progress stays on your device.</p></article>
         <article><span class="number">03</span><h3>See what is on</h3><p>Browse your channel guide and replay past programmes when your provider offers catch-up.</p></article>
-        <article><span class="number">04</span><h3>Settle into playback</h3><p>Go fullscreen, adjust the picture and choose available tracks. Live TV retries interruptions; idle playback lets the screen rest.</p></article>
+        <article><span class="number">04</span><h3>Settle into playback</h3><p>Go fullscreen or keep watching in picture-in-picture while using other apps. Move the floating video and control playback; closing it or locking the phone pauses it. <a href="https://github.com/AntoCanza/iptv-receiver/blob/main/docs/USER_GUIDE.md#picture-in-picture">Learn the gestures →</a></p></article>
         <article><span class="number">05</span><h3>Watch offline</h3><p>Download supported movies and episodes to a local folder. Track transfers, pause, retry, play and remove saved media in Downloads.</p></article>
         <article><span class="number">06</span><h3>Make it yours</h3><p>Choose from ten interface languages and set parental category locks. Adult content is blocked by default, including offline.</p></article>
       </div>
@@ -115,6 +115,8 @@
       <p class="section-note">See <a href="https://github.com/AntoCanza/iptv-receiver/blob/main/docs/VERIFICATION.md">what has been tested</a>, the <a href="https://github.com/AntoCanza/iptv-receiver/blob/main/docs/VALIDATION_PLAN.md">full validation plan</a>, <a href="https://github.com/AntoCanza/iptv-receiver/blob/main/docs/ROADMAP.md">what is planned</a> and the <a href="https://github.com/AntoCanza/iptv-receiver/releases/latest">latest release and checksum</a>.</p>
     </section>
     <section class="section wrap faq" aria-labelledby="questions"><p class="eyebrow">A few useful answers</p><h2 id="questions">About IPTV Receiver</h2>
+      <details><summary>How do I move and resize the floating video?</summary><p>Go Home while playing or choose Picture-in-picture in the player. Drag the window to an Android-supported edge position. On Android 12+, use two fingers to pinch/spread or double-tap to change size. Tap once for play/pause, supported seeking, expand and close. Android controls the size limits; gestures and menus can vary by device. See the <a href="https://github.com/AntoCanza/iptv-receiver/blob/main/docs/USER_GUIDE.md#picture-in-picture">PiP guide</a> for permissions and troubleshooting.</p></details>
+      <details><summary>Does playback continue when I lock the phone?</summary><p>No. Locking the phone or closing the floating window pauses playback. Unlocking or reopening the app keeps it paused until you choose Play or Resume. Going Home after pausing also keeps it paused and does not open PiP automatically.</p></details>
       <details><summary>When will the screen turn off?</summary><p>After playback pauses, stops, ends or fails, your device’s normal inactivity timeout applies. Brief buffering or reconnects keep the screen awake for up to one minute. Touching the screen resets Android’s inactivity timer; the app does not change your device settings.</p></details>
       <details><summary>Where is my viewing progress saved?</summary><p>On this device, separately for each provider account. Resume points and watched status stay until you clear them. Uninstalling or clearing app storage removes local data; there is no cloud sync.</p></details>
       <details><summary>Where are offline downloads kept?</summary><p>In private app storage by default, or in a local folder you choose in Settings → Downloads. Downloads stay until removed and are excluded from cache cleanup. Files in a shared folder can be opened by other apps and may remain after uninstall. Explicit logout hides the account’s library until you reconnect.</p></details>

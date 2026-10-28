@@ -2,6 +2,11 @@ package io.github.antocanza.iptvreceiver
 
 import android.os.Bundle
 import android.content.Intent
+import android.content.res.Configuration
+import android.app.PictureInPictureUiState
+import android.os.Build
+import androidx.annotation.RequiresApi
+import io.github.antocanza.iptvreceiver.playback.PlaybackPictureInPicture
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.activity.compose.setContent
@@ -29,10 +34,29 @@ import io.github.antocanza.iptvreceiver.ui.DownloadsNavigation
 
 class MainActivity : AppCompatActivity() {
     private var previewIntent by mutableStateOf<Intent?>(null)
+    private var downloadsOpenRequest by mutableStateOf(0)
+    val pictureInPicture by lazy { PlaybackPictureInPicture(this) }
+
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        pictureInPicture.onUserLeaveHint()
+    }
+
+    override fun onPictureInPictureModeChanged(isInPictureInPictureMode: Boolean, newConfig: Configuration) {
+        super.onPictureInPictureModeChanged(isInPictureInPictureMode, newConfig)
+        pictureInPicture.onModeChanged(isInPictureInPictureMode)
+    }
+
+    @RequiresApi(Build.VERSION_CODES.VANILLA_ICE_CREAM)
+    override fun onPictureInPictureUiStateChanged(pipState: PictureInPictureUiState) {
+        super.onPictureInPictureUiStateChanged(pipState)
+        if (pipState.isTransitioningToPip) pictureInPicture.onEntering()
+    }
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        if (intent.getBooleanExtra("open_downloads", false)) downloadsOpenRequest++
         previewIntent = intent
     }
 
@@ -70,7 +94,8 @@ class MainActivity : AppCompatActivity() {
                     LaunchedEffect(previewIntent) {
                         if (previewIntent?.getBooleanExtra("open_downloads", false) == true) downloadsPage = "downloads"
                     }
-                    if (downloadsPage != null) DownloadsNavigation(container, checkNotNull(downloadsPage), session, back = { downloadsPage = null })
+                    if (downloadsPage != null) DownloadsNavigation(container, checkNotNull(downloadsPage), session,
+                        openListRequest = downloadsOpenRequest, back = { downloadsPage = null })
                     else if (session == null) LoginScreen(state, model::connect, draft,
                         openDownloads = if (offlineAccount != null) ({ downloadsPage = "downloads" }) else null)
                     else ReceiverNavigation(repository, session, model, openDownloads = { settings -> downloadsPage = if (settings) "download_settings" else "downloads" })

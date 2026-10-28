@@ -220,4 +220,9 @@
   <string name="download_storage_error">Хранилище заполнено или доступ к папке утрачен.</string>
   <string name="download_sign_in">Подключитесь к провайдеру, чтобы обновить запрос на загрузку.</string>
   <string name="download_blocked">Родительский контроль блокирует эту загрузку.</string>
+  <string name="player_pip">Картинка в картинке</string>
+  <string name="player_pip_unavailable">Режим «Картинка в картинке» недоступен на этом устройстве или отключён в настройках Android.</string>
+  <string name="player_pip_back">Назад на 10 секунд</string>
+  <string name="player_pip_forward">Вперёд на 10 секунд</string>
+  <string name="player_pause">Пауза</string>
 </resources>

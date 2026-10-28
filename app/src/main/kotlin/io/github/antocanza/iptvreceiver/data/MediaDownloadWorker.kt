@@ -103,7 +103,10 @@ class MediaDownloadWorker(context: Context, parameters: WorkerParameters) : Coro
         val context = applicationContext
         val manager = context.getSystemService(NotificationManager::class.java)
         manager.createNotificationChannel(NotificationChannel("downloads", context.getString(R.string.downloads), NotificationManager.IMPORTANCE_LOW))
-        val intent = Intent(context, MainActivity::class.java).putExtra("open_downloads", true)
+        // Bring the existing single-task activity out of PiP before showing Downloads.
+        val intent = Intent.makeMainActivity(android.content.ComponentName(context, MainActivity::class.java))
+            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_RESET_TASK_IF_NEEDED)
+            .putExtra("open_downloads", true)
         val pending = PendingIntent.getActivity(context, 71, intent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
         val notification = Notification.Builder(context, "downloads")
             .setSmallIcon(R.drawable.ic_download).setContentTitle(context.getString(R.string.downloads))

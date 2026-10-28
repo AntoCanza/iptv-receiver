@@ -55,14 +55,21 @@ class PlaybackDeviceChecks : Instrumentation() {
     private var viewingPhase: String? = null
     private var screenSleep = false
     private var downloadPhase: String? = null
+    private var pipPhase: String? = null
     private var engine: PlaybackEngine? = null
     private var server: ServerSocket? = null
     private var completed = 0
     private var stage = "starting"
-    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); real = arguments?.getString("real") == "true"; normalUi = arguments?.getString("normalUi") == "true"; displayOnly = arguments?.getString("displayOnly") == "true"; progressPhase = arguments?.getString("progressPhase"); uxPhase = arguments?.getString("uxPhase"); viewingPhase = arguments?.getString("viewingPhase"); screenSleep = arguments?.getString("screenSleep") == "true"; downloadPhase = arguments?.getString("downloadPhase"); start() }
+    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); real = arguments?.getString("real") == "true"; normalUi = arguments?.getString("normalUi") == "true"; displayOnly = arguments?.getString("displayOnly") == "true"; progressPhase = arguments?.getString("progressPhase"); uxPhase = arguments?.getString("uxPhase"); viewingPhase = arguments?.getString("viewingPhase"); screenSleep = arguments?.getString("screenSleep") == "true"; downloadPhase = arguments?.getString("downloadPhase"); pipPhase = arguments?.getString("pipPhase"); start() }
     override fun onStart() {
         val result = Bundle()
         try {
+            if (pipPhase != null) {
+                PictureInPictureDeviceChecks(this, ::status, ::passed).run(checkNotNull(pipPhase), real)
+                result.putString("result", "PASS; completed=$completed; PiP phase=$pipPhase")
+                finish(Activity.RESULT_OK, result)
+                return
+            }
             if (viewingPhase == "data") {
                 ViewingStoreChecks(targetContext, ::passed).run()
                 result.putString("result", "PASS; completed=$completed; synthetic viewing storage")
@@ -107,7 +114,10 @@ class PlaybackDeviceChecks : Instrumentation() {
                 "class=${it.className}; checkable=${it.isCheckable}; textName=${it.text?.toString()?.contains(label(R.string.remember_connection)) == true}; descName=${it.contentDescription?.toString()?.contains(label(R.string.remember_connection)) == true}; parentCheck=${it.parent?.isCheckable}"
             }) }
             // Never publish exception messages/causes, media URLs, content titles or provider responses.
-            val location = error.stackTrace.firstOrNull { it.className.startsWith(javaClass.name) }
+            val location = error.stackTrace.firstOrNull { it.className.startsWith("io.github.antocanza.iptvreceiver") }
+            if (pipPhase != null) status("PiP failure locations=" + error.stackTrace.filter {
+                it.className.startsWith("io.github.antocanza.iptvreceiver")
+            }.take(8).joinToString { "${it.methodName}:${it.lineNumber}" })
             result.putString("result", "FAIL; completed=$completed; type=${error.javaClass.simpleName}; method=${location?.methodName}; line=${location?.lineNumber}")
             finish(Activity.RESULT_CANCELED, result)
         } finally {
@@ -504,9 +514,8 @@ class PlaybackDeviceChecks : Instrumentation() {
                     remember = rememberOption()
                     check(remember.isChecked)
                     passed("remember connection has a named checkbox; tapping the label toggles it")
-                    val previous = activity
                     onMain { activity.requestedOrientation = android.content.pm.ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
-                    waitUntil { activity !== previous && activity.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE }
+                    waitUntil { activity.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE }
                     onMain {
                         val retained = ViewModelProvider.create(activity)["login-draft", LoginDraftViewModel::class]
                         check(retained === draft && retained.server == connection.serverUrl && retained.username == connection.username && retained.password == connection.password)
@@ -929,9 +938,8 @@ class PlaybackDeviceChecks : Instrumentation() {
             screenshot("movie")
             passed("movie detail resumes directly, Start over seeks to zero and manual watched status updates")
 
-            val previous = activity
             onMain { activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_LANDSCAPE }
-            waitUntil { activity !== previous && activity.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE }
+            waitUntil { activity.resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE }
             waitUi(label(R.string.watch_again))
             onMain { activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_PORTRAIT }
             waitUntil { activity.resources.configuration.orientation == Configuration.ORIENTATION_PORTRAIT }

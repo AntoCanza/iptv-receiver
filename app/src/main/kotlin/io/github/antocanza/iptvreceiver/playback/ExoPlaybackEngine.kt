@@ -26,6 +26,7 @@ import kotlinx.coroutines.cancel
 
 @androidx.annotation.OptIn(UnstableApi::class)
 class ExoPlaybackEngine(context: Context, source: PlaybackSource, localUri: Uri? = null, onFirstPlayback: () -> Unit = {}) : PlaybackEngine {
+    override val isLive = source.isLive
     override val player: ExoPlayer
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val recovery: LivePlaybackRecovery

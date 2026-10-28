@@ -222,4 +222,9 @@
   <string name="download_storage_error">Storage is full or access to the folder was lost.</string>
   <string name="download_sign_in">Connect to your provider to renew this download request.</string>
   <string name="download_blocked">Parental controls block this download.</string>
+  <string name="player_pip">Picture-in-picture</string>
+  <string name="player_pip_unavailable">Picture-in-picture is unavailable on this device or disabled in Android Settings.</string>
+  <string name="player_pip_back">Back 10 seconds</string>
+  <string name="player_pip_forward">Forward 10 seconds</string>
+  <string name="player_pause">Pause</string>
 </resources>

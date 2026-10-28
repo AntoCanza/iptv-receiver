@@ -19,6 +19,7 @@ data class VideoDisplay(val scale: VideoScale = VideoScale.FIT, val aspect: Vide
 class PlaybackViewModel(private val engine: PlaybackEngine, landscape: Boolean, startPositionMs: Long = 0,
     private val onProgress: ((PlaybackProgress) -> Unit)? = null) : ViewModel() {
     val player get() = engine.player
+    val isLive get() = engine.isLive
     val recoveryState get() = engine.recoveryState
     val keepScreenOn get() = engine.keepScreenOn
     private var lastLandscape = landscape
@@ -68,8 +69,10 @@ class PlaybackViewModel(private val engine: PlaybackEngine, landscape: Boolean, 
     fun setDisplay(display: VideoDisplay) { mutableDisplay.value = display }
 
     fun onHostStopped(changingConfigurations: Boolean) {
-        if (!changingConfigurations) { saveProgress(); engine.pause() }
+        if (!changingConfigurations) pause()
     }
+
+    fun pause() { saveProgress(); engine.pause() }
 
     fun retry() = engine.prepareAndPlay()
 

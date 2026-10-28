@@ -381,7 +381,8 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
                             } else null) }
                     })
                     val fullscreen by playback.fullscreen.collectAsStateWithLifecycle()
-                    LaunchedEffect(landscape) { playback.onOrientationChanged(landscape) }
+                    val inPip = inPictureInPicture()
+                    LaunchedEffect(landscape, inPip) { if (!inPip) playback.onOrientationChanged(landscape) }
                     fun changeFullscreen(enabled: Boolean) {
                         playback.setFullscreen(enabled)
                         activity?.requestedOrientation = if (enabled) ActivityInfo.SCREEN_ORIENTATION_SENSOR_LANDSCAPE
@@ -410,9 +411,10 @@ private fun liveFormat(session: Session): String = session.account.preferredLive
 @Composable
 internal fun ScreenFrame(title: String, back: (() -> Unit)? = null, showLanguage: Boolean = false, fullscreen: Boolean = false,
     action: @Composable () -> Unit = {}, content: @Composable () -> Unit) {
-    Scaffold(contentWindowInsets = if (fullscreen) WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets,
+    val immersive = fullscreen || inPictureInPicture()
+    Scaffold(contentWindowInsets = if (immersive) WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets,
         topBar = {
-        if (!fullscreen) Column {
+        if (!immersive) Column {
             Row(Modifier.fillMaxWidth().statusBarsPadding().padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically) {
                 if (back != null) IconButton(onClick = back) {

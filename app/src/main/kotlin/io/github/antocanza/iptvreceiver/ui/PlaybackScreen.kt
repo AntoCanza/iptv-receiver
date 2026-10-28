@@ -14,6 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -32,6 +33,7 @@ import androidx.media3.common.Player
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.ui.PlayerView
 import io.github.antocanza.iptvreceiver.R
+import io.github.antocanza.iptvreceiver.MainActivity
 import io.github.antocanza.iptvreceiver.data.InvalidStreamSchemeException
 import io.github.antocanza.iptvreceiver.model.FailureReason
 import io.github.antocanza.iptvreceiver.playback.PlaybackRecoveryState
@@ -45,11 +47,18 @@ fun PlaybackScreen(model: PlaybackViewModel, fullscreen: Boolean, onFullscreenCh
     onGuide: (() -> Unit)? = null) {
     val lifecycle = LocalLifecycleOwner.current.lifecycle
     val activity = LocalActivity.current
+    val pip = (activity as? MainActivity)?.pictureInPicture
+    val inPip = pip?.presenting == true
     val player = model.player
     val recoveryState by model.recoveryState.collectAsStateWithLifecycle()
     val keepScreenOn by model.keepScreenOn.collectAsStateWithLifecycle()
     val reconnecting = recoveryState == PlaybackRecoveryState.RECONNECTING
     val display by model.display.collectAsStateWithLifecycle()
+    DisposableEffect(model, pip) {
+        pip?.attach(model)
+        onDispose { pip?.detach(model) }
+    }
+    SideEffect { pip?.update() }
     var controlsVisible by remember(player) { mutableStateOf(true) }
     var failed by remember(player) { mutableStateOf(player.playerError != null) }
     var buffering by remember(player) { mutableStateOf(player.playbackState == Player.STATE_BUFFERING) }
@@ -73,7 +82,7 @@ fun PlaybackScreen(model: PlaybackViewModel, fullscreen: Boolean, onFullscreenCh
             }
         }
         val observer = LifecycleEventObserver { _, event ->
-            if (event == Lifecycle.Event.ON_STOP) model.onHostStopped(activity?.isChangingConfigurations == true)
+            if (event == Lifecycle.Event.ON_STOP && pip == null) model.onHostStopped(activity?.isChangingConfigurations == true)
         }
         player.addListener(listener)
         lifecycle.addObserver(observer)
@@ -91,10 +100,10 @@ fun PlaybackScreen(model: PlaybackViewModel, fullscreen: Boolean, onFullscreenCh
         else window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         onDispose { window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
     }
-    DisposableEffect(activity, fullscreen) {
+    DisposableEffect(activity, fullscreen, inPip) {
         val window = activity?.window
         val bars = window?.let { WindowCompat.getInsetsController(it, it.decorView) }
-        if (fullscreen) {
+        if (fullscreen && !inPip) {
             bars?.systemBarsBehavior = WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
             bars?.hide(WindowInsetsCompat.Type.systemBars())
         } else bars?.show(WindowInsetsCompat.Type.systemBars())
@@ -104,7 +113,7 @@ fun PlaybackScreen(model: PlaybackViewModel, fullscreen: Boolean, onFullscreenCh
         AndroidView(factory = { DisplayPlayerView(it).apply {
             this.player = player
             setEnableComposeSurfaceSyncWorkaround(true)
-            useController = true
+            useController = !inPip
             setShowSubtitleButton(false)
             findViewById<View>(androidx.media3.ui.R.id.exo_settings)?.visibility = View.GONE
             setVideoDisplay(display)
@@ -112,6 +121,9 @@ fun PlaybackScreen(model: PlaybackViewModel, fullscreen: Boolean, onFullscreenCh
             setFullscreenButtonClickListener(onFullscreenChange)
         } }, modifier = Modifier.fillMaxSize(), update = {
             if (it.player !== player) it.player = player
+            pip?.setSourceView(it)
+            it.useController = !inPip
+            if (inPip) it.hideController()
             val controllerView = it
             it.setControllerVisibilityListener(PlayerView.ControllerVisibilityListener { controlsVisible = controllerView.isControllerFullyVisible })
             controlsVisible = it.isControllerFullyVisible
@@ -122,10 +134,16 @@ fun PlaybackScreen(model: PlaybackViewModel, fullscreen: Boolean, onFullscreenCh
             it.setFullscreenButtonClickListener(null)
             it.setFullscreenButtonState(fullscreen)
             it.setFullscreenButtonClickListener(onFullscreenChange)
-        }, onRelease = { it.setControllerVisibilityListener(null as PlayerView.ControllerVisibilityListener?); it.setFullscreenButtonClickListener(null); it.player = null })
-        PlaybackTools(model, onGuide, controlsVisible)
+        }, onRelease = {
+            pip?.clearSourceView(it)
+            it.setControllerVisibilityListener(null as PlayerView.ControllerVisibilityListener?)
+            it.setFullscreenButtonClickListener(null)
+            it.player = null
+        })
+        if (!inPip) PlaybackTools(model, onGuide, controlsVisible,
+            onPictureInPicture = pip?.takeIf { it.supported }?.let { { it.enter() } })
         if (reconnecting || (buffering && !failed)) CircularProgressIndicator(Modifier.align(Alignment.Center))
-        if (!reconnecting && (failed || recoveryState == PlaybackRecoveryState.FAILED)) Column(Modifier.align(Alignment.Center).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        if (!inPip && !reconnecting && (failed || recoveryState == PlaybackRecoveryState.FAILED)) Column(Modifier.align(Alignment.Center).padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Text(when {
                 invalidStreamScheme -> FailureReason.INVALID_STREAM.localized()
                 decodingFailure -> stringResource(R.string.playback_decoding_failed)
@@ -138,6 +156,9 @@ fun PlaybackScreen(model: PlaybackViewModel, fullscreen: Boolean, onFullscreenCh
         }
     }
 }
+
+@Composable
+internal fun inPictureInPicture(): Boolean = (LocalActivity.current as? MainActivity)?.pictureInPicture?.presenting == true
 
 private fun isDecodingFailure(error: PlaybackException?): Boolean = error?.errorCode in setOf(
     PlaybackException.ERROR_CODE_DECODER_INIT_FAILED,
