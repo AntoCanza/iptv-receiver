@@ -45,6 +45,35 @@ class ViewingStore(
     private val versions = mutableMapOf<List<String>, Long>()
     private val clearedAt = mutableMapOf<String, Long>()
 
+    /** Offline callers supply the opaque account key of a locally authorized download, never credentials. */
+    @Synchronized internal fun offlineProgress(account: String, target: WatchTarget): PlaybackProgress? =
+        offlineAccount(account) { db -> point(db, account, target.key) }
+
+    @Synchronized internal fun saveOfflineProgress(account: String, target: WatchTarget, value: PlaybackProgress, observed: Long) {
+        offlineAccount(account) { db ->
+            val versionKey = listOf(account) + target.key
+            if (clearedAt[account]?.let { it >= observed } == true || versions[versionKey]?.let { it > observed } == true) return@offlineAccount
+            val previous = point(db, account, target.key)
+            val safe = PlaybackProgress.checkpoint(value.positionMs, value.durationMs, value.completed).copy(
+                watched = value.watched || value.completed || previous?.watched == true, lastPlayedAtMillis = now())
+            transaction(db) { writePoint(db, account, target.key, safe) }
+            versions[versionKey] = observed
+        }
+    }
+
+    @Synchronized internal fun recordOfflineWatch(account: String, target: WatchTarget, observed: Long) {
+        if (clearedAt[account]?.let { it >= observed } == true) return
+        offlineAccount(account) { db -> transaction(db) { writeHistory(db, account, WatchHistoryEntry(target, now())) } }
+    }
+
+    private fun <T> offlineAccount(account: String, action: (SQLiteDatabase) -> T): T {
+        require(account.matches(Regex("[a-f0-9]{64}")))
+        val db = helper.writableDatabase
+        // Online enqueue initializes migration first. Never bypass an unfinished legacy import.
+        check(db.rawQuery("SELECT 1 FROM imported WHERE account = ?", arrayOf(account)).use { it.moveToFirst() })
+        return action(db)
+    }
+
     val progress: PlaybackProgressStore = object : PlaybackProgressStore {
         override fun load(connection: ProviderConnection): Map<List<String>, PlaybackProgress> = account(connection) { db, key ->
             points(db, "account = ?", arrayOf(key))
@@ -99,6 +128,7 @@ class ViewingStore(
         override fun clear(connection: ProviderConnection) {
             account(connection) { db, key ->
                 db.delete("history", "account = ?", arrayOf(key))
+                clearedAt[key] = System.nanoTime()
                 legacyHistory.clear(connection)
             }
         }

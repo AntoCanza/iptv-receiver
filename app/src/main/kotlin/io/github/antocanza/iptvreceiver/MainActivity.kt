@@ -15,6 +15,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
@@ -24,6 +25,7 @@ import androidx.core.content.edit
 import io.github.antocanza.iptvreceiver.ui.LoginScreen
 import io.github.antocanza.iptvreceiver.ui.ReceiverNavigation
 import io.github.antocanza.iptvreceiver.ui.ReceiverViewModel
+import io.github.antocanza.iptvreceiver.ui.DownloadsNavigation
 
 class MainActivity : AppCompatActivity() {
     private var previewIntent by mutableStateOf<Intent?>(null)
@@ -56,13 +58,22 @@ class MainActivity : AppCompatActivity() {
                     val model: ReceiverViewModel = viewModel(key = if (preview != null) "store-preview" else "receiver",
                         factory = viewModelFactory { initializer { ReceiverViewModel(repository, store, container.watchHistoryStore,
                             progressStore = container.playbackProgressStore, reminders = if (preview == null) container.subscriptionReminders else null,
-                            persistenceScope = container.persistenceScope) } })
+                            persistenceScope = container.persistenceScope,
+                            onAuthenticated = { if (preview == null) container.downloads.rememberAccount(it) },
+                            onSignOut = { if (preview == null) container.downloads.signOut() }) } })
                     val draft: LoginDraftViewModel = viewModel(key = if (preview != null) "preview-login-draft" else "login-draft")
                     val state by model.state.collectAsStateWithLifecycle()
                     LaunchedEffect(state.session != null) { if (state.session != null) draft.clear() }
                     val session = state.session
-                    if (session == null) LoginScreen(state, model::connect, draft)
-                    else ReceiverNavigation(repository, session, model)
+                    val offlineAccount by container.downloads.account.collectAsStateWithLifecycle()
+                    var downloadsPage by rememberSaveable { mutableStateOf<String?>(null) }
+                    LaunchedEffect(previewIntent) {
+                        if (previewIntent?.getBooleanExtra("open_downloads", false) == true) downloadsPage = "downloads"
+                    }
+                    if (downloadsPage != null) DownloadsNavigation(container, checkNotNull(downloadsPage), session, back = { downloadsPage = null })
+                    else if (session == null) LoginScreen(state, model::connect, draft,
+                        openDownloads = if (offlineAccount != null) ({ downloadsPage = "downloads" }) else null)
+                    else ReceiverNavigation(repository, session, model, openDownloads = { settings -> downloadsPage = if (settings) "download_settings" else "downloads" })
                 }
             }
         }

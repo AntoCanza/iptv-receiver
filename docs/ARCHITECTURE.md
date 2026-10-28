@@ -16,7 +16,7 @@ those additional clients or their playback integrations have been implemented.
 - Android 8.0 (API 26) minimum; compile SDK 37.2, target API 36 and Build Tools 36.0.0.
 - Device language by default, English fallback and ten selectable interface languages; see [localization](LOCALIZATION.md).
 
-The current application is 0.1.14 (versionCode 15). The build pins AGP 9.4.1, Gradle 9.8.2, Kotlin/Compose compiler plugin 2.4.21 and Media3 1.11.1. CI uses JDK 21 and the application targets Java 17 bytecode. The version catalog, Wrapper properties and app Gradle file are authoritative; see the [build settings](../README.md#run-locally). AGP provides built-in Kotlin for Android; do not also apply `org.jetbrains.kotlin.android`.
+The current application is 0.1.15 (versionCode 16). The build pins AGP 9.4.1, Gradle 9.8.2, Kotlin/Compose compiler plugin 2.4.21 and Media3 1.11.1. CI uses JDK 21 and the application targets Java 17 bytecode. The version catalog, Wrapper properties and app Gradle file are authoritative; see the [build settings](../README.md#run-locally). AGP provides built-in Kotlin for Android; do not also apply `org.jetbrains.kotlin.android`.
 
 Lint treats correctness warnings as errors. Dependency-version and target-SDK migration notices remain informational. Dependencies are handled through Dependabot review; the deliberately pinned API 36 target must be reviewed against current platform/store requirements before release. This avoids an unrelated upstream release unexpectedly breaking a development build.
 
@@ -129,7 +129,7 @@ flowchart TD
 
 Optional `ContentMetadata` enriches catalog and detail models at the provider boundary. Browsing uses only metadata returned by the list request; details are fetched only when opened. Missing detail fields preserve listing metadata. Catalog sort and genre selection are saved with the navigation entry, along with the grid position. Details use a compact phone layout, expandable synopsis/credits, a reachable movie Play action and one selected season at a time. Extra artwork still loads only while visible. Provider metadata and external trailer URLs are not added to durable watch history.
 
-Home contains five icon-and-label destinations: Live TV, Movies, Series, TV guide and Watch history, plus a Settings action. Account details/logout, server information, language, parental controls and history/progress clearing live under Settings. Login retains a language icon before authentication; content screens keep the header focused on Back and the current title. Optional server timezone/clock values are settings-only sign-in snapshots, never used to rewrite the connection or playback address.
+Home contains six icon-and-label destinations: Live TV, Movies, Series, TV guide, Watch history and Downloads, plus a Settings action. Account details/logout, server information, language, parental controls, download preferences and history/progress clearing live under Settings. The login screen also exposes the last connected account's offline library until explicit logout. Login retains a language icon before authentication; content screens keep the header focused on Back and the current title. Optional server timezone/clock values are settings-only sign-in snapshots, never used to rewrite the connection or playback address.
 
 Settings also contains a parental panel with memory-only authentication. `ParentalControls` persists a salted password verifier and immutable policy; its default policy blocks adult content even before setup. Reset constructs the default policy and removes the password and all account/category selections atomically. `ParentalCatalogRepository` wraps the provider contract to enforce category descendants, provider adult flags and adult labels consistently, including all-title searches and stream resolution. The panel alone uses the unfiltered repository after password verification to list categories. Policy revisions recreate catalog ViewModels and clear/refilter visible history. History identifiers are resolved against provider listings so legacy records cannot bypass category restrictions. Provider failures and unreadable settings fail closed. See [security](../SECURITY.md#parental-controls) for storage, reset behavior and classification limits.
 
@@ -145,6 +145,9 @@ flowchart TD
     Home --> Series[Series categories]
     Home --> Guide[Channel programme guide]
     Home --> History[Watch history and resume]
+    Login --> Downloads[Offline Downloads]
+    Home --> Downloads
+    Downloads --> Player
     Home --> Settings[Settings]
     Settings --> Account[Account and logout]
     Settings --> ServerInfo[Server information]
@@ -187,7 +190,9 @@ Movie/episode checkpoints update one indexed progress row. They survive recent-h
 
 `SubscriptionReminders` evaluates the provider's authentication expiry using local calendar dates and stores account/expiry-specific acknowledgement times under `filesDir/subscription-reminders`. ReceiverViewModel exposes notices; the foreground navigation host checks on resume and every minute while browsing, suppressing popups during playback and resume choices. No background notification job is created.
 
-Add Room for category/item metadata and DataStore for further non-sensitive settings when those features are implemented. Scope every persisted record by provider account and content type. Add migration tests alongside schema changes.
+Offline downloads have an account-scoped atomic index and encrypted pending requests, independent of the provider-authenticated navigation tree. Native storage/HTTP APIs and existing WorkManager/Media3 dependencies add no new library. Local playback uses a file/content-only source; the online stream guard remains HTTP(S)-only. See [download lifecycle](CACHE_AND_PLAYBACK.md#explicit-offline-downloads) for completion, storage, policy and cancellation rules.
+
+Prefer the existing native SQLite and Android settings/storage facilities when category/item persistence is introduced. Add a persistence library only for a demonstrated need after reviewing its lifetime maintenance and license costs. Scope every persisted record by provider account and content type and test migrations alongside schema changes.
 
 ## References
 

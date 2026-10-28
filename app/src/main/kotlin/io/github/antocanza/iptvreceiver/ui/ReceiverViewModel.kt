@@ -45,6 +45,8 @@ class ReceiverViewModel(
     private val progressStore: PlaybackProgressStore? = null,
     private val reminders: SubscriptionReminders? = null,
     private val persistenceScope: CoroutineScope? = null,
+    private val onAuthenticated: suspend (ProviderConnection) -> Unit = {},
+    private val onSignOut: suspend () -> Unit = {},
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(LoginState())
     val state = mutableState.asStateFlow()
@@ -101,6 +103,7 @@ class ReceiverViewModel(
             val account = repository.authenticate(connection)
             try {
                 withContext(storageDispatcher) { if (remember) store.save(connection) else store.clear() }
+                onAuthenticated(connection)
             } catch (error: CancellationException) { throw error } catch (_: Exception) {
                 mutableState.value = LoginState(busy = false, error = FailureReason.SAVE_FAILED)
                 return
@@ -262,7 +265,7 @@ class ReceiverViewModel(
         mutableState.value = LoginState(busy = true)
         connectionJob = viewModelScope.launch {
             try {
-                withContext(storageDispatcher) { store.clear() }
+                withContext(storageDispatcher) { try { onSignOut() } finally { store.clear() } }
                 mutableState.value = LoginState(busy = false)
             } catch (error: CancellationException) { throw error } catch (_: Exception) {
                 mutableState.value = LoginState(busy = false, error = FailureReason.REMOVE_FAILED)

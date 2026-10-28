@@ -29,6 +29,8 @@ The app supports right-to-left layout with `android:supportsRtl=true`, start/end
 
 ## Changing or adding translations
 
+Downloads, transfer/storage states, folder selection, offline help and deletion controls have matching translated resources in all ten languages. Repeated media actions include translated title context for accessibility. Resource parity does not replace native-speaker or TalkBack review.
+
 1. Add/change the English string in `values/strings.xml`.
 2. Update each translated `strings.xml`; keep the same keys and numbered format placeholders.
 3. Keep the language picker, `locales_config.xml`, Gradle resource filters and localization tests in sync if adding a locale.

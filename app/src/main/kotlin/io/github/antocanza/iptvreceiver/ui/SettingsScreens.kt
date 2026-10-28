@@ -51,13 +51,14 @@ internal fun NavigationCard(@DrawableRes icon: Int, title: String, onClick: () -
 }
 
 @Composable
-internal fun SettingsScreen(account: () -> Unit, server: () -> Unit, parental: () -> Unit, viewing: () -> Unit) {
+internal fun SettingsScreen(account: () -> Unit, server: () -> Unit, parental: () -> Unit, viewing: () -> Unit, downloads: () -> Unit = {}) {
     Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState()).padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(12.dp)) {
         NavigationCard(R.drawable.ic_account, stringResource(R.string.settings_account), account)
         NavigationCard(R.drawable.ic_server, stringResource(R.string.settings_server), server)
         NavigationCard(R.drawable.ic_lock, stringResource(R.string.parental_controls), parental)
         NavigationCard(R.drawable.ic_history, stringResource(R.string.watch_storage_title), viewing)
+        NavigationCard(R.drawable.ic_download, stringResource(R.string.downloads), downloads)
         Card(Modifier.fillMaxWidth()) { LanguageSelector(asRow = true) }
     }
 }

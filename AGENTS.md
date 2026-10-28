@@ -38,6 +38,13 @@ che corrisponde a `.github/workflows/android.yml`:
 .\gradlew.bat --no-daemon verifyDependencyPolicy :core:model:test :core:provider:test :app:testDebugUnitTest :app:lintDebug :app:lintRelease :app:assembleDebug :app:assembleRelease :app:bundleRelease
 ```
 
+Per i download, leggere anche `docs/VALIDATION_PLAN.md` e la sezione dedicata di
+`docs/CACHE_AND_PLAYBACK.md`. Le verifiche strumentali `downloadPhase data`,
+`folder`, `ui` e `real` richiedono una copia privata ripristinabile dei dati:
+le fixture rimuovono temporaneamente la connessione salvata per provare l'avvio
+offline. Non usarle sui dati personali senza questo ripristino. `real` usa solo
+il provider di prova autorizzato. I controlli parentali restano attivi sui download.
+
 Per pagine pubbliche, metadati e collegamenti del sito:
 
 ```powershell

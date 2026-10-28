@@ -54,17 +54,30 @@ class PlaybackDeviceChecks : Instrumentation() {
     private var uxPhase: String? = null
     private var viewingPhase: String? = null
     private var screenSleep = false
+    private var downloadPhase: String? = null
     private var engine: PlaybackEngine? = null
     private var server: ServerSocket? = null
     private var completed = 0
     private var stage = "starting"
-    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); real = arguments?.getString("real") == "true"; normalUi = arguments?.getString("normalUi") == "true"; displayOnly = arguments?.getString("displayOnly") == "true"; progressPhase = arguments?.getString("progressPhase"); uxPhase = arguments?.getString("uxPhase"); viewingPhase = arguments?.getString("viewingPhase"); screenSleep = arguments?.getString("screenSleep") == "true"; start() }
+    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); real = arguments?.getString("real") == "true"; normalUi = arguments?.getString("normalUi") == "true"; displayOnly = arguments?.getString("displayOnly") == "true"; progressPhase = arguments?.getString("progressPhase"); uxPhase = arguments?.getString("uxPhase"); viewingPhase = arguments?.getString("viewingPhase"); screenSleep = arguments?.getString("screenSleep") == "true"; downloadPhase = arguments?.getString("downloadPhase"); start() }
     override fun onStart() {
         val result = Bundle()
         try {
             if (viewingPhase == "data") {
                 ViewingStoreChecks(targetContext, ::passed).run()
                 result.putString("result", "PASS; completed=$completed; synthetic viewing storage")
+                finish(Activity.RESULT_OK, result)
+                return
+            }
+            if (downloadPhase != null) {
+                val intent = Intent(targetContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                if (downloadPhase == "data" || downloadPhase == "folder") intent.putExtra("store_preview", true)
+                activity = startActivitySync(intent) as MainActivity
+                onMain { activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
+                if (downloadPhase == "data" || downloadPhase == "folder") DownloadDeviceChecks(targetContext, ::passed).run(downloadPhase == "folder")
+                else if (downloadPhase == "real") { check(real); realDownloadChecks() }
+                else downloadUiChecks()
+                result.putString("result", "PASS; completed=$completed; download phase=$downloadPhase")
                 finish(Activity.RESULT_OK, result)
                 return
             }
@@ -103,6 +116,100 @@ class PlaybackDeviceChecks : Instrumentation() {
         }
     }
     private fun status(value: String) { val bundle = Bundle(); bundle.putString("check", value); sendStatus(0, bundle) }
+    private fun realDownloadChecks() = runBlocking {
+        val app = targetContext.applicationContext as ReceiverApplication
+        val connection = checkNotNull(app.connectionStore.load())
+        val repository = app.repository
+        repository.authenticate(connection)
+        app.downloads.rememberAccount(connection)
+        app.downloads.setWifiOnly(false)
+        val categories = repository.categories(connection, ContentType.MOVIE)
+        var target: WatchTarget? = null
+        for (category in categories.take(12)) {
+            val item = repository.items(connection, ContentType.MOVIE, category.id).firstOrNull {
+                io.github.antocanza.iptvreceiver.data.downloadExtension(WatchTarget(it)) != null
+            }
+            if (item != null) { target = WatchTarget(repository.movie(connection, item).item); break }
+        }
+        val selected = checkNotNull(target)
+        var id: String? = null
+        try {
+            app.downloads.enqueue(connection, selected, repository)
+            val key = io.github.antocanza.iptvreceiver.data.accountKey(connection)
+            fun entry() = app.downloads.store.load().first { it.account == key && it.target.key == selected.key }
+            id = entry().id
+            waitUntil(45_000) { entry().bytes > 0 || entry().status == io.github.antocanza.iptvreceiver.data.DownloadStatus.FAILED }
+            check(entry().bytes > 0)
+            if (entry().active) app.downloads.pause(checkNotNull(id))
+            val saved = app.downloads.files.output(entry().location).length()
+            check(saved > 0)
+            passed("real provider accepts native direct-file download; partial bytes persist after pause")
+            if (entry().status != io.github.antocanza.iptvreceiver.data.DownloadStatus.READY) {
+                app.downloads.resume(checkNotNull(id), connection, repository)
+                waitUntil(45_000) { app.downloads.files.output(entry().location).length() > saved || entry().status == io.github.antocanza.iptvreceiver.data.DownloadStatus.READY }
+                if (entry().active) app.downloads.pause(checkNotNull(id))
+                passed("real provider download retries/resumes through the production repository and scheduler")
+            }
+        } finally {
+            id?.let { app.downloads.remove(it) }
+        }
+        check(app.downloads.store.load().none { it.target.key == selected.key })
+        passed("real provider test file and encrypted request removed without keeping a recording")
+    }
+    private fun downloadUiChecks() = runBlocking {
+        val app = targetContext.applicationContext as ReceiverApplication
+        val id = targetContext.cacheDir.resolve("download-check-id.txt").readText()
+        waitUntil { visible(label(R.string.downloads)) }
+        click(label(R.string.downloads))
+        waitUntil { visible(label(R.string.download_ready)) }
+        java.io.FileOutputStream(targetContext.cacheDir.resolve("downloads-list-check.png")).use {
+            uiAutomation.takeScreenshot()?.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
+        }
+        passed("cold launch reaches completed Downloads without a saved connection or provider authentication")
+        scrollDownload(label(R.string.play), true)
+        click(label(R.string.play))
+        waitUntil { view()?.player?.isPlaying == true }
+        val frames = AtomicInteger()
+        onMain { (view()?.player as ExoPlayer).setVideoFrameMetadataListener { _, _, _, _ -> frames.incrementAndGet() } }
+        waitUntil { frames.get() >= 5 }
+        waitUntil { view()?.player?.currentPosition?.let { it >= 18_000 } == true }
+        lateinit var localPlayer: Player
+        onMain { localPlayer = checkNotNull(view()?.player); localPlayer.pause(); localPlayer.seekTo(30_000) }
+        waitUntil { localPlayer.currentPosition >= 30_000 }
+        java.io.FileOutputStream(targetContext.cacheDir.resolve("downloads-player-check.png")).use {
+            uiAutomation.takeScreenshot()?.compress(android.graphics.Bitmap.CompressFormat.PNG, 100, it)
+        }
+        passed("local-only AVC video renders frames, resumes and seeks with the fixture server stopped")
+        uiAutomation.performGlobalAction(android.accessibilityservice.AccessibilityService.GLOBAL_ACTION_BACK)
+        waitUntil { visible(label(R.string.download_ready)) }
+        repeat(20) { if (app.downloads.playback(id).second?.positionMs?.let { it >= 30_000 } == true) return@repeat; SystemClock.sleep(100) }
+        check(app.downloads.playback(id).second?.positionMs?.let { it >= 30_000 } == true)
+        scrollDownload(label(R.string.download_select_all), false)
+        click(label(R.string.download_select_all))
+        click(activity.getString(R.string.download_remove_selected, 2))
+        click(label(R.string.cancel))
+        check(app.downloads.store.get(id) != null)
+        click(activity.getString(R.string.download_remove_selected, 2))
+        click(label(R.string.download_remove))
+        waitUntil { visible(label(R.string.download_empty)) }
+        check(app.downloads.store.get(id) == null)
+        passed("bulk removal supports cancellation then deletes completed and missing entries from the app")
+        app.downloads.folder.value?.let { folder ->
+            val uri = android.net.Uri.parse(folder)
+            if (android.provider.DocumentsContract.getTreeDocumentId(uri) == "primary:IPTV-Download-Checks") {
+                app.downloads.setFolder(null)
+                targetContext.contentResolver.releasePersistableUriPermission(uri, Intent.FLAG_GRANT_READ_URI_PERMISSION or Intent.FLAG_GRANT_WRITE_URI_PERMISSION)
+            }
+        }
+    }
+    private fun scrollDownload(text: String, forward: Boolean) {
+        repeat(20) {
+            if (visible(text)) return
+            nodes().firstOrNull { it.isScrollable }?.performAction(if (forward) AccessibilityNodeInfo.ACTION_SCROLL_FORWARD else AccessibilityNodeInfo.ACTION_SCROLL_BACKWARD)
+            SystemClock.sleep(250)
+        }
+        error("Download control unavailable")
+    }
     private fun passed(value: String) { completed++; status("PASS $value") }
     private fun onMain(action: () -> Unit) {
         var failure: Throwable? = null
@@ -115,6 +222,8 @@ class PlaybackDeviceChecks : Instrumentation() {
         error("Device condition timed out")
     }
     private fun click(label: String, timeout: Long = 10_000, privateLabel: Boolean = false) {
+        // Native controls can auto-hide while a real stream buffers. A viewer reveals them first.
+        onMain { view()?.showController() }
         val deadline = SystemClock.elapsedRealtime() + timeout
         while (SystemClock.elapsedRealtime() < deadline) {
             val nodes = nodes().filter { it.text?.toString()?.equals(label, true) == true || it.contentDescription?.toString()?.equals(label, true) == true }
@@ -717,7 +826,8 @@ class PlaybackDeviceChecks : Instrumentation() {
             status("subtitle selection language=$language")
             click(label(R.string.player_subtitles))
             val name = DefaultTrackNameProvider(activity.resources).getTrackName(Format.Builder().setSampleMimeType(MimeTypes.TEXT_VTT).setLanguage(language).build())
-            click(name); click(activity.getString(android.R.string.ok))
+            val numberedName = nodes().mapNotNull { it.text?.toString() }.first { it.contains(name) }
+            click(numberedName); click(activity.getString(android.R.string.ok))
             waitUntil { player.currentCues.cues.any { it.text.toString().contains(cue) } }
             click(label(R.string.player_subtitles)); click(activity.getString(androidx.media3.ui.R.string.exo_track_selection_none)); click(activity.getString(android.R.string.ok))
             waitUntil { C.TRACK_TYPE_TEXT in player.trackSelectionParameters.disabledTrackTypes && player.currentCues.cues.isEmpty() }

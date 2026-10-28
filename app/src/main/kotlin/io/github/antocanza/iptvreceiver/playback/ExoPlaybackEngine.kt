@@ -1,11 +1,16 @@
 package io.github.antocanza.iptvreceiver.playback
 
 import android.content.Context
+import android.net.Uri
+import androidx.core.net.toUri
 import androidx.media3.common.AudioAttributes
 import androidx.media3.common.C
 import androidx.media3.common.MediaItem
 import androidx.media3.common.util.UnstableApi
 import androidx.media3.datasource.DefaultHttpDataSource
+import androidx.media3.datasource.DataSource
+import androidx.media3.datasource.FileDataSource
+import androidx.media3.datasource.ContentDataSource
 import androidx.media3.exoplayer.ExoPlayer
 import androidx.media3.exoplayer.DefaultLoadControl
 import androidx.media3.exoplayer.source.DefaultMediaSourceFactory
@@ -20,7 +25,7 @@ import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel
 
 @androidx.annotation.OptIn(UnstableApi::class)
-class ExoPlaybackEngine(context: Context, source: PlaybackSource, onFirstPlayback: () -> Unit = {}) : PlaybackEngine {
+class ExoPlaybackEngine(context: Context, source: PlaybackSource, localUri: Uri? = null, onFirstPlayback: () -> Unit = {}) : PlaybackEngine {
     override val player: ExoPlayer
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val recovery: LivePlaybackRecovery
@@ -29,7 +34,8 @@ class ExoPlaybackEngine(context: Context, source: PlaybackSource, onFirstPlaybac
     override val keepScreenOn get() = screenAwake.keepScreenOn
 
     init {
-        val mediaItem = MediaItem.Builder().setUri(source.url).apply {
+        require(localUri == null || (!source.isLive && localUri.scheme in setOf("file", "content")))
+        val mediaItem = MediaItem.Builder().setUri(localUri ?: source.url.toUri()).apply {
             if (source.isLive) setLiveConfiguration(MediaItem.LiveConfiguration.Builder().setTargetOffsetMs(30_000).build())
             source.durationMs?.let { setClippingConfiguration(MediaItem.ClippingConfiguration.Builder().setEndPositionMs(it).build()) }
         }.build()
@@ -37,7 +43,13 @@ class ExoPlaybackEngine(context: Context, source: PlaybackSource, onFirstPlaybac
             .setAllowCrossProtocolRedirects(true)
             .setConnectTimeoutMs(if (source.isLive) 5_000 else 15_000)
             .setReadTimeoutMs(if (source.isLive) 5_000 else 30_000)
-        val mediaSources = DefaultMediaSourceFactory(StreamDataSourceFactory(http))
+        // Local playback has no HTTP fallback. Provider manifest/segment requests keep their HTTP-only guard.
+        val dataSources = when (localUri?.scheme) {
+            "file" -> DataSource.Factory { FileDataSource() }
+            "content" -> DataSource.Factory { ContentDataSource(context.applicationContext) }
+            else -> StreamDataSourceFactory(http)
+        }
+        val mediaSources = DefaultMediaSourceFactory(dataSources)
         if (source.isLive) mediaSources.setLoadErrorHandlingPolicy(LiveLoadErrorPolicy())
         val loadControl = if (source.isLive) DefaultLoadControl.Builder()
             .setBufferDurationsMsForStreaming(60_000, 90_000, 20_000, 20_000)

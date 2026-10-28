@@ -11,3 +11,9 @@ Prefer an officially maintained LTS line where the upstream project provides one
 - Do not force transitive libraries independently to their newest versions. Upgrade the owning library or BOM so its tested dependency set stays aligned.
 
 The [dependency audit](DEPENDENCY_AUDIT.md) records the checked versions and any remaining migration work. Recheck upstream support before every store release.
+
+## Prefer platform facilities
+
+For new functionality, first consider Android platform APIs, then existing AndroidX/Kotlin components already used by the app. Add an externally maintained library only when its concrete benefits justify its license, update channel, transitive graph and replacement cost. Pin the chosen version and record its license/provenance. Review license changes as well as migration notes on upgrades; automatic update proposals do not authorize accepting new terms or paid services.
+
+Do not remove a tested component solely to reduce a dependency count. A native replacement must preserve the required behavior, security, cancellation, performance and supported Android versions, with appropriate regression evidence. Storage, cryptography, the viewing database and direct-file download transport already use platform facilities. The [native replacement assessment](DEPENDENCY_AUDIT.md#fresh-check-and-native-code-review--october-28-2026) describes the remaining candidates and their tradeoffs.

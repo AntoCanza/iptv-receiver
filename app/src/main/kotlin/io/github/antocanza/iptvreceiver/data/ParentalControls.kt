@@ -29,7 +29,11 @@ data class ParentalPolicy(
     val revision: Long = 0,
 ) {
     fun blockedIds(connection: ProviderConnection, type: ContentType, categories: List<Category>): Set<String> {
-        val prefix = "${accountKey(connection)}:${type.name}:"
+        return blockedIds(accountKey(connection), type, categories)
+    }
+
+    fun blockedIds(account: String, type: ContentType, categories: List<Category>): Set<String> {
+        val prefix = "$account:${type.name}:"
         val blocked = blockedCategories.filter { it.startsWith(prefix) }.mapTo(mutableSetOf()) { it.removePrefix(prefix) }
         blocked += categories.filter { category ->
             "$prefix${category.id}" in blockedCategories ||

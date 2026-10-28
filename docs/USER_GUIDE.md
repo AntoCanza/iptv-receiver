@@ -1,6 +1,6 @@
 # IPTV Receiver user guide
 
-This guide describes Android **0.1.14 (versionCode 15)** for phones and tablets running Android 8.0 or later. Android TV, Windows, LG webOS and Samsung Tizen apps remain planned. The app requires your own Xtream-compatible provider account and supplies no channels, subscriptions or media.
+This guide describes Android **0.1.15 (versionCode 16)** for phones and tablets running Android 8.0 or later. Android TV, Windows, LG webOS and Samsung Tizen apps remain planned. The app requires your own Xtream-compatible provider account and supplies no channels, subscriptions or media.
 
 ## Install or update
 
@@ -20,7 +20,7 @@ HTTP works automatically for account, media and artwork requests. Prefer HTTPS w
 
 ## Browse and search
 
-Home opens **Live TV**, **Movies**, **Series**, **TV guide** and **Watch history**, with a separate **Settings** action.
+Home opens **Live TV**, **Movies**, **Series**, **TV guide**, **Watch history** and **Downloads**, with a separate **Settings** action.
 
 - At a content section's root, search or choose its all-content option to load titles across the connected account's categories. Inside a category, search stays within that category. Separate accounts are not combined.
 - Search uses available title, year and genre metadata. Relevance puts exact titles first unless you explicitly choose another sort. Provider order, title, newest and rating sorts and genre filters use available listing fields; missing values remain unknown.
@@ -52,6 +52,18 @@ Series **Continue** selects the last unfinished regular episode, including a bri
 **Watch history** lists actual playback starts, newest first, loading older entries in pages. Movies and episodes remain for **180 days**; live channels for **10 days**. Watched flags and resume points persist beyond those windows until explicitly cleared. Live and catch-up playback do not create movie/episode bookmarks.
 
 Records stay separate for each provider account and survive logout and cache cleanup. Reconnecting with the same server/account restores them. **Settings → Watch history and progress → Clear for this account** asks for confirmation and clears the connected account's records. There is no cloud sync or data export. Android Clear storage or uninstalling removes all local data.
+
+## Downloads and offline viewing
+
+Choose **Download for offline viewing** on a supported movie or episode. Direct MP4, MKV, TS, M4V, WebM, MOV and supported audio files are eligible; adaptive playlists, live-channel recording and offline DRM licensing are outside this first version. A provider can still return an unsupported playlist/error page behind a video address; that download is rejected instead of being marked complete.
+
+Open **Downloads** from Home to see queued, downloading, paused, ready, failed and missing files, their size and total storage used. Pause/resume transfers, retry failures and play completed files with the normal player. Resume continues at the saved viewing position; **Start over** starts at zero. Select individual or multiple entries to remove them after confirmation. Cancelling an active download also removes its partial file. Media removal preserves watch history/progress.
+
+**Settings → Downloads** chooses private app storage or a local folder through Android's folder picker, including supported SD/USB storage. Some folders are restricted by Android. Cloud document providers are not supported. The setting affects new downloads; existing files keep their location and required folder grants. Files in a chosen shared folder can also be opened by other apps. The default transfer setting allows unmetered connections only; disable it to permit metered connections. Android may delay background jobs.
+
+Completed downloads remain until removed and are excluded from ordinary cache cleanup. The login screen offers **Downloads** for the last connected account, so a cold launch can play saved content without provider authentication. Explicit logout hides that library and removes unfinished request credentials; reconnecting to the same account restores access. Switching accounts does not combine libraries. Current parental rules still apply offline; blocked entries show a generic label and can be removed without revealing their title.
+
+Watch state is saved to the same account-scoped database used for streaming. A moved/deleted file, revoked folder grant or disconnected drive appears as unavailable. Reconnect storage or grant the original folder again before retrying access. Downloaded media is a local copy: it does not repair missing codecs, add subtitle/audio tracks or guarantee provider download eligibility. App-data clearing/uninstallation removes private app media and its index; files in a chosen shared folder can remain and must be removed there if no longer needed.
 
 ## TV guide and replay
 

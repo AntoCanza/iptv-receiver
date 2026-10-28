@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>IPTV Receiver — Native Android IPTV Client</title>
-  <meta name="description" content="Download IPTV Receiver for Android. Browse your Xtream provider, resume movies and episodes, check the TV guide and manage parental controls.">
+  <meta name="description" content="Watch your Xtream provider on Android. Browse live TV, movies and series, save supported titles offline, resume playback and manage your downloads.">
   <meta name="robots" content="index, follow, max-image-preview:large">
   <meta name="theme-color" content="#101a26">
   <link rel="canonical" href="https://antocanza.github.io/iptv-receiver/">
@@ -15,13 +15,13 @@
   <meta property="og:locale" content="en_US">
   <meta property="og:site_name" content="IPTV Receiver">
   <meta property="og:title" content="IPTV Receiver — Native Android IPTV Client">
-  <meta property="og:description" content="Live TV, movies and series from your provider, with watch progress, a channel guide and parental controls. Download the signed Android development APK.">
+  <meta property="og:description" content="Live TV, movies and series from your provider, with offline downloads, viewing progress, a channel guide and parental controls. Get the Android development APK.">
   <meta property="og:url" content="https://antocanza.github.io/iptv-receiver/">
   <meta property="og:image" content="https://antocanza.github.io/iptv-receiver/images/feature.png">
   <meta property="og:image:alt" content="IPTV Receiver, a native Android app for live TV, movies and series">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="IPTV Receiver — Native Android IPTV Client">
-  <meta name="twitter:description" content="Download the Android development APK. Search your provider’s catalog, resume movies and episodes, and browse the channel guide.">
+  <meta name="twitter:description" content="Get IPTV Receiver for Android. Search your provider’s catalog, save supported movies and episodes offline, and manage saved media in Downloads.">
   <meta name="twitter:image" content="https://antocanza.github.io/iptv-receiver/images/feature.png">
   <script type="application/ld+json">
   {
@@ -39,7 +39,7 @@
         "@id": "https://antocanza.github.io/iptv-receiver/#webpage",
         "url": "https://antocanza.github.io/iptv-receiver/",
         "name": "IPTV Receiver — Native Android IPTV Client",
-        "description": "Download the Android IPTV development APK and explore provider browsing, watch progress, the channel guide and parental controls.",
+        "description": "Download the Android IPTV development APK and explore provider browsing, offline downloads, viewing progress, the channel guide and parental controls.",
         "inLanguage": "en",
         "isPartOf": { "@id": "https://antocanza.github.io/iptv-receiver/#website" },
         "mainEntity": { "@id": "https://antocanza.github.io/iptv-receiver/#app" }
@@ -49,8 +49,8 @@
         "@id": "https://antocanza.github.io/iptv-receiver/#app",
         "name": "IPTV Receiver",
         "url": "https://antocanza.github.io/iptv-receiver/",
-        "description": "An Android client for your Xtream provider: live TV, movies, series, resume, a channel guide and parental controls. Bring your own account; no content or subscription is included. Development build.",
-        "softwareVersion": "0.1.14",
+        "description": "An Android client for your Xtream provider: live TV, movies, series, offline downloads, resume, a channel guide and parental controls. Bring your own account; no content or subscription is included. Development build.",
+        "softwareVersion": "0.1.15",
         "downloadUrl": "https://github.com/AntoCanza/iptv-receiver/releases/latest/download/iptv-receiver.apk",
         "applicationCategory": "MultimediaApplication",
         "license": "https://github.com/AntoCanza/iptv-receiver/blob/main/LICENSE",
@@ -68,14 +68,14 @@
   <a class="skip-link" href="#main">Skip to content</a>
   <header class="site-header wrap">
     <a class="brand" href="./"><img src="images/icon.png" width="36" height="36" alt="">IPTV Receiver</a>
-    <nav aria-label="Main navigation"><a href="#features">Features</a><a href="#getting-started">Get started</a><a href="#documentation">Guides</a><a href="https://github.com/AntoCanza/iptv-receiver">GitHub ↗</a></nav>
+    <nav aria-label="Main navigation"><a href="#features">Features</a><a href="#offline">Offline viewing</a><a href="#getting-started">Get started</a><a href="#documentation">Guides</a><a href="https://github.com/AntoCanza/iptv-receiver">GitHub ↗</a></nav>
   </header>
   <main id="main">
     <section class="hero wrap">
       <div>
         <p class="eyebrow">Android · Phones &amp; tablets</p>
         <h1>Your TV.<br>Your time.</h1>
-        <p class="lead">Watch live TV, movies and series from your Xtream-compatible provider. Find something new or pick up where you left off on your Android phone or tablet.</p>
+        <p class="lead">Watch live TV, movies and series from your Xtream-compatible provider. Pick up where you left off or save supported movies and episodes to watch offline on your Android phone or tablet.</p>
         <div class="actions"><a class="button" href="https://github.com/AntoCanza/iptv-receiver/releases/latest/download/iptv-receiver.apk">Download Android APK ↓</a><a class="text-link" href="https://github.com/AntoCanza/iptv-receiver/blob/main/docs/USER_GUIDE.md">Read the user guide →</a></div>
         <p class="status"><span aria-hidden="true"></span>Android 8.0+ · Development build · Not yet on Google Play</p>
       </div>
@@ -88,10 +88,18 @@
         <article><span class="number">01</span><h3>Find your next watch</h3><p>Search channels, movies and series. Filter by genre and explore seasons, episodes and title details.</p></article>
         <article><span class="number">02</span><h3>Continue your story</h3><p>Resume a movie or episode, track what you have watched and continue a series. Progress stays on your device.</p></article>
         <article><span class="number">03</span><h3>See what is on</h3><p>Browse your channel guide and replay past programmes when your provider offers catch-up.</p></article>
-        <article><span class="number">04</span><h3>Settle into playback</h3><p>Go fullscreen, adjust the picture and choose available audio or subtitles. Live TV retries temporary interruptions.</p></article>
-        <article><span class="number">05</span><h3>Let the screen rest</h3><p>Keep it awake while watching. When playback pauses, stops or ends, Android can turn it off after inactivity.</p></article>
-        <article><span class="number">06</span><h3>Make it yours</h3><p>Choose from ten interface languages and set parental category locks. Adult content is blocked by default.</p></article>
+        <article><span class="number">04</span><h3>Settle into playback</h3><p>Go fullscreen, adjust the picture and choose available tracks. Live TV retries interruptions; idle playback lets the screen rest.</p></article>
+        <article><span class="number">05</span><h3>Watch offline</h3><p>Download supported movies and episodes to a local folder. Track transfers, pause, retry, play and remove saved media in Downloads.</p></article>
+        <article><span class="number">06</span><h3>Make it yours</h3><p>Choose from ten interface languages and set parental category locks. Adult content is blocked by default, including offline.</p></article>
       </div>
+    </section>
+    <section id="offline" class="section wrap split">
+      <div><p class="eyebrow">Download &amp; keep</p><h2>Save now.<br>Watch later.</h2><p>Completed downloads play after an app restart without internet or a fresh provider login. Choose private app storage or a local folder on supported device, SD or USB storage.</p><p>Direct movie and episode files are supported. Adaptive-stream downloads, offline DRM licensing and live recording remain planned. Read the <a href="https://github.com/AntoCanza/iptv-receiver/blob/main/docs/USER_GUIDE.md#downloads-and-offline-viewing">offline viewing guide</a> for details.</p></div>
+      <ol class="steps">
+        <li><h3>Choose a title</h3><p>Open a supported movie or episode and tap Download for offline viewing. Unmetered connections are used by default.</p></li>
+        <li><h3>Manage Downloads</h3><p>See progress and file sizes, pause or retry transfers, and play completed titles. Settings → Downloads chooses where new files are saved.</p></li>
+        <li><h3>Keep control of storage</h3><p>Remove one download or select several to delete after confirmation. Watch history and viewing progress stay on your device.</p></li>
+      </ol>
     </section>
     <section id="getting-started" class="section wrap split">
       <div><p class="eyebrow">Get started</p><h2>Bring your<br>own provider.</h2><p>You need an Xtream-compatible account and permission to access its content. IPTV Receiver does not include channels, media or a subscription.</p></div>
@@ -104,11 +112,12 @@
     <section id="documentation" class="section wrap">
       <p class="eyebrow">Guides &amp; source</p><h2>A little help when you need it.</h2>
       <p class="section-note">Start with the <a href="https://github.com/AntoCanza/iptv-receiver/blob/main/docs/USER_GUIDE.md">user guide</a> for setup, controls and troubleshooting. Developers can <a href="https://github.com/AntoCanza/iptv-receiver#run-locally">build the app</a> or read the <a href="https://github.com/AntoCanza/iptv-receiver/blob/main/CONTRIBUTING.md">contributor guide</a>.</p>
-      <p class="section-note">See <a href="https://github.com/AntoCanza/iptv-receiver/blob/main/docs/VERIFICATION.md">what has been tested</a>, <a href="https://github.com/AntoCanza/iptv-receiver/blob/main/docs/ROADMAP.md">what is planned</a> and the <a href="https://github.com/AntoCanza/iptv-receiver/releases/latest">latest release and checksum</a>.</p>
+      <p class="section-note">See <a href="https://github.com/AntoCanza/iptv-receiver/blob/main/docs/VERIFICATION.md">what has been tested</a>, the <a href="https://github.com/AntoCanza/iptv-receiver/blob/main/docs/VALIDATION_PLAN.md">full validation plan</a>, <a href="https://github.com/AntoCanza/iptv-receiver/blob/main/docs/ROADMAP.md">what is planned</a> and the <a href="https://github.com/AntoCanza/iptv-receiver/releases/latest">latest release and checksum</a>.</p>
     </section>
     <section class="section wrap faq" aria-labelledby="questions"><p class="eyebrow">A few useful answers</p><h2 id="questions">About IPTV Receiver</h2>
       <details><summary>When will the screen turn off?</summary><p>After playback pauses, stops, ends or fails, your device’s normal inactivity timeout applies. Brief buffering or reconnects keep the screen awake for up to one minute. Touching the screen resets Android’s inactivity timer; the app does not change your device settings.</p></details>
       <details><summary>Where is my viewing progress saved?</summary><p>On this device, separately for each provider account. Resume points and watched status stay until you clear them. Uninstalling or clearing app storage removes local data; there is no cloud sync.</p></details>
+      <details><summary>Where are offline downloads kept?</summary><p>In private app storage by default, or in a local folder you choose in Settings → Downloads. Downloads stay until removed and are excluded from cache cleanup. Files in a shared folder can be opened by other apps and may remain after uninstall. Explicit logout hides the account’s library until you reconnect.</p></details>
       <details><summary>Can I use it on a TV or computer?</summary><p>The current app is for Android phones and tablets. Dedicated Android TV, Windows, LG webOS and Samsung Tizen clients are planned.</p></details>
       <details><summary>Is it open source?</summary><p>Yes. The project uses the <a href="https://github.com/AntoCanza/iptv-receiver/blob/main/LICENSE">MIT License</a>, allowing use, modification and redistribution, including commercially. Keep the copyright and license notice. Provider content and third-party components have their own terms.</p></details>
     </section>

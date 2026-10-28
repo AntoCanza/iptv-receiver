@@ -60,6 +60,10 @@ internal fun DetailsScreen(
     progress: DetailProgressState = DetailProgressState(busy = false),
     retryProgress: () -> Unit = {},
     setWatched: (Episode?, Boolean) -> Unit = { _, _ -> },
+    download: (WatchTarget) -> Unit = {},
+    downloaded: Set<List<String>> = emptySet(),
+    downloadBusy: Boolean = false,
+    openDownloads: () -> Unit = {},
 ) {
     if (state.busy) { Loading(); return }
     state.error?.let { ErrorState(it, retry); return }
@@ -139,6 +143,9 @@ internal fun DetailsScreen(
                     }
                 }
             }
+            if (movie != null) item(key = "download") {
+                DownloadAction(WatchTarget(movie.item), downloaded, downloadBusy, download, openDownloads)
+            }
             if (description.isNotBlank()) item(key = "description") { Synopsis(description) }
             if (metadata.cast != null || metadata.director != null || metadata.country != null) {
                 item(key = "credits") { Credits(metadata) }
@@ -197,6 +204,7 @@ internal fun DetailsScreen(
                                         Text(markLabel)
                                     }
                                 }
+                                DownloadAction(WatchTarget(item, episode), downloaded, downloadBusy, download, openDownloads)
                             }
                             Icon(painterResource(R.drawable.ic_play), contentDescription = watchPlayLabel(point),
                                 modifier = Modifier.size(24.dp).align(Alignment.CenterVertically), tint = MaterialTheme.colorScheme.primary)

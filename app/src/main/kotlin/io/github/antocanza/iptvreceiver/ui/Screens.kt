@@ -93,7 +93,8 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.awaitCancellation
 
 @Composable
-fun LoginScreen(state: LoginState, connect: (ProviderConnection, Boolean) -> Unit, draft: LoginDraftViewModel = viewModel()) {
+fun LoginScreen(state: LoginState, connect: (ProviderConnection, Boolean) -> Unit, draft: LoginDraftViewModel = viewModel(),
+    openDownloads: (() -> Unit)? = null) {
     var name by rememberSaveable { mutableStateOf("") }
     // Credentials stay out of Android's saved-state bundles.
     val server = draft.server
@@ -106,6 +107,7 @@ fun LoginScreen(state: LoginState, connect: (ProviderConnection, Boolean) -> Uni
         Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState()).padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally) {
             Column(Modifier.widthIn(max = 480.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+                openDownloads?.let { action -> NavigationCard(R.drawable.ic_download, stringResource(R.string.downloads), action) }
                 Text(stringResource(R.string.connection_help))
                 OutlinedTextField(name, { name = it }, Modifier.fillMaxWidth(),
                     label = { Text(stringResource(R.string.connection_name_optional)) }, enabled = !state.busy, singleLine = true)
@@ -144,7 +146,7 @@ fun LoginScreen(state: LoginState, connect: (ProviderConnection, Boolean) -> Uni
 }
 
 @Composable
-fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: ReceiverViewModel) {
+fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: ReceiverViewModel, openDownloads: (Boolean) -> Unit = {}) {
     val navigation = rememberNavController()
     val container = LocalContext.current.applicationContext as ReceiverApplication
     val policy by container.parentalControls.policy.collectAsStateWithLifecycle()
@@ -232,13 +234,15 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
                         }
                         NavigationCard(R.drawable.ic_calendar, stringResource(R.string.tv_guide), onClick = { navigation.navigate("guide_browse/root") })
                         NavigationCard(R.drawable.ic_history, stringResource(R.string.watch_history), onClick = { navigation.navigate("history") })
+                        NavigationCard(R.drawable.ic_download, stringResource(R.string.downloads), onClick = { openDownloads(false) })
                     }
                 }
             }
             composable("settings") {
                 ScreenFrame(stringResource(R.string.settings), back = { navigation.popBackStack() }) {
                     SettingsScreen(account = { navigation.navigate("settings/account") }, server = { navigation.navigate("settings/server") },
-                        parental = { navigation.navigate("settings/parental") }, viewing = { navigation.navigate("settings/viewing") })
+                        parental = { navigation.navigate("settings/parental") }, viewing = { navigation.navigate("settings/viewing") },
+                        downloads = { openDownloads(true) })
                 }
             }
             composable("settings/viewing") {
@@ -342,10 +346,20 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
                     }
                     ScreenFrame((state.movie?.item?.title ?: state.series?.title ?: item.title)
                         .ifBlank { stringResource(R.string.untitled) }, back = { navigation.popBackStack() }) {
-                        DetailsScreen(state, item, details::load,
-                            playMovie = { movie, restart -> playFromDetails(WatchTarget(movie), restart) { repository.stream(session.connection, movie) } },
-                            playEpisode = { episode, restart -> playFromDetails(WatchTarget(item, episode), restart) { repository.episodeStream(session.connection, episode) } },
-                            progress = progress, retryProgress = { details.refreshProgress() }, setWatched = details::setWatched)
+                        val downloads: DownloadsViewModel = viewModel(factory = viewModelFactory { initializer { DownloadsViewModel(container.downloads) } })
+                        val downloaded by container.downloads.store.entries.collectAsStateWithLifecycle()
+                        val downloadState by downloads.state.collectAsStateWithLifecycle()
+                        Column(Modifier.fillMaxSize()) {
+                            if (downloadState.failed) Text(stringResource(R.string.download_action_error), Modifier.padding(16.dp), color = MaterialTheme.colorScheme.error)
+                            Box(Modifier.weight(1f)) { DetailsScreen(state, item, details::load,
+                                playMovie = { movie, restart -> playFromDetails(WatchTarget(movie), restart) { repository.stream(session.connection, movie) } },
+                                playEpisode = { episode, restart -> playFromDetails(WatchTarget(item, episode), restart) { repository.episodeStream(session.connection, episode) } },
+                                progress = progress, retryProgress = { details.refreshProgress() }, setWatched = details::setWatched,
+                                download = { target -> downloads.enqueue(session.connection, target, repository) },
+                                downloaded = downloaded.filter { it.account == io.github.antocanza.iptvreceiver.data.accountKey(session.connection) }.map { it.target.key }.toSet(),
+                                downloadBusy = downloadState.busy,
+                                openDownloads = { openDownloads(false) }) }
+                        }
                     }
                 } else ScreenFrame(stringResource(R.string.app_name), back = { navigation.popBackStack() }) {
                     Text(stringResource(R.string.select_title), Modifier.padding(24.dp))
@@ -394,7 +408,7 @@ fun ReceiverNavigation(repository: CatalogRepository, session: Session, model: R
 private fun liveFormat(session: Session): String = session.account.preferredLiveFormat
 
 @Composable
-private fun ScreenFrame(title: String, back: (() -> Unit)? = null, showLanguage: Boolean = false, fullscreen: Boolean = false,
+internal fun ScreenFrame(title: String, back: (() -> Unit)? = null, showLanguage: Boolean = false, fullscreen: Boolean = false,
     action: @Composable () -> Unit = {}, content: @Composable () -> Unit) {
     Scaffold(contentWindowInsets = if (fullscreen) WindowInsets(0, 0, 0, 0) else ScaffoldDefaults.contentWindowInsets,
         topBar = {

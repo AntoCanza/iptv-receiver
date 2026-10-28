@@ -1,6 +1,6 @@
 # Implementation and validation roadmap
 
-Baseline: Android 0.1.14 (versionCode 15), October 27, 2026. Checked items describe implemented behavior or the specific recorded verification, not compatibility with every device/provider. See the [user guide](USER_GUIDE.md) for current features and [verification](VERIFICATION.md) for evidence by version.
+Baseline: Android 0.1.15 (versionCode 16), October 28, 2026. Checked items describe implemented behavior or the specific recorded verification, not compatibility with every device/provider. See the [user guide](USER_GUIDE.md) for current features and [verification](VERIFICATION.md) for evidence by version.
 
 ## Milestone 0 — Public foundation
 
@@ -32,7 +32,7 @@ A successful login/catalog request alone does not complete playback validation. 
 
 ## Milestone 2 — Reliable mobile browsing
 
-- [ ] Room metadata cache scoped to provider, account and content type.
+- [ ] Durable metadata cache scoped to provider, account and content type, preferring native SQLite.
 - [ ] Fast cached opening, explicit refresh and visible stale-data state.
 - [ ] Measure catalog size; incremental ingestion/paging strategy where required.
 - [ ] Restore categories and scroll positions after playback and process recreation.
@@ -58,6 +58,8 @@ Live TV, Movies and Series roots support full-catalog search and all-content bro
 - [ ] Next-episode playback with correct numeric season/episode ordering.
 - [x] Retained player, immersive fullscreen and rotation continuity, with selected Pixel checks.
 - [x] Let Android's normal inactivity timeout take over when playback is paused, stopped, ended or failed, with bounded buffering/reconnect grace.
+- [x] Direct-file movie/episode downloads, dedicated management section, configurable local folder, pause/retry, bulk deletion and credential-free offline playback with current parental rules.
+- [ ] Broader offline download/storage checks across API 26, tablets, SD/USB drives, revoked grants, low-space and Android background quotas.
 - [ ] Broader fullscreen/inset behavior across API levels, tablets and the minified build.
 - [ ] Categorize offline, access-denied, unavailable-stream and unsupported-codec failures.
 
@@ -110,4 +112,4 @@ the additional clients and their playback integrations remain unimplemented.
 
 ## Later product choices
 
-Password-protected parental controls with default adult blocking and settings reset are implemented; device and provider classification coverage remains part of release hardening. Favorites, multiple accounts, a simultaneous multi-channel EPG grid/XMLTV import, casting, downloads, M3U import, background playback and cloud sync remain later product choices. The existing channel guide and Xtream catch-up path still need broader provider and device coverage.
+Password-protected parental controls with default adult blocking and settings reset are implemented; device and provider classification coverage remains part of release hardening. Direct-file downloads are implemented. Adaptive/offline-DRM downloads, live recording, favorites, multiple accounts, a simultaneous multi-channel EPG grid/XMLTV import, casting, M3U import, background playback and cloud sync remain later product choices. The existing channel guide and Xtream catch-up path still need broader provider and device coverage. Follow [the full validation plan](VALIDATION_PLAN.md) for the next real-service, accessibility and reliability pass.

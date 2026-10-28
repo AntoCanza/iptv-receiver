@@ -28,6 +28,7 @@ class ReceiverApplication : Application() {
     val repository: CatalogRepository by lazy { ParentalCatalogRepository(unfilteredRepository, parentalControls) }
     val connectionStore by lazy { ConnectionStore(this) }
     private val viewingStore by lazy { ViewingStore(this) }
+    val downloads by lazy { io.github.antocanza.iptvreceiver.data.DownloadRepository(this, viewingStore) }
     val watchHistoryStore get() = viewingStore.history
     val playbackProgressStore get() = viewingStore.progress
     val subscriptionReminders by lazy { SubscriptionReminders(filesDir.resolve("subscription-reminders")) }
