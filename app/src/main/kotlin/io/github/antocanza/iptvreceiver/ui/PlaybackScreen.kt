@@ -47,6 +47,7 @@ fun PlaybackScreen(model: PlaybackViewModel, fullscreen: Boolean, onFullscreenCh
     val activity = LocalActivity.current
     val player = model.player
     val recoveryState by model.recoveryState.collectAsStateWithLifecycle()
+    val keepScreenOn by model.keepScreenOn.collectAsStateWithLifecycle()
     val reconnecting = recoveryState == PlaybackRecoveryState.RECONNECTING
     val display by model.display.collectAsStateWithLifecycle()
     var controlsVisible by remember(player) { mutableStateOf(true) }
@@ -74,18 +75,21 @@ fun PlaybackScreen(model: PlaybackViewModel, fullscreen: Boolean, onFullscreenCh
         val observer = LifecycleEventObserver { _, event ->
             if (event == Lifecycle.Event.ON_STOP) model.onHostStopped(activity?.isChangingConfigurations == true)
         }
-        val window = activity?.window
-        window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         player.addListener(listener)
         lifecycle.addObserver(observer)
         onDispose {
             lifecycle.removeObserver(observer)
             player.removeListener(listener)
-            window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
             if (activity?.isChangingConfigurations == false) {
                 activity.requestedOrientation = ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
             }
         }
+    }
+    DisposableEffect(activity, keepScreenOn) {
+        val window = activity?.window
+        if (keepScreenOn) window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        else window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        onDispose { window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
     }
     DisposableEffect(activity, fullscreen) {
         val window = activity?.window

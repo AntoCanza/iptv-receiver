@@ -6,6 +6,14 @@ Each player navigation entry owns one PlaybackViewModel and ExoPlayer, built wit
 
 Landscape automatically hides the header and system bars. The player fullscreen button can request landscape; exit/Back releases that request and returns to the device's orientation policy. Synchronizing Media3's icon temporarily disconnects its listener, because Media3 also emits the fullscreen callback for programmatic state changes.
 
+## Screen sleep
+
+The retained playback engine owns the screen-awake policy. Actual playback keeps the display on; pause, stop, end, suppressed playback and terminal failure release the activity's `FLAG_KEEP_SCREEN_ON`. Android then handles input and its normal screen timeout. The app does not draw a black overlay, change system display settings or request device-administrator permissions.
+
+Startup, buffering and automatic live recovery receive at most 60 seconds of screen-awake grace per continuous wait. Reconnect attempts share that deadline; rotation cannot renew it. Actual playback or an explicit Retry starts a fresh allowance. Exhausted recovery releases the hold immediately, and leaving the player removes listeners and cancels the timer. Releasing the hold does not itself cancel recovery; backgrounding still pauses playback and cancels recovery as before.
+
+The precise screen-off time follows device settings and Android policy; the grace period is not a forced-lock deadline. Follow [Android's screen-awake guidance](https://developer.android.com/develop/background-work/background-tasks/awake/screen-on). JVM policy tests cover state changes and deadlines; hardware checks are recorded in [verification](VERIFICATION.md).
+
 ## Durable movie and episode progress
 
 After playback actually starts, movie and episode positions are checkpointed every five seconds and on seek, pause, backgrounding and player removal. Final writes use an application-owned I/O scope so leaving a navigation entry does not cancel them. A forced process kill can lose the last few seconds since the latest completed checkpoint. Live TV and catch-up never receive movie/episode bookmarks.

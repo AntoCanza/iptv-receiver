@@ -173,6 +173,8 @@ Each screen ViewModel exposes immutable state with loading, data and error value
 
 The player destination's retained `PlaybackViewModel` owns one engine/ExoPlayer. Activity recreation reattaches the view without preparing the source again. It pauses when the destination stops and releases its resources when removed. Background playback and a `MediaSessionService` are future product decisions. It uses device decoders; a supported container does not guarantee support for every embedded codec.
 
+The engine also retains the screen-awake policy and exposes its state through the ViewModel. Playback keeps the screen awake; idle states release it to Android's normal inactivity timeout. Buffering and reconnects share a bounded grace period across rotation; see [screen sleep](CACHE_AND_PLAYBACK.md#screen-sleep).
+
 ## Implemented persistence and remaining cache work
 
 Optional encrypted connection storage and durable watch history are implemented. `ViewingStore` owns a version-1 app-private SQLite database with indexed progress/history tables and transactional writes. Account keys hash normalized server/account identifiers; connection names and password changes do not create new history. History records contain content/episode identifiers, display titles, stream extensions and last playback-start timestamps. Artwork, provider responses, playback URLs and credentials are never serialized. Old atomic files import once per account in one transaction. Unsupported versions fail visibly without overwriting sources; import markers prevent old files from resurrecting subsequent edits or cleared data.

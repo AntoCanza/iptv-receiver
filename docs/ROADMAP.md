@@ -57,6 +57,7 @@ Live TV, Movies and Series roots support full-catalog search and all-content bro
 - [x] Channel programme guide with search, current/upcoming/past programmes and advertised catch-up playback.
 - [ ] Next-episode playback with correct numeric season/episode ordering.
 - [x] Retained player, immersive fullscreen and rotation continuity, with selected Pixel checks.
+- [x] Let Android's normal inactivity timeout take over when playback is paused, stopped, ended or failed, with bounded buffering/reconnect grace.
 - [ ] Broader fullscreen/inset behavior across API levels, tablets and the minified build.
 - [ ] Categorize offline, access-denied, unavailable-stream and unsupported-codec failures.
 

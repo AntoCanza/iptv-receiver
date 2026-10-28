@@ -1,6 +1,18 @@
 # Verification record
 
-Date: October 27, 2026. Latest development version 0.1.14, versionCode 15. Package: `io.github.antocanza.iptvreceiver`.
+Date: October 28, 2026. Latest development version 0.1.14, versionCode 15. Package: `io.github.antocanza.iptvreceiver`.
+
+## Idle screen sleep and shorter public documentation — October 28, 2026
+
+The playback engine now releases the screen-awake hold on pause, stop, completion, suppressed playback and terminal failure. Startup, buffering and automatic live reconnects share a 60-second continuous-wait allowance; rotation retains the controller and manual Retry renews the allowance. Android handles user input and the actual display timeout. No new permissions, dependencies or system-setting changes were introduced.
+
+The complete README verification command passes with JDK 21: **172 JVM tests** (126 app, 6 model, 40 provider), dependency policy, debug/release lint, debug APK, minified unsigned release APK and unsigned release AAB. The nine new screen-policy tests cover uninterrupted playback, idle/failed/suppressed states, bounded startup/buffering/reconnects, exhausted retries, explicit retry, pause/resume and cleanup. Both lint variants have zero errors/warnings and the existing target-SDK informational hint. The device-check APK builds and its updated runner passes debug lint.
+
+On a physical Pixel 9 Pro XL running Android 17, eight checks pass through the actual PlaybackScreen and ExoPlayer: active playback sets the activity's screen-awake flag; pause, natural completion, stop and a failed load clear it; resume and Retry restore it; removing the player screen clears it. The fixture is a seekable silent WAV served on device loopback, with a deliberately unavailable loopback endpoint for failure. These are screen-state/UI checks, not new video/provider compatibility evidence. The data-preserving installation uses the existing signing certificate, does not use the real provider and creates no history/progress records. Normal app launch was restored afterwards; display settings were not changed.
+
+Reproduce the device checks with `adb shell am instrument -w -e screenSleep true io.github.antocanza.iptvreceiver.test/io.github.antocanza.iptvreceiver.PlaybackDeviceChecks`. Actual inactivity-to-screen-off timing, touch-reset timing, charging/always-on policies, buffering grace across physical rotation, API 26, tablets and the minified build on hardware remain unverified. The 60-second deadlines use virtual time in JVM tests; the phone checks assert window flags rather than forcing device sleep.
+
+The README was reduced from roughly 1,730 to 570 words, retaining setup, the complete verification command and links to detailed guides. Both public HTML pages were shortened and the new behavior was added to the user/playback guides and roadmap. The site checker passes for metadata, structured data, images, anchors and the sitemap. Chromium screenshots were reviewed at 1440 and 390 pixels; layout checks at 1440, 768, 390 and 320 pixels confirm no horizontal overflow, loaded images and working FAQ expansion. Older verification entries below retain their original scope.
 
 ## Documentation synchronization — October 27, 2026
 

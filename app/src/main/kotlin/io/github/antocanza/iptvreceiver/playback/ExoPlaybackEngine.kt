@@ -24,7 +24,9 @@ class ExoPlaybackEngine(context: Context, source: PlaybackSource, onFirstPlaybac
     override val player: ExoPlayer
     private val scope = CoroutineScope(SupervisorJob() + Dispatchers.Main.immediate)
     private val recovery: LivePlaybackRecovery
+    private val screenAwake: PlaybackScreenAwake
     override val recoveryState get() = recovery.state
+    override val keepScreenOn get() = screenAwake.keepScreenOn
 
     init {
         val mediaItem = MediaItem.Builder().setUri(source.url).apply {
@@ -66,11 +68,16 @@ class ExoPlaybackEngine(context: Context, source: PlaybackSource, onFirstPlaybac
             setSource()
             player.prepare()
         })
+        screenAwake = PlaybackScreenAwake(player, recovery.state, scope)
     }
 
-    override fun prepareAndPlay() = recovery.prepareAndPlay()
+    override fun prepareAndPlay() {
+        recovery.prepareAndPlay()
+        screenAwake.onPlaybackRequested()
+    }
     override fun pause() = recovery.pause()
     override fun release() {
+        screenAwake.release()
         recovery.release()
         scope.cancel()
         player.release()

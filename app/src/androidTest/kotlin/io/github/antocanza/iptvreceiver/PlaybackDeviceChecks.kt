@@ -53,11 +53,12 @@ class PlaybackDeviceChecks : Instrumentation() {
     private var progressPhase: String? = null
     private var uxPhase: String? = null
     private var viewingPhase: String? = null
+    private var screenSleep = false
     private var engine: PlaybackEngine? = null
     private var server: ServerSocket? = null
     private var completed = 0
     private var stage = "starting"
-    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); real = arguments?.getString("real") == "true"; normalUi = arguments?.getString("normalUi") == "true"; displayOnly = arguments?.getString("displayOnly") == "true"; progressPhase = arguments?.getString("progressPhase"); uxPhase = arguments?.getString("uxPhase"); viewingPhase = arguments?.getString("viewingPhase"); start() }
+    override fun onCreate(arguments: Bundle?) { super.onCreate(arguments); real = arguments?.getString("real") == "true"; normalUi = arguments?.getString("normalUi") == "true"; displayOnly = arguments?.getString("displayOnly") == "true"; progressPhase = arguments?.getString("progressPhase"); uxPhase = arguments?.getString("uxPhase"); viewingPhase = arguments?.getString("viewingPhase"); screenSleep = arguments?.getString("screenSleep") == "true"; start() }
     override fun onStart() {
         val result = Bundle()
         try {
@@ -67,12 +68,13 @@ class PlaybackDeviceChecks : Instrumentation() {
                 finish(Activity.RESULT_OK, result)
                 return
             }
-            val fixture = if (viewingPhase == "ui") startMediaFixture() else null
+            val fixture = if (viewingPhase == "ui" || screenSleep) startMediaFixture() else null
             val intent = Intent(targetContext, MainActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
             if (fixture != null) intent.putExtra("store_preview", true).putExtra("preview_fixture_port", android.net.Uri.parse(fixture).port)
             activity = startActivitySync(intent) as MainActivity
-            onMain { activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
-            if (viewingPhase == "ui") viewingUiChecks()
+            if (!screenSleep) onMain { activity.window.addFlags(android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON) }
+            if (screenSleep) screenSleepChecks(checkNotNull(fixture))
+            else if (viewingPhase == "ui") viewingUiChecks()
             else if (uxPhase != null) { check(real); usabilityChecks(checkNotNull(uxPhase)) }
             else if (progressPhase != null) when (progressPhase) {
                 "seed" -> { check(real); progressSeedChecks() }
@@ -160,6 +162,45 @@ class PlaybackDeviceChecks : Instrumentation() {
         if (root is DisplayPlayerView) return root
         if (root is ViewGroup) for (i in 0 until root.childCount) view(root.getChildAt(i))?.let { return it }
         return null
+    }
+    private fun screenSleepChecks(base: String) {
+        lateinit var playback: ExoPlaybackEngine
+        onMain { playback = ExoPlaybackEngine(targetContext, PlaybackSource("$base/fixture.wav", "Screen sleep fixture", false)) }
+        val model = attach(playback)
+        fun hasHold() = activity.window.attributes.flags and android.view.WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON != 0
+        waitUntil { playback.player.isPlaying && hasHold() }
+        passed("active playback holds the screen awake")
+
+        onMain { playback.player.pause() }
+        waitUntil { !hasHold() }
+        passed("pause releases the screen hold")
+        onMain { playback.player.play() }
+        waitUntil { playback.player.isPlaying && hasHold() }
+        passed("resume restores the screen hold")
+
+        onMain { playback.player.seekTo(playback.player.duration - 300) }
+        waitUntil { playback.player.playbackState == Player.STATE_ENDED && !hasHold() }
+        passed("natural completion releases the screen hold")
+        onMain { playback.player.seekTo(0); playback.player.play() }
+        waitUntil { playback.player.isPlaying && hasHold() }
+        onMain { playback.player.stop() }
+        waitUntil { !hasHold() }
+        passed("stop releases the screen hold")
+
+        onMain {
+            playback.player.setMediaItem(MediaItem.fromUri("http://127.0.0.1:1/unavailable.wav"))
+            model.retry()
+        }
+        waitUntil { playback.player.playerError != null && !hasHold() }
+        passed("failed media releases the screen hold")
+        onMain { playback.player.setMediaItem(MediaItem.fromUri("$base/fixture.wav")); model.retry() }
+        waitUntil { playback.player.isPlaying && hasHold() }
+        passed("retry can restore playback and the screen hold")
+        onMain {
+            activity.setContent { MaterialTheme { Box(Modifier.fillMaxSize()) } }
+        }
+        waitUntil { !hasHold() }
+        passed("leaving the player clears the activity screen hold")
     }
     private fun waitUi(label: String, timeout: Long = 30_000) {
         val deadline = SystemClock.elapsedRealtime() + timeout
@@ -654,6 +695,7 @@ class PlaybackDeviceChecks : Instrumentation() {
         val wrapper = object : PlaybackEngine {
             override val player = player
             override val recoveryState = MutableStateFlow(PlaybackRecoveryState.NONE)
+            override val keepScreenOn = MutableStateFlow(false)
             override fun prepareAndPlay() { player.prepare(); player.play() }
             override fun pause() = player.pause()
             override fun release() = player.release()

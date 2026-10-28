@@ -9,6 +9,7 @@ enum class PlaybackRecoveryState { NONE, RECONNECTING, FAILED }
 interface PlaybackEngine {
     val player: Player
     val recoveryState: StateFlow<PlaybackRecoveryState>
+    val keepScreenOn: StateFlow<Boolean>
     fun prepareAndPlay()
     fun pause()
     fun release()

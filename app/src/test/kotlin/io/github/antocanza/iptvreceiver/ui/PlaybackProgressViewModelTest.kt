@@ -91,6 +91,7 @@ class PlaybackProgressViewModelTest {
         var duration = 6_600_000L
         var state = Player.STATE_READY
         override val recoveryState = MutableStateFlow(PlaybackRecoveryState.NONE)
+        override val keepScreenOn = MutableStateFlow(false)
         override val player = Proxy.newProxyInstance(Player::class.java.classLoader, arrayOf(Player::class.java)) { _, method, args ->
             when (method.name) {
                 "getCurrentPosition" -> position

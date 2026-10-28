@@ -33,6 +33,8 @@ Large-font or short-window layouts use compact rows and scrolling controls. Long
 
 Tap the player to show its controls. Fullscreen uses landscape; Back exits fullscreen before leaving playback. Rotation retains the current playback session. Backgrounding pauses it, and leaving the player releases it.
 
+The screen stays awake while media plays. Pausing, stopping, finishing or a playback failure lets Android turn the display off after its normal inactivity timeout. Brief buffering and live reconnects keep it awake for up to one minute; exhausted retries release it sooner. Touching or operating the app resets Android's inactivity timer. No setting or extra permission is needed, and the app does not change your device's screen timeout.
+
 Display settings offer **Fit**, **Zoom** and **Stretch**, separately from **Auto**, **16:9**, **4:3** and **21:9** aspect ratios. Zoom can crop the picture; Stretch can distort it. Choices survive rotation and reconnects within the player session.
 
 The subtitle icon appears when text tracks are available and includes **Off**. Audio selection appears for multiple audio tracks. Stream information shows reported formats and timeline values; unknown values stay unknown. Track availability depends on the actual stream, and a listed subtitle track may not carry visible cues. Display choices do not change source resolution or bitrate.

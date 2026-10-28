@@ -20,6 +20,7 @@ class PlaybackViewModel(private val engine: PlaybackEngine, landscape: Boolean, 
     private val onProgress: ((PlaybackProgress) -> Unit)? = null) : ViewModel() {
     val player get() = engine.player
     val recoveryState get() = engine.recoveryState
+    val keepScreenOn get() = engine.keepScreenOn
     private var lastLandscape = landscape
     private val mutableFullscreen = MutableStateFlow(landscape)
     val fullscreen = mutableFullscreen.asStateFlow()

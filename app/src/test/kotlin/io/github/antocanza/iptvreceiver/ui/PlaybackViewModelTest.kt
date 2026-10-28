@@ -90,6 +90,7 @@ class PlaybackViewModelTest {
     private class FakeEngine : PlaybackEngine {
         override val player: Player get() = error("UI-only player access is not needed by the retained session test")
         override val recoveryState = MutableStateFlow(PlaybackRecoveryState.NONE)
+        override val keepScreenOn = MutableStateFlow(false)
         var prepareCalls = 0
         var releaseCalls = 0
         var positionMs = 0L
